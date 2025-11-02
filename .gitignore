@@ -56,6 +56,9 @@ temp/
 /backend/dist/
 /backend/.nest/
 
+# Prisma generated client
+/backend/src/generated/
+
 # Vite
 /frontend/dist/
 /frontend/.vite/
