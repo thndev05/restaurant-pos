@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { MenuItemsService } from './menu-items.service';
 import { GetMenuItemsDto } from './dto/get-menu-items.dto';
 
@@ -13,8 +13,8 @@ export class MenuItemsController {
     return this.menuItemsService.getMenuItems(filterDto);
   }
 
-  @Get(':id')
-  getMenuItemById(id: string) {
+  @Get('/:id')
+  getMenuItemById(@Param('id') id: string) {
     return this.menuItemsService.getMenuItemById(id);
   }
 }
