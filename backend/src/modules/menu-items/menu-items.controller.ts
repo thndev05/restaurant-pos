@@ -1,13 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { MenuItemsService } from './menu-items.service';
+import { GetMenuItemsDto } from './dto/get-menu-items.dto';
 
 @Controller('menu-items')
 export class MenuItemsController {
   constructor(private readonly menuItemsService: MenuItemsService) {}
 
   @Get('')
-  getAllMenuItems() {
-    return this.menuItemsService.getAllMenuItems();
+  getMenuItems(
+    @Query() filterDto: GetMenuItemsDto
+  ) {
+    return this.menuItemsService.getMenuItems(filterDto);
   }
 
   @Get(':id')
