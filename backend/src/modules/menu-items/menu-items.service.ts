@@ -12,26 +12,24 @@ export class MenuItemsService {
 
   async getMenuItems(filterDto: GetMenuItemsDto) {
     const { search } = filterDto;
+    const searchTerm = search?.trim();
 
-    let where: any = {};
+    // Build where condition
+    const where: any = {
+      isActive: true,
+      ...(searchTerm && buildPrismaSearchQuery(searchTerm, ['name'])),
+    };
 
-    // Build query search cho database
-    if (search && search.trim()) {
-      where = buildPrismaSearchQuery(search, ['name']);
-      where.isActive = true;
-    }
-    
+    // Query database
     const menuItems = await this.prismaService.menuItem.findMany({
       where,
       orderBy: { name: 'asc' },
     });
 
-    // Filter thêm ở application level để xử lý dấu tiếng Việt
-    if (search && search.trim()) {
-      return filterBySearchTerm(menuItems, search, ['name']);
-    }
-
-    return menuItems;
+    // Filter by search term (handle Vietnamese accents)
+    return searchTerm
+      ? filterBySearchTerm(menuItems, searchTerm, ['name'])
+      : menuItems;
   }
 
   async getMenuItemById(id: string) {
