@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -34,5 +36,25 @@ export class MenuItemsController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.menuItemsService.createMenuItem(createMenuItemDto, file);
+  }
+
+  @Delete('/:id')
+  softDeleteMenuItem(@Param('id') id: string) {
+    return this.menuItemsService.softDeleteMenuItem(id);
+  }
+
+  @Delete('/:id/hard')
+  hardDeleteMenuItem(@Param('id') id: string) {
+    return this.menuItemsService.hardDeleteMenuItem(id);
+  }
+
+  @Patch('/:id')
+  @UseInterceptors(FileInterceptor('image'))
+  updateMenuItem(
+    @Param('id') id: string,
+    @Body() updateMenuItemDto: CreateMenuItemDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.menuItemsService.updateMenuItem(updateMenuItemDto, file, id);
   }
 }
