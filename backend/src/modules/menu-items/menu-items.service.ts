@@ -149,7 +149,8 @@ export class MenuItemsService {
       data: {
         name,
         price,
-        image: imageUrl
+        image: imageUrl,
+        updatedAt: new Date(),
       }
     });
     
