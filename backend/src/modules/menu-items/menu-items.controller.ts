@@ -29,7 +29,7 @@ export class MenuItemsController {
     return this.menuItemsService.getMenuItemById(id);
   }
 
-  @Post('/create')
+  @Post('')
   @UseInterceptors(FileInterceptor('image'))
   createMenuItem(
     @Body() createMenuItemDto: CreateMenuItemDto,
