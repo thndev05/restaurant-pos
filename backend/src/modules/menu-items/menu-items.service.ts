@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from 'src/config/prisma/prisma.service';
 import { GetMenuItemsDto } from './dto/get-menu-items.dto';
 import { CreateMenuItemDto } from './dto/create-menu-items.dto';
-import { CloudinaryService } from 'src/config/cloudinary.service';
+import { CloudinaryService } from 'src/config/cloudinary/cloudinary.service';
 import {
   buildPrismaSearchQuery,
   filterBySearchTerm,
@@ -34,6 +34,7 @@ export class MenuItemsService {
     const menuItems = await this.db.findMany({
       where,
       orderBy: { name: 'asc' },
+      include: { category: true }
     });
 
     // Filter by search term (handle Vietnamese accents)
@@ -52,12 +53,13 @@ export class MenuItemsService {
     } else {
       return this.db.findUnique({
         where: { id },
+        include: { category: true }
       });
     }
   }
 
   async createMenuItem(createMenuItemDto: CreateMenuItemDto, file?: any) {
-    const { name, price } = createMenuItemDto;
+    const { name, price, categoryId } = createMenuItemDto;
 
     let imageUrl: string | null = null;
 
@@ -66,11 +68,23 @@ export class MenuItemsService {
       imageUrl = uploadResult.secure_url;
     }
 
+    const category = await this.prismaService.category.findUnique({
+      where: { 
+        id: categoryId,
+        isActive: true 
+      }
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with id ${categoryId} not found.`);
+    }
+
     return this.db.create({
       data: {
         name,
         price,
         image: imageUrl,
+        categoryId
       },
     });
   }
@@ -120,7 +134,7 @@ export class MenuItemsService {
   }
 
   async updateMenuItem(updateMenuItemDto: UpdateMenuItemDto, file: any, id: string) {
-    const { name, price } = updateMenuItemDto;
+    const { name, price, categoryId } = updateMenuItemDto;
     let imageUrl: string | null = null;
 
     const menuItem = await this.db.findUnique({
@@ -139,6 +153,17 @@ export class MenuItemsService {
       }
     }
 
+    const category = await this.prismaService.category.findUnique({
+      where: { 
+        id: categoryId,
+        isActive: true
+      }
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with id ${categoryId} not found.`);
+    }
+
     if (file) {
       const uploadResult = await this.cloudinaryService.uploadImage(file);
       imageUrl = uploadResult.secure_url;
@@ -150,6 +175,7 @@ export class MenuItemsService {
         name,
         price,
         image: imageUrl,
+        categoryId,
         updatedAt: new Date(),
       }
     });

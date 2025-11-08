@@ -19,5 +19,22 @@ model MenuItem {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  // foreign key
+  categoryId  String?
+  category    Category? @relation("CategoryToMenuItems", fields: [categoryId], references: [id])
+
   @@map("menu_items")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  menuItems   MenuItem[] @relation("CategoryToMenuItems")
+
+  @@map("categories")
 }
