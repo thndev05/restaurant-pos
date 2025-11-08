@@ -34,7 +34,7 @@ export class MenuItemsService {
     const menuItems = await this.db.findMany({
       where,
       orderBy: { name: 'asc' },
-      include: { category: true }
+      include: { category: true },
     });
 
     // Filter by search term (handle Vietnamese accents)
@@ -46,16 +46,14 @@ export class MenuItemsService {
   async getMenuItemById(id: string) {
     const menuItem = await this.db.findUnique({
       where: { id },
+      include: { category: true },
     });
 
     if (!menuItem) {
-      return new NotFoundException(`Menu item with id ${id} not found.`);
-    } else {
-      return this.db.findUnique({
-        where: { id },
-        include: { category: true }
-      });
+      throw new NotFoundException(`Menu item with id ${id} not found.`);
     }
+
+    return menuItem;
   }
 
   async createMenuItem(createMenuItemDto: CreateMenuItemDto, file?: any) {
@@ -68,15 +66,15 @@ export class MenuItemsService {
       imageUrl = uploadResult.secure_url;
     }
 
-    const category = await this.prismaService.category.findUnique({
-      where: { 
-        id: categoryId,
-        isActive: true 
-      }
-    });
+    // Validate category exists and is active if provided
+    if (categoryId) {
+      const category = await this.prismaService.category.findUnique({
+        where: { id: categoryId },
+      });
 
-    if (!category) {
-      throw new NotFoundException(`Category with id ${categoryId} not found.`);
+      if (!category || !category.isActive) {
+        throw new NotFoundException(`Category with id ${categoryId} not found or inactive.`);
+      }
     }
 
     return this.db.create({
@@ -84,18 +82,18 @@ export class MenuItemsService {
         name,
         price,
         image: imageUrl,
-        categoryId
+        categoryId: categoryId || null,
       },
     });
   }
 
   async softDeleteMenuItem(id: string) {
     const menuItem = await this.db.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!menuItem) {
-      return new NotFoundException(`Menu item with id ${id} not found.`);
+      throw new NotFoundException(`Menu item with id ${id} not found.`);
     }
 
     await this.db.update({
@@ -111,18 +109,18 @@ export class MenuItemsService {
 
   async hardDeleteMenuItem(id: string) {
     const menuItem = await this.db.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!menuItem) {
-      return new NotFoundException(`Menu item with id ${id} not found.`);
+      throw new NotFoundException(`Menu item with id ${id} not found.`);
     }
 
     const publicId = menuItem?.image;
     if (publicId) {
       await this.cloudinaryService.deleteImage(publicId);
     }
-      
+
     await this.db.delete({
       where: { id },
     });
@@ -130,59 +128,60 @@ export class MenuItemsService {
     return {
       code: 200,
       message: `Menu item with id ${id} has been hard deleted.`,
-    }
+    };
   }
 
-  async updateMenuItem(updateMenuItemDto: UpdateMenuItemDto, file: any, id: string) {
+  async updateMenuItem(
+    updateMenuItemDto: UpdateMenuItemDto,
+    file: any,
+    id: string,
+  ) {
     const { name, price, categoryId } = updateMenuItemDto;
     let imageUrl: string | null = null;
 
     const menuItem = await this.db.findUnique({
-      where: { 
-        id,
-        isActive: true
-      },
+      where: { id },
     });
 
     if (!menuItem) {
-      return new NotFoundException(`Menu item with id ${id} not found.`);
-    } else {
+      throw new NotFoundException(`Menu item with id ${id} not found.`);
+    }
+
+    // Delete old image if new file is provided
+    if (file) {
       const publicImage = menuItem?.image;
       if (publicImage) {
         await this.cloudinaryService.deleteImage(publicImage);
       }
-    }
-
-    const category = await this.prismaService.category.findUnique({
-      where: { 
-        id: categoryId,
-        isActive: true
-      }
-    });
-
-    if (!category) {
-      throw new NotFoundException(`Category with id ${categoryId} not found.`);
-    }
-
-    if (file) {
       const uploadResult = await this.cloudinaryService.uploadImage(file);
       imageUrl = uploadResult.secure_url;
+    }
+
+    // Validate category exists and is active if provided
+    if (categoryId) {
+      const category = await this.prismaService.category.findUnique({
+        where: { id: categoryId },
+      });
+
+      if (!category || !category.isActive) {
+        throw new NotFoundException(`Category with id ${categoryId} not found or inactive.`);
+      }
     }
 
     await this.db.update({
       where: { id },
       data: {
-        name,
-        price,
-        image: imageUrl,
-        categoryId,
+        ...(name && { name }),
+        ...(price && { price }),
+        ...(imageUrl && { image: imageUrl }),
+        ...(categoryId && { categoryId }),
         updatedAt: new Date(),
-      }
+      },
     });
-    
+
     return {
       code: 200,
-      message: `Menu item with id ${id} has been updated.`
-    }
+      message: `Menu item with id ${id} has been updated.`,
+    };
   }
 }
