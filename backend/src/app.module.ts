@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './config/prisma/prisma.module';
 import { MenuItemsModule } from './modules/menu-items/menu-items.module';
 import { CloudinaryModule } from './config/cloudinary/cloudinary.module';
-import { CategoryModule } from './modules/category/category.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { CategoryModule } from './modules/category/category.module';
     PrismaModule,
     CloudinaryModule,
     MenuItemsModule,
-    CategoryModule,
+    CategoriesModule,
   ],
 })
 export class AppModule {}
