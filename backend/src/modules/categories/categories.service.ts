@@ -14,7 +14,7 @@ export class CategoriesService {
   async getCategories() {
     return this.db.findMany({
       where: { isActive: true },
-      orderBy: { name: 'asc' },
+      // orderBy: { name: 'asc' },
       include: { menuItems: true },
     });
   }
