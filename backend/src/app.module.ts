@@ -4,6 +4,7 @@ import { PrismaModule } from './config/prisma/prisma.module';
 import { MenuItemsModule } from './modules/menu-items/menu-items.module';
 import { CloudinaryModule } from './config/cloudinary/cloudinary.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { TablesModule } from './modules/tables/tables.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
     CloudinaryModule,
     MenuItemsModule,
     CategoriesModule,
+    TablesModule,
   ],
 })
 export class AppModule {}
