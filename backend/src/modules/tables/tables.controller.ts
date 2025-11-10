@@ -1,10 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { TablesService } from './tables.service';
-import { CreateTableDto } from './dto/create-table.dto';
+import { CreateTableDto, UpdateTableDto, GetTablesDto } from './dto';
 import { TableStatus } from 'src/generated/prisma';
-import { UpdateTableDto } from './dto/update-table.dto';
-import { get } from 'axios';
-import { GetTablesDto } from './dto/get-tables.dto';
 
 @Controller('tables')
 export class TablesController {

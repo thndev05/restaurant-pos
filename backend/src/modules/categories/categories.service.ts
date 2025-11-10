@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateCategoryDto, UpdateCategoryDto } from './dto';
 
 @Injectable()
 export class CategoriesService {
@@ -14,7 +13,6 @@ export class CategoriesService {
   async getCategories() {
     return this.db.findMany({
       where: { isActive: true },
-      // orderBy: { name: 'asc' },
       include: { menuItems: true },
     });
   }

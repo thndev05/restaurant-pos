@@ -1,13 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
-import { GetMenuItemsDto } from './dto/get-menu-items.dto';
-import { CreateMenuItemDto } from './dto/create-menu-items.dto';
+import { GetMenuItemsDto, CreateMenuItemDto, UpdateMenuItemDto } from './dto';
 import { CloudinaryService } from 'src/config/cloudinary/cloudinary.service';
 import {
   buildPrismaSearchQuery,
   filterBySearchTerm,
 } from 'src/common/utils/search.util';
-import { UpdateMenuItemDto } from './dto/update-menu-items.dto';
 
 @Injectable()
 export class MenuItemsService {

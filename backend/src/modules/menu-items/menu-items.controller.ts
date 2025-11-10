@@ -12,8 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MenuItemsService } from './menu-items.service';
-import { GetMenuItemsDto } from './dto/get-menu-items.dto';
-import { CreateMenuItemDto } from './dto/create-menu-items.dto';
+import { GetMenuItemsDto, CreateMenuItemDto, UpdateMenuItemDto } from './dto';
 
 @Controller('menu-items')
 export class MenuItemsController {
@@ -52,7 +51,7 @@ export class MenuItemsController {
   @UseInterceptors(FileInterceptor('image'))
   updateMenuItem(
     @Param('id') id: string,
-    @Body() updateMenuItemDto: CreateMenuItemDto,
+    @Body() updateMenuItemDto: UpdateMenuItemDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.menuItemsService.updateMenuItem(updateMenuItemDto, file, id);

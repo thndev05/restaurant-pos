@@ -1,9 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
-import { CreateTableDto } from './dto/create-table.dto';
+import { CreateTableDto, UpdateTableDto, GetTablesDto } from './dto';
 import { TableStatus } from 'src/generated/prisma';
-import { UpdateTableDto } from './dto/update-table.dto';
-import { GetTablesDto } from './dto/get-tables.dto';
 
 @Injectable()
 export class TablesService {
@@ -18,11 +16,14 @@ export class TablesService {
 
     if (status && !Object.values(TableStatus).includes(status)) {
       throw new BadRequestException(`Invalid table status: ${status}`);
-    } else {
-      return this.db.findMany({ where: { status } });
     }
 
-    return this.db.findMany();
+    return this.db.findMany({
+      where: {
+        ...(status && { status }),
+      },
+      orderBy: { number: 'asc' },
+    });
   }
 
   async getTableById(id: string) {
