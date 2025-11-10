@@ -8,6 +8,8 @@ async function main() {
   // Xóa dữ liệu cũ
   await prisma.menuItem.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.table.deleteMany();
+  await prisma.customer.deleteMany();
   console.log('🗑️  Đã xóa dữ liệu cũ');
 
   // Tạo categories
@@ -207,6 +209,40 @@ async function main() {
   });
 
   console.log(`✅ Đã tạo ${menuItems.count} menu items thành công!`);
+
+  // Tạo tables
+  const tables = await prisma.table.createMany({
+    data: [
+      { number: 1, capacity: 2 },
+      { number: 2, capacity: 2 },
+      { number: 3, capacity: 4 },
+      { number: 4, capacity: 4 },
+      { number: 5, capacity: 6 },
+      { number: 6, capacity: 6 },
+      { number: 7, capacity: 8 },
+      { number: 8, capacity: 8 },
+    ],
+  });
+
+  console.log(`✅ Đã tạo ${tables.count} tables thành công!`);
+
+  // Tạo customers
+  const customers = await prisma.customer.createMany({
+    data: [
+      { name: 'Nguyễn Văn A', phone: '0901234567', isActive: true },
+      { name: 'Trần Thị B', phone: '0912345678', isActive: true },
+      { name: 'Phạm Minh C', phone: '0923456789', isActive: true },
+      { name: 'Lê Quốc D', phone: '0934567890', isActive: true },
+      { name: 'Hoàng Kim E', phone: '0945678901', isActive: true },
+      { name: 'Vũ Hải F', phone: '0956789012', isActive: true },
+      { name: 'Đặng Ngọc G', phone: '0967890123', isActive: true },
+      { name: 'Bùi Tuấn H', phone: '0978901234', isActive: true },
+      { name: 'Tô Công I', phone: '0989012345', isActive: true },
+      { name: 'Mạc Thị J', phone: '0990123456', isActive: true },
+    ],
+  });
+
+  console.log(`✅ Đã tạo ${customers.count} customers thành công!`);
 }
 
 main()
