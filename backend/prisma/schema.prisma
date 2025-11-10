@@ -9,6 +9,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ===== ENUMS =====
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  OUT_OF_SERVICE
+}
+
 // ===== MODELS =====
 model MenuItem {
   id          String    @id @default(uuid())
@@ -28,7 +36,7 @@ model MenuItem {
 
 model Category {
   id          String     @id @default(uuid())
-  name        String
+  name        String     @unique
   isActive    Boolean    @default(true)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -37,4 +45,15 @@ model Category {
   menuItems   MenuItem[] @relation("CategoryToMenuItems")
 
   @@map("categories")
+}
+
+model Table {
+  id          String      @id @default(uuid())
+  number      Int         @unique 
+  capacity    Int         @default(2)
+  status      TableStatus @default(AVAILABLE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("tables")
 }
