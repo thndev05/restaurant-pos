@@ -1,16 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { TablesService } from './tables.service';
 import { CreateTableDto } from './dto/create-table.dto';
 import { TableStatus } from 'src/generated/prisma';
 import { UpdateTableDto } from './dto/update-table.dto';
+import { get } from 'axios';
+import { GetTablesDto } from './dto/get-tables.dto';
 
 @Controller('tables')
 export class TablesController {
   constructor(private readonly tablesService: TablesService) { }
 
   @Get('')
-  async getTables() {
-    return this.tablesService.getTables();
+  async getTables(@Query() getTablesDto: GetTablesDto) {
+    return this.tablesService.getTables(getTablesDto);
   }
 
   @Get(':id')

@@ -3,6 +3,7 @@ import { PrismaService } from 'src/config/prisma/prisma.service';
 import { CreateTableDto } from './dto/create-table.dto';
 import { TableStatus } from 'src/generated/prisma';
 import { UpdateTableDto } from './dto/update-table.dto';
+import { GetTablesDto } from './dto/get-tables.dto';
 
 @Injectable()
 export class TablesService {
@@ -12,7 +13,15 @@ export class TablesService {
     return this.prismaService.table;
   }
 
-  async getTables() {
+  async getTables(getTablesDto: GetTablesDto) {
+    const { status } = getTablesDto;
+
+    if (status && !Object.values(TableStatus).includes(status)) {
+      throw new BadRequestException(`Invalid table status: ${status}`);
+    } else {
+      return this.db.findMany({ where: { status } });
+    }
+
     return this.db.findMany();
   }
 
