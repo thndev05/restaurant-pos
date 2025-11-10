@@ -52,7 +52,7 @@ export class CategoriesService {
   async updateCategory(id: string, updateCategoryDto: UpdateCategoryDto) {
     const { name } = updateCategoryDto;
 
-    const category = await this.db.findUnique({ where: { id } });
+    const category = await this.getCategoryById(id);
 
     if (!category) {
       throw new NotFoundException(`Category with id ${id} not found.`);
@@ -84,7 +84,7 @@ export class CategoriesService {
   }
 
   async softDeleteCategory(id: string) {
-    const category = await this.db.findUnique({ where: { id } });
+    const category = await this.getCategoryById(id);
 
     if (!category) {
       throw new NotFoundException(`Category with id ${id} not found.`);
@@ -102,10 +102,7 @@ export class CategoriesService {
   }
 
   async hardDeleteCategory(id: string) {
-    const category = await this.db.findUnique({
-      where: { id },
-      include: { menuItems: true },
-    });
+    const category = await this.getCategoryById(id);
 
     if (!category) {
       throw new NotFoundException(`Category with id ${id} not found.`);
