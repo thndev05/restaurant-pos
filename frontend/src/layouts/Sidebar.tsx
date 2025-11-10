@@ -29,15 +29,31 @@ const Sidebar: FC = () => {
               key={item.id}
               to={item.path}
               title={item.title}
+              end
               className={({ isActive }) =>
                 cn(
-                  'flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-200',
-                  'text-text-gray hover:bg-background',
-                  isActive && 'bg-primary hover:bg-primary-hover text-white'
+                  'group relative flex h-12 w-12 items-center justify-center rounded-xl',
+                  'transition-all duration-300 ease-in-out',
+                  isActive
+                    ? 'bg-primary shadow-primary/20 shadow-md'
+                    : 'text-text-gray hover:bg-background hover:text-text-dark'
                 )
               }
             >
-              <Icon size={24} />
+              {({ isActive }) => (
+                <>
+                  <Icon
+                    size={24}
+                    className={cn(
+                      'transition-all duration-300',
+                      isActive ? 'scale-110 text-white' : 'scale-100 group-hover:scale-105'
+                    )}
+                  />
+                  {isActive && (
+                    <div className="absolute top-1/2 -left-1 h-8 w-1 -translate-y-1/2 rounded-r-full bg-white" />
+                  )}
+                </>
+              )}
             </NavLink>
           );
         })}
