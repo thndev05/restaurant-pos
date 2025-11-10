@@ -24,12 +24,12 @@ const LoginPage: FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#667eea] to-[#764ba2] p-5">
+    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-[#667eea] to-[#764ba2] p-5">
       <div className="w-full max-w-md">
         <div className="animate-slideUp rounded-2xl bg-white p-10 shadow-2xl">
           {/* Logo */}
           <div className="mb-10 flex flex-col items-center">
-            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-4xl text-white">
+            <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-xl bg-linear-to-br from-[#667eea] to-[#764ba2] text-4xl text-white">
               🍽️
             </div>
             <h1 className="text-text-dark mb-2 text-3xl font-bold">Welcome Back</h1>

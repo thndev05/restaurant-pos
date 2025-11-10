@@ -16,7 +16,7 @@ const Sidebar: FC = () => {
   return (
     <aside className="z-10 flex w-18 flex-col items-center bg-white py-5 shadow-md">
       {/* Logo */}
-      <div className="from-primary to-secondary mb-10 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br text-xl font-bold text-white">
+      <div className="from-primary to-secondary mb-10 flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br text-xl font-bold text-white">
         <FiShoppingBag />
       </div>
 
