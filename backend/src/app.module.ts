@@ -6,6 +6,7 @@ import { CloudinaryModule } from './config/cloudinary/cloudinary.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TablesModule } from './modules/tables/tables.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { CustomersModule } from './modules/customers/customers.module';
     }),
     PrismaModule,
     CloudinaryModule,
+    AuthModule,
     MenuItemsModule,
     CategoriesModule,
     TablesModule,
