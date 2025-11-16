@@ -1,9 +1,9 @@
 import type { FC } from 'react';
 import { useState } from 'react';
 import { FiEdit, FiTrash2 } from 'react-icons/fi';
-import MainLayout from '../layouts/MainLayout';
-import { SearchBar, Badge } from '../components/common';
-import { formatCurrency, formatDate } from '../utils';
+import MainLayout from '../../layouts/staff/StaffLayout';
+import { SearchBar, Badge } from '../../components/common';
+import { formatCurrency, formatDate } from '../../utils';
 
 const mockOrders = [
   {

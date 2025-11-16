@@ -1,9 +1,9 @@
 import type { FC } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import MainLayout from '../layouts/MainLayout';
-import { SearchBar, Button } from '../components/common';
-import type { Table } from '../types';
+import MainLayout from '../../layouts/staff/StaffLayout';
+import { SearchBar, Button } from '../../components/common';
+import type { Table } from '../../types';
 
 const mockTables: Table[] = Array.from({ length: 20 }, (_, i) => ({
   id: `table-${i + 1}`,
@@ -44,7 +44,7 @@ const TablesPage: FC = () => {
               onSearch={setSearchQuery}
               className="w-80"
             />
-            <Button onClick={() => navigate('/payment')}>Select & Pay</Button>
+            <Button onClick={() => navigate('/staff/payment')}>Select & Pay</Button>
           </div>
         </div>
 

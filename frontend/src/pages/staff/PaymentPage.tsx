@@ -2,10 +2,10 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import MainLayout from '../layouts/MainLayout';
-import { Button } from '../components/common';
-import { useOrder } from '../hooks';
-import { formatCurrency } from '../utils';
+import MainLayout from '../../layouts/staff/StaffLayout';
+import { Button } from '../../components/common';
+import { useOrder } from '../../hooks';
+import { formatCurrency } from '../../utils';
 
 const PaymentPage: FC = () => {
   const navigate = useNavigate();

@@ -1,11 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { OrderProvider } from './contexts/OrderContext';
 import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import TablesPage from './pages/TablesPage';
-import CustomersPage from './pages/CustomersPage';
-import OrdersPage from './pages/OrdersPage';
-import PaymentPage from './pages/PaymentPage';
+import {
+  StaffHomePage,
+  StaffTablesPage,
+  StaffCustomersPage,
+  StaffOrdersPage,
+  StaffPaymentPage,
+} from './pages/staff';
+import { CustomerHomePage } from './pages/customer';
 
 function App() {
   return (
@@ -14,12 +17,25 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/tables" element={<TablesPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/payment" element={<PaymentPage />} />
-          <Route path="*" element={<Navigate to="/home" replace />} />
+
+          {/* Staff Routes */}
+          <Route path="/staff/home" element={<StaffHomePage />} />
+          <Route path="/staff/tables" element={<StaffTablesPage />} />
+          <Route path="/staff/customers" element={<StaffCustomersPage />} />
+          <Route path="/staff/orders" element={<StaffOrdersPage />} />
+          <Route path="/staff/payment" element={<StaffPaymentPage />} />
+
+          {/* Customer Routes */}
+          <Route path="/customer/home" element={<CustomerHomePage />} />
+
+          {/* Redirect old paths to staff */}
+          <Route path="/home" element={<Navigate to="/staff/home" replace />} />
+          <Route path="/tables" element={<Navigate to="/staff/tables" replace />} />
+          <Route path="/customers" element={<Navigate to="/staff/customers" replace />} />
+          <Route path="/orders" element={<Navigate to="/staff/orders" replace />} />
+          <Route path="/payment" element={<Navigate to="/staff/payment" replace />} />
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </OrderProvider>
     </Router>

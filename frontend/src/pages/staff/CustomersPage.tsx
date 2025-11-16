@@ -1,10 +1,10 @@
 import type { FC } from 'react';
 import { useState } from 'react';
 import { FiPlus, FiEdit } from 'react-icons/fi';
-import MainLayout from '../layouts/MainLayout';
-import { SearchBar, Button } from '../components/common';
-import type { Customer } from '../types';
-import { formatCurrency, formatDate } from '../utils';
+import MainLayout from '../../layouts/staff/StaffLayout';
+import { SearchBar, Button } from '../../components/common';
+import type { Customer } from '../../types';
+import { formatCurrency, formatDate } from '../../utils';
 
 const mockCustomers: Customer[] = [
   {

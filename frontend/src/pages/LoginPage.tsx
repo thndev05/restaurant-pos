@@ -1,7 +1,7 @@
 import type { FC, FormEvent } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiUsers, FiUser } from 'react-icons/fi';
 import { Button, Input } from '../components/common';
 
 const LoginPage: FC = () => {
@@ -11,6 +11,7 @@ const LoginPage: FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState<'staff' | 'customer'>('staff');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -19,7 +20,12 @@ const LoginPage: FC = () => {
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      navigate('/home');
+      // Navigate based on selected role
+      if (role === 'staff') {
+        navigate('/staff/home');
+      } else {
+        navigate('/customer/home');
+      }
     }, 1500);
   };
 
@@ -38,6 +44,37 @@ const LoginPage: FC = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Role Selection */}
+            <div>
+              <label className="text-text-gray mb-2 block text-sm font-medium">Login as</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole('staff')}
+                  className={`flex items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-medium transition-all ${
+                    role === 'staff'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-text-gray hover:border-primary/50'
+                  }`}
+                >
+                  <FiUsers size={20} />
+                  <span>Staff</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole('customer')}
+                  className={`flex items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-medium transition-all ${
+                    role === 'customer'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-text-gray hover:border-primary/50'
+                  }`}
+                >
+                  <FiUser size={20} />
+                  <span>Customer</span>
+                </button>
+              </div>
+            </div>
+
             <Input
               type="email"
               placeholder="Email"

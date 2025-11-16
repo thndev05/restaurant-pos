@@ -1,13 +1,13 @@
 import type { FC } from 'react';
 import { useState } from 'react';
-import { SearchBar } from '../components/common';
-import ProductCard from '../components/home/ProductCard';
-import CategoryFilter from '../components/home/CategoryFilter';
-import OrderPanel from '../components/home/OrderPanel';
-import MainLayout from '../layouts/MainLayout';
-import { useOrder } from '../hooks';
-import type { Product } from '../types';
-import { generateId } from '../utils/helpers';
+import { SearchBar } from '../../components/common';
+import ProductCard from '../../components/home/ProductCard';
+import CategoryFilter from '../../components/home/CategoryFilter';
+import OrderPanel from '../../components/home/OrderPanel';
+import MainLayout from '../../layouts/staff/StaffLayout';
+import { useOrder } from '../../hooks';
+import type { Product } from '../../types';
+import { generateId } from '../../utils/helpers';
 
 // Mock data
 const categories = [
