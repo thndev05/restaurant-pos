@@ -229,18 +229,18 @@ export default function DashboardPage() {
           <div className="space-y-3 sm:space-y-4">
             {bestSellingItems.map((item, index) => (
               <div key={item.id} className="flex items-center gap-3 sm:gap-4">
-                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-medium sm:h-8 sm:w-8 sm:text-sm">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-medium sm:h-8 sm:w-8 sm:text-sm">
                   {index + 1}
                 </div>
                 <img
                   src={item.imageUrl}
                   alt={item.name}
-                  className="h-10 w-10 flex-shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium sm:text-base">{item.name}</p>
                 </div>
-                <div className="flex-shrink-0 text-right">
+                <div className="shrink-0 text-right">
                   <p className="text-xs font-medium sm:text-sm">{item.quantity} sold</p>
                   <p className="text-muted-foreground text-xs sm:text-sm">
                     ${(item.revenue / 1000).toFixed(1)}k
