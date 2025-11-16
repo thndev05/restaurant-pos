@@ -1,5 +1,5 @@
-export { default as StaffHomePage } from './HomePage';
-export { default as StaffTablesPage } from './TablesPage';
-export { default as StaffCustomersPage } from './CustomersPage';
-export { default as StaffOrdersPage } from './OrdersPage';
-export { default as StaffPaymentPage } from './PaymentPage';
+export { default as LoginPage } from './LoginPage';
+export { default as DashboardPage } from './admin/DashboardPage';
+export { default as MenuManagementPage } from './admin/MenuManagementPage';
+export { default as TableManagementPage } from './admin/TableManagementPage';
+export { default as StaffManagementPage } from './admin/StaffManagementPage';

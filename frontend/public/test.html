@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS Variables Test</title>
+  <style>
+    :root {
+      --primary: 221.2 83.2% 53.3%;
+    }
+    .test-bg {
+      background-color: hsl(var(--primary));
+      padding: 20px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-bg">
+    Test Primary Color - Nếu thấy màu xanh dương thì CSS variables hoạt động
+  </div>
+</body>
+</html>

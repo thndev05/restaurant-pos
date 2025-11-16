@@ -1,0 +1,206 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root {
+    /* Primary Colors */
+    --color-primary: #4285f4;
+    --color-primary-hover: #357ae8;
+    --color-primary-light: #bfdbfe;
+
+    /* Secondary Colors */
+    --color-secondary: #34a853;
+
+    /* Background Colors */
+    --color-background: #f5f5f5;
+    --color-background-light: #fafafa;
+
+    /* Text Colors */
+    --color-text-dark: #1f2937;
+    --color-text: #374151;
+    --color-text-gray: #6b7280;
+    --color-text-light: #9ca3af;
+
+    /* Border Colors */
+    --color-border: #e5e7eb;
+    --color-border-light: #f3f4f6;
+
+    /* Success Colors */
+    --color-success-light: #d1fae5;
+    --color-success: #10b981;
+    --color-success-dark: #059669;
+
+    /* Danger Colors */
+    --color-danger-light: #fee2e2;
+    --color-danger: #ef4444;
+    --color-danger-dark: #dc2626;
+
+    /* Warning Colors */
+    --color-warning-light: #fef3c7;
+    --color-warning: #f59e0b;
+    --color-warning-dark: #d97706;
+
+    /* Info Colors */
+    --color-info-light: #dbeafe;
+    --color-info: #3b82f6;
+    --color-info-dark: #2563eb;
+  }
+}
+
+@layer utilities {
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+  .bg-primary-hover {
+    background-color: var(--color-primary-hover);
+  }
+  .bg-primary-light {
+    background-color: var(--color-primary-light);
+  }
+  .bg-secondary {
+    background-color: var(--color-secondary);
+  }
+  .bg-background {
+    background-color: var(--color-background);
+  }
+  .bg-background-light {
+    background-color: var(--color-background-light);
+  }
+
+  .text-primary {
+    color: var(--color-primary);
+  }
+  .text-primary-hover {
+    color: var(--color-primary-hover);
+  }
+  .text-secondary {
+    color: var(--color-secondary);
+  }
+  .text-text-dark {
+    color: var(--color-text-dark);
+  }
+  .text-text {
+    color: var(--color-text);
+  }
+  .text-text-gray {
+    color: var(--color-text-gray);
+  }
+  .text-text-light {
+    color: var(--color-text-light);
+  }
+
+  .border-border {
+    border-color: var(--color-border);
+  }
+  .border-border-light {
+    border-color: var(--color-border-light);
+  }
+  .border-primary {
+    border-color: var(--color-primary);
+  }
+
+  .bg-success {
+    background-color: var(--color-success);
+  }
+  .bg-success-light {
+    background-color: var(--color-success-light);
+  }
+  .bg-success-dark {
+    background-color: var(--color-success-dark);
+  }
+
+  .bg-danger {
+    background-color: var(--color-danger);
+  }
+  .bg-danger-light {
+    background-color: var(--color-danger-light);
+  }
+  .bg-danger-dark {
+    background-color: var(--color-danger-dark);
+  }
+
+  .bg-warning {
+    background-color: var(--color-warning);
+  }
+  .bg-warning-light {
+    background-color: var(--color-warning-light);
+  }
+  .bg-warning-dark {
+    background-color: var(--color-warning-dark);
+  }
+
+  .bg-info {
+    background-color: var(--color-info);
+  }
+  .bg-info-light {
+    background-color: var(--color-info-light);
+  }
+  .bg-info-dark {
+    background-color: var(--color-info-dark);
+  }
+
+  .text-success {
+    color: var(--color-success);
+  }
+  .text-success-dark {
+    color: var(--color-success-dark);
+  }
+  .text-danger {
+    color: var(--color-danger);
+  }
+  .text-danger-dark {
+    color: var(--color-danger-dark);
+  }
+  .text-warning {
+    color: var(--color-warning);
+  }
+  .text-warning-dark {
+    color: var(--color-warning-dark);
+  }
+  .text-info {
+    color: var(--color-info);
+  }
+  .text-info-dark {
+    color: var(--color-info-dark);
+  }
+
+  .hover\:bg-primary-hover:hover {
+    background-color: var(--color-primary-hover);
+  }
+  .hover\:bg-background:hover {
+    background-color: var(--color-background);
+  }
+  .hover\:text-primary:hover {
+    color: var(--color-primary);
+  }
+  .hover\:text-text-dark:hover {
+    color: var(--color-text-dark);
+  }
+  .hover\:border-primary:hover {
+    border-color: var(--color-primary);
+  }
+
+  /* Shadow utilities */
+  .shadow-primary\/20 {
+    box-shadow:
+      0 4px 6px -1px rgba(66, 133, 244, 0.2),
+      0 2px 4px -2px rgba(66, 133, 244, 0.2);
+  }
+}
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

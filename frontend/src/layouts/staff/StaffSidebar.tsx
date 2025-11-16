@@ -1,81 +1,74 @@
-import type { FC } from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiHome, FiUsers, FiShoppingBag, FiSettings, FiLogOut } from 'react-icons/fi';
-import { MdTableBar } from 'react-icons/md';
-import { PiReceiptBold } from 'react-icons/pi';
-import { cn } from '../../utils/helpers';
+import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard,
+  UtensilsCrossed,
+  Users,
+  Table as TableIcon,
+  ChefHat,
+  Settings,
+  LogOut,
+} from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
-const StaffSidebar: FC = () => {
-  const navItems = [
-    { id: 'home', icon: FiHome, title: 'Home', path: '/staff/home' },
-    { id: 'tables', icon: MdTableBar, title: 'Tables', path: '/staff/tables' },
-    { id: 'customers', icon: FiUsers, title: 'Customers', path: '/staff/customers' },
-    { id: 'orders', icon: PiReceiptBold, title: 'Orders', path: '/staff/orders' },
-  ];
+const navigationItems = [
+  { path: '/staff/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/staff/menu', icon: UtensilsCrossed, label: 'Menu Management' },
+  { path: '/staff/tables', icon: TableIcon, label: 'Table Management' },
+  { path: '/staff/staff-management', icon: Users, label: 'Staff Management' },
+];
 
+export default function StaffSidebar() {
   return (
-    <aside className="z-10 flex w-18 flex-col items-center bg-white py-5 shadow-md">
+    <aside className="flex w-64 flex-col border-r bg-white">
       {/* Logo */}
-      <div className="from-primary to-secondary mb-10 flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br text-xl font-bold text-white">
-        <FiShoppingBag />
+      <div className="flex h-16 items-center gap-3 border-b px-6">
+        <div className="bg-primary flex h-10 w-10 items-center justify-center rounded-lg">
+          <ChefHat className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h1 className="font-bold">Restaurant POS</h1>
+          <p className="text-muted-foreground text-xs">Staff Portal</p>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-1 flex-col gap-5">
-        {navItems.map((item) => {
+      <nav className="flex-1 space-y-1 p-4">
+        {navigationItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
-              key={item.id}
+              key={item.path}
               to={item.path}
-              title={item.title}
-              end
               className={({ isActive }) =>
                 cn(
-                  'group relative flex h-12 w-12 items-center justify-center rounded-xl',
-                  'transition-all duration-300 ease-in-out',
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary shadow-primary/20 shadow-md'
-                    : 'text-text-gray hover:bg-background hover:text-text-dark'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )
               }
             >
-              {({ isActive }) => (
-                <>
-                  <Icon
-                    size={24}
-                    className={cn(
-                      'transition-all duration-300',
-                      isActive ? 'scale-110 text-white' : 'scale-100 group-hover:scale-105'
-                    )}
-                  />
-                  {isActive && (
-                    <div className="absolute top-1/2 -left-1 h-8 w-1 -translate-y-1/2 rounded-r-full bg-white" />
-                  )}
-                </>
-              )}
+              <Icon className="h-5 w-5" />
+              <span>{item.label}</span>
             </NavLink>
           );
         })}
       </nav>
 
-      {/* Settings & Logout */}
-      <div className="flex flex-col gap-3">
-        <button
-          title="Settings"
-          className="text-text-gray hover:bg-background flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-200"
-        >
-          <FiSettings size={24} />
+      <Separator />
+
+      {/* Bottom Actions */}
+      <div className="space-y-1 p-4">
+        <button className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+          <Settings className="h-5 w-5" />
+          <span>Settings</span>
         </button>
-        <button
-          title="Logout"
-          className="text-text-gray hover:bg-background hover:text-danger flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-200"
-        >
-          <FiLogOut size={24} />
+        <button className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+          <LogOut className="h-5 w-5" />
+          <span>Logout</span>
         </button>
       </div>
     </aside>
   );
-};
-
-export default StaffSidebar;
+}
