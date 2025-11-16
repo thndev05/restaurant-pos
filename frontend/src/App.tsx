@@ -28,13 +28,6 @@ function App() {
           {/* Customer Routes */}
           <Route path="/customer/home" element={<CustomerHomePage />} />
 
-          {/* Redirect old paths to staff */}
-          <Route path="/home" element={<Navigate to="/staff/home" replace />} />
-          <Route path="/tables" element={<Navigate to="/staff/tables" replace />} />
-          <Route path="/customers" element={<Navigate to="/staff/customers" replace />} />
-          <Route path="/orders" element={<Navigate to="/staff/orders" replace />} />
-          <Route path="/payment" element={<Navigate to="/staff/payment" replace />} />
-
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </OrderProvider>
