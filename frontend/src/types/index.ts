@@ -59,4 +59,40 @@ export interface Category {
   id: string;
   name: string;
   icon: string;
+  description?: string;
+  displayOrder?: number;
+}
+
+export interface MenuItem {
+  id: string;
+  categoryId: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  isAvailable: boolean;
+  tags?: string[];
+}
+
+export interface Staff {
+  id: string;
+  username: string;
+  fullName: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface RevenueData {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface BestSellingItem {
+  id: string;
+  name: string;
+  quantity: number;
+  revenue: number;
+  imageUrl: string;
 }

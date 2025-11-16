@@ -9,6 +9,12 @@ import {
   StaffPaymentPage,
 } from './pages/staff';
 import { CustomerHomePage } from './pages/customer';
+import {
+  AdminDashboardPage,
+  AdminMenuManagementPage,
+  AdminTableManagementPage,
+  AdminStaffManagementPage,
+} from './pages/admin';
 
 function App() {
   return (
@@ -17,6 +23,12 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+          <Route path="/admin/menu" element={<AdminMenuManagementPage />} />
+          <Route path="/admin/tables" element={<AdminTableManagementPage />} />
+          <Route path="/admin/staff" element={<AdminStaffManagementPage />} />
 
           {/* Staff Routes */}
           <Route path="/staff/home" element={<StaffHomePage />} />

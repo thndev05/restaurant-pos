@@ -1,7 +1,7 @@
 import type { FC, FormEvent } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUsers, FiUser } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiUsers, FiUser, FiShield } from 'react-icons/fi';
 import { Button, Input } from '../components/common';
 
 const LoginPage: FC = () => {
@@ -11,7 +11,7 @@ const LoginPage: FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState<'staff' | 'customer'>('staff');
+  const [role, setRole] = useState<'admin' | 'staff' | 'customer'>('staff');
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -21,7 +21,9 @@ const LoginPage: FC = () => {
     setTimeout(() => {
       setIsLoading(false);
       // Navigate based on selected role
-      if (role === 'staff') {
+      if (role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (role === 'staff') {
         navigate('/staff/home');
       } else {
         navigate('/customer/home');
@@ -47,7 +49,19 @@ const LoginPage: FC = () => {
             {/* Role Selection */}
             <div>
               <label className="text-text-gray mb-2 block text-sm font-medium">Login as</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRole('admin')}
+                  className={`flex items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-medium transition-all ${
+                    role === 'admin'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-text-gray hover:border-primary/50'
+                  }`}
+                >
+                  <FiShield size={20} />
+                  <span>Admin</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setRole('staff')}
