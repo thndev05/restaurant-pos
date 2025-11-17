@@ -17,13 +17,16 @@ import KitchenDashboardPage from './pages/staff/kitchen/KitchenDashboardPage';
 import CashierPaymentQueuePage from './pages/staff/cashier/CashierPaymentQueuePage';
 // Customer Pages
 import CustomerHomePage from './pages/customer/HomePage';
+import ReservationPage from './pages/customer/ReservationPage';
+import MenuPage from './pages/customer/MenuPage';
+import TableOrderPage from './pages/customer/TableOrderPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Redirect root to staff login */}
-        <Route path="/" element={<Navigate to="/staff/login" replace />} />
+        {/* Redirect root to customer home */}
+        <Route path="/" element={<Navigate to="/customer/home" replace />} />
 
         {/* Staff Routes */}
         <Route path="/staff/login" element={<StaffLoginPage />} />
@@ -128,6 +131,9 @@ function App() {
         {/* Customer Routes */}
         <Route path="/customer" element={<Navigate to="/customer/home" replace />} />
         <Route path="/customer/home" element={<CustomerHomePage />} />
+        <Route path="/customer/reservation" element={<ReservationPage />} />
+        <Route path="/customer/menu" element={<MenuPage />} />
+        <Route path="/customer/table/:tableId" element={<TableOrderPage />} />
       </Routes>
     </BrowserRouter>
   );
