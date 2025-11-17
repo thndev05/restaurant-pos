@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { TablesService } from './tables.service';
 import { CreateTableDto, UpdateTableDto, GetTablesDto } from './dto';
 import { TableStatus } from 'src/generated/prisma';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('tables')
 export class TablesController {
   constructor(private readonly tablesService: TablesService) { }
