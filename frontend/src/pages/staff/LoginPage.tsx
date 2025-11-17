@@ -21,7 +21,7 @@ type StaffRole = 'admin' | 'manager' | 'staff' | 'kitchen' | 'cashier';
 
 interface RoleConfig {
   id: StaffRole;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   color: string;
   route: string;
@@ -119,7 +119,19 @@ export default function StaffLoginPage() {
                           </CardDescription>
                         </div>
                       </div>
-                      <Badge variant={role.color as any} className="w-fit shrink-0">
+                      <Badge
+                        variant={
+                          role.color as
+                            | 'default'
+                            | 'secondary'
+                            | 'destructive'
+                            | 'outline'
+                            | 'success'
+                            | 'warning'
+                            | 'info'
+                        }
+                        className="w-fit shrink-0"
+                      >
                         {role.label}
                       </Badge>
                     </div>
