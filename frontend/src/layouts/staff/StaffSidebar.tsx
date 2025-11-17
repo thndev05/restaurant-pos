@@ -8,14 +8,44 @@ import {
   ChefHat,
   Settings,
   LogOut,
+  ClipboardList,
+  Bell,
+  DollarSign,
+  Flame,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
-const navigationItems = [
-  { path: '/staff/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/staff/menu', icon: UtensilsCrossed, label: 'Menu Management' },
-  { path: '/staff/tables', icon: TableIcon, label: 'Table Management' },
-  { path: '/staff/staff-management', icon: Users, label: 'Staff Management' },
+// Admin navigation
+const adminNavigationItems = [
+  { path: '/staff/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/staff/admin/menu', icon: UtensilsCrossed, label: 'Menu Management' },
+  { path: '/staff/admin/tables', icon: TableIcon, label: 'Table Management' },
+  { path: '/staff/admin/staff-management', icon: Users, label: 'Staff Management' },
+];
+
+// Waiter navigation
+const waiterNavigationItems = [
+  { path: '/staff/waiter/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/staff/waiter/orders', icon: ClipboardList, label: 'Orders Queue' },
+  { path: '/staff/waiter/actions', icon: Bell, label: 'Requests' },
+];
+
+// Kitchen navigation
+const kitchenNavigationItems = [
+  { path: '/staff/kitchen/dashboard', icon: Flame, label: 'Kitchen Display' },
+];
+
+// Cashier navigation
+const cashierNavigationItems = [
+  { path: '/staff/cashier/payments', icon: DollarSign, label: 'Payment Queue' },
+];
+
+// For demo purposes, showing all sections. In production, filter based on user role
+const navigationSections = [
+  { title: 'Admin', items: adminNavigationItems },
+  { title: 'Waiter', items: waiterNavigationItems },
+  { title: 'Kitchen', items: kitchenNavigationItems },
+  { title: 'Cashier', items: cashierNavigationItems },
 ];
 
 export default function StaffSidebar() {
@@ -33,27 +63,36 @@ export default function StaffSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                )
-              }
-            >
-              <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
+      <nav className="flex-1 space-y-4 overflow-y-auto p-4">
+        {navigationSections.map((section) => (
+          <div key={section.title}>
+            <h3 className="text-muted-foreground mb-2 px-3 text-xs font-semibold tracking-wider uppercase">
+              {section.title}
+            </h3>
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      )
+                    }
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <Separator />
