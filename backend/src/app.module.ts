@@ -22,7 +22,7 @@ import { UsersModule } from './modules/users/users.module';
     CategoriesModule,
     TablesModule,
     CustomersModule,
-    UsersModule
+    UsersModule,
   ],
 })
 export class AppModule {}

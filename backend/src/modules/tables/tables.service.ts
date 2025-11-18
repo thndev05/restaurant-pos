@@ -56,7 +56,7 @@ export class TablesService {
       const existingTableNumber = await this.db.findFirst({
         where: { number: { equals: number }, id: { not: id } },
       });
-      
+
       if (existingTableNumber) {
         throw new BadRequestException(`Table "${number}" already exists.`);
       }
@@ -75,7 +75,7 @@ export class TablesService {
     return {
       code: 200,
       message: `Table with ID "${id}" has been updated.`,
-    }
+    };
   }
 
   async updateTableStatus(id: string, status: TableStatus) {
@@ -96,7 +96,7 @@ export class TablesService {
     return {
       code: 200,
       message: `Table with ID "${id}" status has been updated to "${status}".`,
-    }
+    };
   }
 
   async deleteTable(id: string) {
@@ -110,6 +110,6 @@ export class TablesService {
     return {
       code: 200,
       message: `Table with ID "${id}" has been deleted.`,
-    }
+    };
   }
 }

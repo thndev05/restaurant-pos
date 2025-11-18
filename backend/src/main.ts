@@ -20,7 +20,7 @@ async function bootstrap() {
         enableImplicitConversion: true, // Tự động convert type
       },
     }),
-  )
+  );
 
   // CORS
   app.enableCors();

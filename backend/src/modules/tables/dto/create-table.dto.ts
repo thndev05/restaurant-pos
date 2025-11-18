@@ -1,7 +1,13 @@
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString } from "class-validator";
-import { TableStatus } from "src/generated/prisma";
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { TableStatus } from 'src/generated/prisma';
 
-export class  CreateTableDto {
+export class CreateTableDto {
   @IsNotEmpty()
   @IsInt()
   number: number;

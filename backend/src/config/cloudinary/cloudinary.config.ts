@@ -10,7 +10,7 @@ export const CloudinaryProvider = {
       api_key: configService.get<string>('CLOUDINARY_API_KEY'),
       api_secret: configService.get<string>('CLOUDINARY_API_SECRET'),
     });
-    
+
     return cloudinary;
   },
 };

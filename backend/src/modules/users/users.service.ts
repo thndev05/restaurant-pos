@@ -3,9 +3,7 @@ import { PrismaService } from 'src/config/prisma/prisma.service';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly prismaService: PrismaService
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   private get db() {
     return this.prismaService;
@@ -59,6 +57,6 @@ export class UsersService {
     return {
       code: 200,
       message: `User with ID ${id} has been deleted successfully`,
-    }
+    };
   }
 }

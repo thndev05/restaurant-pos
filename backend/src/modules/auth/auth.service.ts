@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
@@ -92,7 +96,7 @@ export class AuthService {
       code: 200,
       message: 'Login successful',
       data: {
-        accessToken
+        accessToken,
       },
     };
   }

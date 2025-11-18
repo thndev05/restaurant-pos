@@ -3,7 +3,7 @@
  */
 export function removeVietnameseAccents(str: string): string {
   if (!str) return '';
-  
+
   return str
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -16,17 +16,14 @@ export function removeVietnameseAccents(str: string): string {
  */
 export function normalizeSearchString(str: string): string {
   if (!str) return '';
-  
+
   return removeVietnameseAccents(str.toLowerCase().trim());
 }
 
 /**
  * Build query search cho Prisma với nhiều fields
  */
-export function buildPrismaSearchQuery(
-  search: string,
-  fields: string[],
-): any {
+export function buildPrismaSearchQuery(search: string, fields: string[]): any {
   if (!search || !search.trim()) return {};
 
   const searchLower = search.toLowerCase().trim();

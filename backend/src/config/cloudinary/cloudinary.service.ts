@@ -14,7 +14,7 @@ export class CloudinaryService {
     folder: string = 'restaurant-pos/menu-items',
   ): Promise<UploadApiResponse> {
     const cloudinary = await import('cloudinary');
-    
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.v2.uploader.upload_stream(
         {
@@ -42,7 +42,7 @@ export class CloudinaryService {
    */
   async deleteImage(publicId: string): Promise<any> {
     const cloudinary = await import('cloudinary');
-    
+
     try {
       return await cloudinary.v2.uploader.destroy(publicId);
     } catch (error) {
@@ -57,9 +57,13 @@ export class CloudinaryService {
    * @param height - Desired height
    * @returns Optimized image URL
    */
-  async getOptimizedUrl(publicId: string, width?: number, height?: number): Promise<string> {
+  async getOptimizedUrl(
+    publicId: string,
+    width?: number,
+    height?: number,
+  ): Promise<string> {
     const cloudinary = await import('cloudinary');
-    
+
     return cloudinary.v2.url(publicId, {
       transformation: [
         { width, height, crop: 'fill' },

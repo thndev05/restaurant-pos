@@ -71,7 +71,9 @@ export class MenuItemsService {
       });
 
       if (!category || !category.isActive) {
-        throw new NotFoundException(`Category with id ${categoryId} not found or inactive.`);
+        throw new NotFoundException(
+          `Category with id ${categoryId} not found or inactive.`,
+        );
       }
     }
 
@@ -162,7 +164,9 @@ export class MenuItemsService {
       });
 
       if (!category || !category.isActive) {
-        throw new NotFoundException(`Category with id ${categoryId} not found or inactive.`);
+        throw new NotFoundException(
+          `Category with id ${categoryId} not found or inactive.`,
+        );
       }
     }
 

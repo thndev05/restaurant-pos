@@ -1,6 +1,6 @@
-import { Type } from "class-transformer";
-import { IsEnum, IsInt, IsOptional } from "class-validator";
-import { TableStatus } from "src/generated/prisma";
+import { Type } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional } from 'class-validator';
+import { TableStatus } from 'src/generated/prisma';
 
 export class UpdateTableDto {
   @IsOptional()

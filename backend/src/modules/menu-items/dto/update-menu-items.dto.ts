@@ -1,5 +1,5 @@
-import { Type } from "class-transformer";
-import { IsNotEmpty, IsNumber, IsString, IsOptional } from "class-validator";
+import { Type } from 'class-transformer';
+import { IsNotEmpty, IsNumber, IsString, IsOptional } from 'class-validator';
 
 export class UpdateMenuItemDto {
   @IsNotEmpty()

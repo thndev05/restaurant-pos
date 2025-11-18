@@ -1,5 +1,5 @@
-import { IsEnum, IsOptional } from "class-validator";
-import { TableStatus } from "src/generated/prisma";
+import { IsEnum, IsOptional } from 'class-validator';
+import { TableStatus } from 'src/generated/prisma';
 
 export class GetTablesDto {
   @IsOptional()

@@ -17,10 +17,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: 24 * 60 * 60,
-        }
-      })
+        },
+      }),
     }),
-    PrismaModule 
+    PrismaModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

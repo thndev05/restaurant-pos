@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { CreateCustomerDto, UpdateCustomerDto } from './dto';
 
@@ -52,7 +56,7 @@ export class CustomersService {
     return this.db.create({
       data: {
         name,
-        phone
+        phone,
       },
     });
   }
@@ -73,7 +77,9 @@ export class CustomersService {
       });
 
       if (existingPhone) {
-        throw new BadRequestException(`Phone number "${phone}" already exists.`);
+        throw new BadRequestException(
+          `Phone number "${phone}" already exists.`,
+        );
       }
     }
 
