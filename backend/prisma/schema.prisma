@@ -17,6 +17,14 @@ enum TableStatus {
   OUT_OF_SERVICE
 }
 
+enum RoleName {
+  ADMIN
+  MANAGER
+  CASHIER
+  WAITER
+  KITCHEN
+}
+
 // ===== MODELS =====
 model MenuItem {
   id          String    @id @default(uuid())
@@ -69,17 +77,53 @@ model Customer {
   @@map("customers")
 }
 
-model Role {
-  id             String           @id @default(uuid())
-  name           String           @unique
+model Permission {
+  id             String                @id @default(uuid())
+  name           String                @unique
+  description    String?
+  resource       String                // e.g., "menu-items", "orders", "users"
+  action         String                // e.g., "create", "read", "update", "delete"
   
   // Relations
-  users          User[]           @relation("UserToRole")
+  roles          RolePermission[]
+  
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
 
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model Role {
+  id             String                @id @default(uuid())
+  name           RoleName              @unique
+  displayName    String
+  description    String?
+  
+  // Relations
+  users          User[]                @relation("UserToRole")
+  permissions    RolePermission[]
+
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
 
   @@map("roles")
+}
+
+model RolePermission {
+  id             String       @id @default(uuid())
+  
+  // Foreign keys
+  roleId         String
+  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  
+  permissionId   String
+  permission     Permission   @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  createdAt      DateTime     @default(now())
+  
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
 }
 
 model User {
@@ -87,6 +131,7 @@ model User {
   name           String
   username       String     @unique
   password       String
+  isActive       Boolean    @default(true)
 
   // foreign key
   roleId         String

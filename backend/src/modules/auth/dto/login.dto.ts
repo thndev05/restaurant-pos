@@ -1,24 +1,15 @@
-import {
-  IsString,
-  IsNotEmpty,
-  MinLength,
-  MaxLength,
-  Matches,
-} from 'class-validator';
+import { IsString, IsNotEmpty, MinLength, MaxLength } from 'class-validator';
 
 export class LoginDto {
   @IsString()
-  @MinLength(6)
+  @MinLength(3)
   @MaxLength(20)
   @IsNotEmpty()
   username: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(6)
   @MaxLength(32)
   @IsNotEmpty()
-  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-    message: 'Invalid username or password',
-  })
   password: string;
 }

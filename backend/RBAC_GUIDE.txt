@@ -1,0 +1,360 @@
+# RBAC (Role-Based Access Control) System
+
+## Overview
+
+The system now implements a comprehensive Role-Based Access Control (RBAC) system with 5 roles and granular permissions.
+
+## Roles
+
+### 1. ADMIN (Administrator)
+- **Full system access** with all permissions
+- Can manage users, roles, and system settings
+- Has access to all resources and operations
+
+### 2. MANAGER
+- Manage restaurant operations
+- View and export reports
+- Manage menu items, categories, tables
+- Manage orders and process payments
+- Cannot manage users or roles (read-only access)
+
+### 3. CASHIER
+- Process orders and payments
+- Manage customer information
+- View menu items and categories
+- Update table status
+- Process refunds
+
+### 4. WAITER
+- Take orders and manage tables
+- View menu items and categories
+- Create and update orders
+- View customer information
+- Update table status
+
+### 5. KITCHEN
+- View orders assigned to kitchen
+- Update order cooking status
+- View menu items
+- Limited to kitchen operations only
+
+## Permissions
+
+Permissions follow the pattern: `{resource}.{action}`
+
+### Resources
+- `menu-items` - Menu items management
+- `categories` - Category management
+- `tables` - Table management
+- `customers` - Customer management
+- `orders` - Order management
+- `users` - User management
+- `roles` - Role management
+- `payments` - Payment processing
+- `kitchen` - Kitchen operations
+- `reports` - Reports and analytics
+
+### Common Actions
+- `create` - Create new records
+- `read` - View records
+- `update` - Modify existing records
+- `delete` - Remove records
+- Special actions: `cancel`, `refund`, `export`, `view-orders`, `update-status`, `process`
+
+## Usage in Controllers
+
+### 1. Public Routes (No Authentication)
+```typescript
+import { Public } from './modules/auth/decorators';
+
+@Public()
+@Post('login')
+login() {
+  // Anyone can access
+}
+```
+
+### 2. Protected Routes (Authentication Required)
+```typescript
+// All routes are protected by default with global JwtAuthGuard
+@Get('profile')
+getProfile(@CurrentUser() user: AuthUser) {
+  return user;
+}
+```
+
+### 3. Role-Based Access
+```typescript
+import { Roles } from './modules/auth/decorators';
+import { RoleName } from 'src/generated/prisma';
+
+// Single role
+@Roles(RoleName.ADMIN)
+@Delete('user/:id')
+deleteUser() {
+  // Only admins can access
+}
+
+// Multiple roles
+@Roles(RoleName.ADMIN, RoleName.MANAGER)
+@Get('reports')
+getReports() {
+  // Admins and managers can access
+}
+```
+
+### 4. Permission-Based Access
+```typescript
+import { RequirePermissions } from './modules/auth/decorators';
+
+// Single permission
+@RequirePermissions('menu-items.create')
+@Post('menu-items')
+createMenuItem() {
+  // Users with menu-items.create permission
+}
+
+// Multiple permissions (ALL required)
+@RequirePermissions('orders.read', 'orders.update')
+@Put('orders/:id')
+updateOrder() {
+  // Users must have BOTH permissions
+}
+```
+
+### 5. Combined Role and Permission
+```typescript
+@Roles(RoleName.ADMIN, RoleName.MANAGER)
+@RequirePermissions('users.delete')
+@Delete('users/:id')
+deleteUser() {
+  // Must be admin or manager AND have users.delete permission
+}
+```
+
+### 6. Get Current User
+```typescript
+import { CurrentUser } from './modules/auth/decorators';
+import { AuthUser } from 'src/common/utils/authorization.util';
+
+@Get('my-orders')
+getMyOrders(@CurrentUser() user: AuthUser) {
+  // user object contains: id, name, username, role, permissions
+  return this.ordersService.findByUser(user.id);
+}
+```
+
+## Usage in Services (Programmatic Checks)
+
+```typescript
+import {
+  hasPermission,
+  hasRole,
+  canDelete,
+  isAdmin,
+  isManagerOrAbove,
+  canPerformAction,
+  AuthUser,
+} from 'src/common/utils/authorization.util';
+import { RoleName } from 'src/generated/prisma';
+import { ForbiddenException } from '@nestjs/common';
+
+async deleteMenuItem(user: AuthUser, id: string) {
+  // Check if user can delete menu items
+  if (!canDelete(user, 'menu-items')) {
+    throw new ForbiddenException('No permission to delete menu items');
+  }
+  
+  // Check specific permission
+  if (!hasPermission(user, 'menu-items.delete')) {
+    throw new ForbiddenException('Permission denied');
+  }
+  
+  // Check role
+  if (!hasRole(user, RoleName.ADMIN)) {
+    // Special logic for non-admins
+  }
+  
+  // Check if admin
+  if (isAdmin(user)) {
+    // Admin can delete anything without restrictions
+  }
+  
+  // Check if manager or above
+  if (isManagerOrAbove(user)) {
+    // Managers and admins can proceed
+  }
+  
+  // Check resource + action
+  if (!canPerformAction(user, 'menu-items', 'delete')) {
+    throw new ForbiddenException('Cannot perform this action');
+  }
+  
+  // Proceed with deletion
+  return this.prisma.menuItem.delete({ where: { id } });
+}
+```
+
+## Available Helper Functions
+
+### Role Checks
+- `hasRole(user, role)` - Check if user has specific role
+- `hasAnyRole(user, [roles])` - Check if user has any of the roles
+- `hasAllRoles(user, [roles])` - Check if user has all roles
+- `isAdmin(user)` - Check if user is admin
+- `isManagerOrAbove(user)` - Check if user is admin or manager
+
+### Permission Checks
+- `hasPermission(user, permission)` - Check specific permission
+- `hasAnyPermission(user, [permissions])` - Check if has any permission
+- `hasAllPermissions(user, [permissions])` - Check if has all permissions
+- `canPerformAction(user, resource, action)` - Check resource + action
+- `canRead(user, resource)` - Shortcut for read permission
+- `canCreate(user, resource)` - Shortcut for create permission
+- `canUpdate(user, resource)` - Shortcut for update permission
+- `canDelete(user, resource)` - Shortcut for delete permission
+
+### Utility Functions
+- `getUserPermissions(user)` - Get all permission names
+- `getPermissionsByResource(user, resource)` - Get actions for resource
+- `getUserRoleDisplayName(user)` - Get role display name
+
+## Login Credentials
+
+### Test Users
+```
+Admin:
+  Username: admin
+  Password: admin123
+
+Manager:
+  Username: manager
+  Password: manager123
+
+Cashiers:
+  Username: cashier1 / cashier2
+  Password: cashier123
+
+Waiters:
+  Username: waiter1 / waiter2
+  Password: waiter123
+
+Kitchen Staff:
+  Username: kitchen1 / kitchen2
+  Password: kitchen123
+```
+
+## Login Response
+
+```json
+{
+  "code": 200,
+  "message": "Login successful",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": "uuid",
+      "name": "Admin User",
+      "username": "admin",
+      "role": {
+        "name": "ADMIN",
+        "displayName": "Administrator"
+      },
+      "permissions": [
+        "menu-items.create",
+        "menu-items.read",
+        "menu-items.update",
+        "menu-items.delete",
+        // ... all other permissions
+      ]
+    }
+  }
+}
+```
+
+## Setup Global Guards
+
+Global guards are configured in `app.module.ts`:
+
+```typescript
+providers: [
+  {
+    provide: APP_GUARD,
+    useClass: JwtAuthGuard, // Authentication
+  },
+  {
+    provide: APP_GUARD,
+    useClass: RolesGuard, // Role-based authorization
+  },
+  {
+    provide: APP_GUARD,
+    useClass: PermissionsGuard, // Permission-based authorization
+  },
+]
+```
+
+## Permission Matrix
+
+| Resource      | Admin | Manager | Cashier | Waiter | Kitchen |
+|---------------|-------|---------|---------|--------|---------|
+| menu-items    | CRUD  | CRUD    | R       | R      | R       |
+| categories    | CRUD  | CRUD    | R       | R      | -       |
+| tables        | CRUD  | CRUD    | RU      | RU     | -       |
+| customers     | CRUD  | CRUD    | CRU     | R      | -       |
+| orders        | CRUD  | CRUD    | CRU     | CRU    | R       |
+| users         | CRUD  | R       | -       | -      | -       |
+| roles         | CRUD  | -       | -       | -      | -       |
+| payments      | All   | All     | Process | -      | -       |
+| kitchen       | All   | -       | -       | -      | View/Update |
+| reports       | All   | View/Export | -   | -      | -       |
+
+*Legend: C=Create, R=Read, U=Update, D=Delete*
+
+## Adding New Permissions
+
+1. Add permission to seed file (`prisma/seed.ts`):
+```typescript
+{ 
+  name: 'resource.action', 
+  description: 'Description', 
+  resource: 'resource', 
+  action: 'action' 
+}
+```
+
+2. Assign to roles in seed file:
+```typescript
+const rolePermissionNames = [
+  // ... existing permissions
+  'resource.action',
+];
+```
+
+3. Run seed:
+```bash
+npm run prisma:seed
+```
+
+4. Use in controllers:
+```typescript
+@RequirePermissions('resource.action')
+```
+
+## Best Practices
+
+1. **Use @Public() for authentication routes** - login, register, public endpoints
+2. **Prefer permissions over roles** - More granular control
+3. **Combine role + permission for sensitive operations** - Extra security layer
+4. **Use helper functions in services** - For business logic authorization
+5. **Keep permissions granular** - Easier to manage and assign
+6. **Document permission requirements** - In controller/method comments
+7. **Test with different roles** - Ensure proper access control
+
+## Security Notes
+
+- All routes are protected by default (JWT authentication)
+- Use `@Public()` to explicitly mark public routes
+- JWT tokens contain: userId, username, role
+- User object from JWT includes full role and permissions
+- Inactive users cannot login
+- Guards run in order: JWT → Roles → Permissions

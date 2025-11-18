@@ -8,9 +8,11 @@ import { PrismaService } from 'src/config/prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './strategies/jwt-payload.interface';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly prismaService: PrismaService,
     private readonly jwtService: JwtService,
@@ -33,12 +35,12 @@ export class AuthService {
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt();
+    const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Get default role (assuming role with name 'user' exists)
+    // Get default role (Waiter as default for new registrations)
     const defaultRole = await this.prismaService.role.findFirst({
-      where: { name: 'staff' },
+      where: { name: 'WAITER' },
     });
 
     if (!defaultRole) {
@@ -52,9 +54,24 @@ export class AuthService {
         username,
         password: hashedPassword,
         roleId: defaultRole.id,
+        isActive: true,
       },
-      include: { role: true },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
+
+    const permissions = newUser.role.permissions.map(
+      (rp) => rp.permission.name,
+    );
 
     return {
       code: 200,
@@ -63,7 +80,11 @@ export class AuthService {
         id: newUser.id,
         name: newUser.name,
         username: newUser.username,
-        role: newUser.role.name,
+        role: {
+          name: newUser.role.name,
+          displayName: newUser.role.displayName,
+        },
+        permissions,
       },
     };
   }
@@ -71,14 +92,28 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { username, password } = loginDto;
 
-    // Find user by username
+    // Find user by username with role and permissions
     const user = await this.db.findUnique({
       where: { username },
-      include: { role: true },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException('Invalid username or password');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is inactive');
     }
 
     // Verify password
@@ -88,15 +123,32 @@ export class AuthService {
       throw new UnauthorizedException('Invalid username or password');
     }
 
-    // Generate JWT token
-    const payload: JwtPayload = { username };
+    // Generate JWT token with user info
+    const payload: JwtPayload = {
+      userId: user.id,
+      username: user.username,
+      role: user.role.name,
+    };
     const accessToken = this.jwtService.sign(payload);
+
+    // Get user permissions
+    const permissions = user.role.permissions.map((rp) => rp.permission.name);
 
     return {
       code: 200,
       message: 'Login successful',
       data: {
         accessToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          role: {
+            name: user.role.name,
+            displayName: user.role.displayName,
+          },
+          permissions,
+        },
       },
     };
   }

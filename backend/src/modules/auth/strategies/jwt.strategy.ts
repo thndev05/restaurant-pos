@@ -15,13 +15,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    const { username } = payload;
+    const { userId } = payload;
     const user = await this.primaService.user.findUnique({
-      where: { username },
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
 
-    if (!user) {
-      throw new UnauthorizedException();
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
     }
 
     return user;
