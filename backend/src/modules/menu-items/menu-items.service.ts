@@ -23,9 +23,12 @@ export class MenuItemsService {
     const searchTerm = search?.trim();
 
     // Build where condition
-    const where: any = {
+    const searchQuery = searchTerm
+      ? buildPrismaSearchQuery(searchTerm, ['name'])
+      : {};
+    const where = {
       isActive: true,
-      ...(searchTerm && buildPrismaSearchQuery(searchTerm, ['name'])),
+      ...searchQuery,
     };
 
     // Query database

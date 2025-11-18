@@ -23,7 +23,12 @@ export function normalizeSearchString(str: string): string {
 /**
  * Build query search cho Prisma với nhiều fields
  */
-export function buildPrismaSearchQuery(search: string, fields: string[]): any {
+export function buildPrismaSearchQuery(
+  search: string,
+  fields: string[],
+):
+  | { OR: Array<Record<string, { contains: string; mode: 'insensitive' }>> }
+  | Record<string, never> {
   if (!search || !search.trim()) return {};
 
   const searchLower = search.toLowerCase().trim();

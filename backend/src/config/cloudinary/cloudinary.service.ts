@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 
 @Injectable()
@@ -26,12 +26,12 @@ export class CloudinaryService {
           ],
         },
         (error: UploadApiErrorResponse, result: UploadApiResponse) => {
-          if (error) return reject(error);
+          if (error) return reject(new Error(error.message));
           resolve(result);
         },
       );
 
-      uploadStream.end(file.buffer);
+      uploadStream.end((file as Express.Multer.File).buffer);
     });
   }
 
@@ -46,7 +46,8 @@ export class CloudinaryService {
     try {
       return await cloudinary.v2.uploader.destroy(publicId);
     } catch (error) {
-      throw new Error(`Failed to delete image: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to delete image: ${message}`);
     }
   }
 
