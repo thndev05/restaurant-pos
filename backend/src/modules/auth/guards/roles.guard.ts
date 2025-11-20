@@ -9,7 +9,6 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    this.logger.log('RolesGuard: canActivate called');
     // Check if route is public
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -17,7 +16,6 @@ export class RolesGuard implements CanActivate {
     ]);
 
     if (isPublic) {
-      this.logger.log('RolesGuard: Public route, allow');
       return true;
     }
 
@@ -28,7 +26,6 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!requiredRoles) {
-      this.logger.log('RolesGuard: No required roles, allow');
       return true;
     }
 

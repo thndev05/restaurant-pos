@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Shield,
   Users,
@@ -15,6 +17,7 @@ import {
   Eye,
   EyeOff,
   UtensilsCrossed,
+  AlertCircle,
 } from 'lucide-react';
 
 type StaffRole = 'admin' | 'manager' | 'staff' | 'kitchen' | 'cashier';
@@ -37,9 +40,11 @@ const STAFF_ROLES: RoleConfig[] = [
 
 export default function StaffLoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [selectedRole, setSelectedRole] = useState<StaffRole>('staff');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>('');
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -49,15 +54,25 @@ export default function StaffLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await login({
+        username: formData.username,
+        password: formData.password,
+      });
+
+      // Navigate based on user role after successful login
       const role = STAFF_ROLES.find((r) => r.id === selectedRole);
       if (role) {
         navigate(role.route);
       }
-    }, 1000);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || 'Invalid username or password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // const selectedRoleConfig = STAFF_ROLES.find((r) => r.id === selectedRole);
@@ -137,6 +152,12 @@ export default function StaffLoginPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-4 sm:p-6">
+                    {error && (
+                      <Alert variant="destructive" className="mb-4">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
                     <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="username" className="text-sm">

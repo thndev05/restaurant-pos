@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/config/prisma/prisma.service';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, RefreshTokenDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './strategies/jwt-payload.interface';
 import { Logger } from '@nestjs/common';
@@ -123,13 +123,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid username or password');
     }
 
-    // Generate JWT token with user info
+    // Generate JWT tokens with user info
     const payload: JwtPayload = {
       userId: user.id,
       username: user.username,
       role: user.role.name,
     };
     const accessToken = this.jwtService.sign(payload);
+
+    // Generate refresh token with longer expiry
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d', // Refresh token valid for 7 days
+    });
 
     // Get user permissions
     const permissions = user.role.permissions.map((rp) => rp.permission.name);
@@ -139,6 +144,7 @@ export class AuthService {
       message: 'Login successful',
       data: {
         accessToken,
+        refreshToken,
         user: {
           id: user.id,
           name: user.name,
@@ -151,5 +157,53 @@ export class AuthService {
         },
       },
     };
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto) {
+    const { refreshToken } = refreshTokenDto;
+
+    try {
+      // Verify the refresh token
+      const decoded = this.jwtService.verify<JwtPayload>(refreshToken);
+
+      // Find user to ensure they still exist and are active
+      const user = await this.db.findUnique({
+        where: { id: decoded.userId },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException('User not found or inactive');
+      }
+
+      // Generate new access token
+      const payload: JwtPayload = {
+        userId: user.id,
+        username: user.username,
+        role: user.role.name,
+      };
+      const newAccessToken = this.jwtService.sign(payload);
+
+      return {
+        code: 200,
+        message: 'Token refreshed successfully',
+        data: {
+          accessToken: newAccessToken,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Refresh token error:', error);
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 }

@@ -8,33 +8,41 @@ import { API_ENDPOINTS } from '@/config/api.config';
 import type { ApiResponse } from '../types';
 
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterData {
-  email: string;
-  password: string;
   name: string;
-  role?: string;
+  username: string;
+  password: string;
 }
 
 export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
+  accessToken: string;
+  refreshToken?: string;
   user: {
     id: string;
-    email: string;
     name: string;
-    role: string;
+    username: string;
+    role: {
+      name: string;
+      displayName: string;
+    };
+    permissions: string[];
   };
 }
 
 export interface User {
   id: string;
-  email: string;
   name: string;
-  role: string;
+  username: string;
+  role: {
+    name: string;
+    displayName: string;
+  };
+  permissions: string[];
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -44,69 +52,92 @@ class AuthService {
    * Login user
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials);
+    const response = await apiClient.post<{ code: number; message: string; data: AuthResponse }>(
+      API_ENDPOINTS.AUTH.LOGIN,
+      credentials
+    );
 
-    // Store tokens
-    const { access_token, refresh_token } = response.data;
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('refresh_token', refresh_token);
+    // Store tokens and user data
+    const { accessToken, refreshToken, user } = response.data.data;
+    localStorage.setItem('access_token', accessToken);
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
+    localStorage.setItem('user', JSON.stringify(user));
 
-    return response.data;
+    return response.data.data;
   }
 
   /**
    * Register new user
    */
-  async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.REGISTER, data);
+  async register(
+    data: RegisterData
+  ): Promise<{
+    id: string;
+    name: string;
+    username: string;
+    role: { name: string; displayName: string };
+    permissions: string[];
+  }> {
+    const response = await apiClient.post<{
+      code: number;
+      message: string;
+      data: {
+        id: string;
+        name: string;
+        username: string;
+        role: { name: string; displayName: string };
+        permissions: string[];
+      };
+    }>(API_ENDPOINTS.AUTH.REGISTER, data);
 
-    // Store tokens
-    const { access_token, refresh_token } = response.data;
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('refresh_token', refresh_token);
-
-    return response.data;
+    return response.data.data;
   }
 
   /**
    * Logout user
    */
   async logout(): Promise<void> {
-    try {
-      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
-    } finally {
-      // Clear tokens regardless of API call result
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-    }
+    // Clear stored data
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
   }
 
   /**
-   * Get current user profile
+   * Get current user from localStorage
    */
-  async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<ApiResponse<User>>(API_ENDPOINTS.AUTH.ME);
-    return response.data.data;
+  getCurrentUser(): User | null {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
   }
 
   /**
    * Refresh access token
    */
-  async refreshToken(): Promise<{ access_token: string }> {
+  async refreshToken(): Promise<{ accessToken: string }> {
     const refreshToken = localStorage.getItem('refresh_token');
 
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
 
-    const response = await apiClient.post<{ access_token: string }>(API_ENDPOINTS.AUTH.REFRESH, {
-      refreshToken,
-    });
+    const response = await apiClient.post<{
+      code: number;
+      message: string;
+      data: { accessToken: string };
+    }>(API_ENDPOINTS.AUTH.REFRESH, { refreshToken });
 
     // Update stored token
-    localStorage.setItem('access_token', response.data.access_token);
+    localStorage.setItem('access_token', response.data.data.accessToken);
 
-    return response.data;
+    return response.data.data;
   }
 
   /**
