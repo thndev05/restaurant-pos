@@ -58,7 +58,8 @@ export class MenuItemsService {
   }
 
   async createMenuItem(createMenuItemDto: CreateMenuItemDto, file?: any) {
-    const { name, price, categoryId } = createMenuItemDto;
+    const { name, description, price, categoryId, isAvailable } =
+      createMenuItemDto;
 
     let imageUrl: string | null = null;
 
@@ -83,8 +84,10 @@ export class MenuItemsService {
     return this.db.create({
       data: {
         name,
+        description,
         price,
         image: imageUrl,
+        isAvailable: isAvailable ?? true,
         categoryId: categoryId || null,
       },
     });
@@ -139,7 +142,8 @@ export class MenuItemsService {
     file: any,
     id: string,
   ) {
-    const { name, price, categoryId } = updateMenuItemDto;
+    const { name, description, price, categoryId, isAvailable } =
+      updateMenuItemDto;
     let imageUrl: string | null = null;
 
     const menuItem = await this.db.findUnique({
@@ -177,9 +181,11 @@ export class MenuItemsService {
       where: { id },
       data: {
         ...(name && { name }),
+        ...(description !== undefined && { description }),
         ...(price && { price }),
         ...(imageUrl && { image: imageUrl }),
         ...(categoryId && { categoryId }),
+        ...(isAvailable !== undefined && { isAvailable }),
         updatedAt: new Date(),
       },
     });
@@ -187,6 +193,30 @@ export class MenuItemsService {
     return {
       code: 200,
       message: `Menu item with id ${id} has been updated.`,
+    };
+  }
+
+  async toggleAvailability(id: string) {
+    const menuItem = await this.db.findUnique({
+      where: { id },
+    });
+
+    if (!menuItem) {
+      throw new NotFoundException(`Menu item with id ${id} not found.`);
+    }
+
+    await this.db.update({
+      where: { id },
+      data: {
+        isAvailable: !menuItem.isAvailable,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      code: 200,
+      message: `Menu item availability toggled successfully.`,
+      data: { isAvailable: !menuItem.isAvailable },
     };
   }
 }

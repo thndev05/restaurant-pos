@@ -40,6 +40,22 @@ class CategoriesService extends BaseApiService<Category> {
   }
 
   /**
+   * Get all categories
+   */
+  async getCategories(): Promise<Category[]> {
+    const response = await apiClient.get<Category[]>(`${this.endpoint}`);
+    return response.data;
+  }
+
+  /**
+   * Get category by ID
+   */
+  async getCategoryById(id: string): Promise<Category> {
+    const response = await apiClient.get<Category>(`${this.endpoint}/${id}`);
+    return response.data;
+  }
+
+  /**
    * Create a new category
    */
   async createCategory(data: CreateCategoryData) {

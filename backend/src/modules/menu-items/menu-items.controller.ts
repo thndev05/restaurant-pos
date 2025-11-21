@@ -59,4 +59,9 @@ export class MenuItemsController {
   ) {
     return this.menuItemsService.updateMenuItem(updateMenuItemDto, file, id);
   }
+
+  @Patch('/:id/toggle-availability')
+  toggleAvailability(@Param('id') id: string) {
+    return this.menuItemsService.toggleAvailability(id);
+  }
 }

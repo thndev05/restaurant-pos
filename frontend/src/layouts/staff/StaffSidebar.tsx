@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -14,6 +15,18 @@ import {
   Flame,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useAuth } from '@/contexts';
 
 // Admin navigation
 const adminNavigationItems = [
@@ -40,15 +53,59 @@ const cashierNavigationItems = [
   { path: '/staff/cashier/payments', icon: DollarSign, label: 'Payment Queue' },
 ];
 
-// For demo purposes, showing all sections. In production, filter based on user role
-const navigationSections = [
-  { title: 'Admin', items: adminNavigationItems },
-  { title: 'Waiter', items: waiterNavigationItems },
-  { title: 'Kitchen', items: kitchenNavigationItems },
-  { title: 'Cashier', items: cashierNavigationItems },
-];
-
 export default function StaffSidebar() {
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const { user, logout, hasPermission } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/staff/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setShowLogoutDialog(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Filter navigation based on module access permissions
+  const getNavigationSections = () => {
+    if (!user) return [];
+
+    const sections = [];
+
+    // Admin/Manager module - management features
+    if (hasPermission('module.admin.access')) {
+      sections.push({ title: 'Admin', items: adminNavigationItems });
+    }
+    // Waiter module - accessible by Admin, Manager, and Waiters
+    if (hasPermission('module.waiter.access')) {
+      sections.push({ title: 'Waiter', items: waiterNavigationItems });
+    }
+    // Kitchen module - accessible by Admin, Manager, and Kitchen staff
+    if (hasPermission('module.kitchen.access')) {
+      sections.push({ title: 'Kitchen', items: kitchenNavigationItems });
+    }
+    // Cashier module - accessible by Admin, Manager, and Cashiers
+    if (hasPermission('module.cashier.access')) {
+      sections.push({ title: 'Cashier', items: cashierNavigationItems });
+    }
+
+    return sections;
+  };
+
+  const visibleSections = getNavigationSections();
+
   return (
     <aside className="flex w-64 flex-col border-r bg-white">
       {/* Logo */}
@@ -62,9 +119,26 @@ export default function StaffSidebar() {
         </div>
       </div>
 
+      {/* User Info Card */}
+      {user && (
+        <div className="border-b p-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {getInitials(user.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 overflow-hidden">
+              <p className="truncate text-sm font-medium">{user.name}</p>
+              <p className="text-muted-foreground truncate text-xs">{user.role.displayName}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 space-y-4 overflow-y-auto p-4">
-        {navigationSections.map((section) => (
+        {visibleSections.map((section) => (
           <div key={section.title}>
             <h3 className="text-muted-foreground mb-2 px-3 text-xs font-semibold tracking-wider uppercase">
               {section.title}
@@ -103,11 +177,36 @@ export default function StaffSidebar() {
           <Settings className="h-5 w-5" />
           <span>Settings</span>
         </button>
-        <button className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors">
+        <button
+          onClick={() => setShowLogoutDialog(true)}
+          className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+        >
           <LogOut className="h-5 w-5" />
           <span>Logout</span>
         </button>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be redirected to the login page and need to sign in again to access the
+              system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }

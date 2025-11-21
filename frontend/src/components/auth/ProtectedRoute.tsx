@@ -9,8 +9,8 @@ import { ReactNode } from 'react';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredPermission?: string;
-  requiredRole?: string;
+  requiredPermission?: string | string[];
+  requiredRole?: string | string[];
   redirectTo?: string;
 }
 
@@ -40,34 +40,46 @@ export function ProtectedRoute({
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Check for required permission
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-destructive text-4xl font-bold">403</h1>
-          <p className="mt-2 text-lg font-semibold">Access Denied</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            You don't have permission to access this page.
-          </p>
+  // Check for required permission (single or array)
+  if (requiredPermission) {
+    const permissions = Array.isArray(requiredPermission)
+      ? requiredPermission
+      : [requiredPermission];
+    const hasRequiredPermission = permissions.some((perm) => hasPermission(perm));
+
+    if (!hasRequiredPermission) {
+      return (
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-destructive text-4xl font-bold">403</h1>
+            <p className="mt-2 text-lg font-semibold">Access Denied</p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              You don't have permission to access this page.
+            </p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
-  // Check for required role
-  if (requiredRole && !hasRole(requiredRole)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-destructive text-4xl font-bold">403</h1>
-          <p className="mt-2 text-lg font-semibold">Access Denied</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            This page is only accessible to {requiredRole} role.
-          </p>
+  // Check for required role (single or array)
+  if (requiredRole) {
+    const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+    const hasRequiredRole = roles.some((role) => hasRole(role));
+
+    if (!hasRequiredRole) {
+      return (
+        <div className="flex min-h-screen items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-destructive text-4xl font-bold">403</h1>
+            <p className="mt-2 text-lg font-semibold">Access Denied</p>
+            <p className="text-muted-foreground mt-1 text-sm">
+              This page is only accessible to authorized roles.
+            </p>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   return <>{children}</>;

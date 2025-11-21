@@ -1,17 +1,26 @@
 import { Type } from 'class-transformer';
-import { IsNotEmpty, IsNumber, IsString, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class UpdateMenuItemDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  name: string;
+  name?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  price: number;
+  price?: number;
 
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  isAvailable?: boolean;
 }

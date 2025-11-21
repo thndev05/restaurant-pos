@@ -57,19 +57,30 @@ export default function StaffLoginPage() {
     setError('');
 
     try {
-      await login({
+      const user = await login({
         username: formData.username,
         password: formData.password,
       });
 
-      // Navigate based on user role after successful login
-      const role = STAFF_ROLES.find((r) => r.id === selectedRole);
-      if (role) {
-        navigate(role.route);
+      // Navigate based on user's module access permissions
+      const permissions = user.permissions;
+
+      if (permissions.includes('module.admin.access')) {
+        navigate('/staff/admin/dashboard');
+      } else if (permissions.includes('module.waiter.access')) {
+        navigate('/staff/waiter/dashboard');
+      } else if (permissions.includes('module.kitchen.access')) {
+        navigate('/staff/kitchen/dashboard');
+      } else if (permissions.includes('module.cashier.access')) {
+        navigate('/staff/cashier/payments');
+      } else {
+        // Fallback if no module access
+        navigate('/staff/admin/dashboard');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
-      setError(err.response?.data?.message || 'Invalid username or password. Please try again.');
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || 'Invalid username or password. Please try again.');
     } finally {
       setIsLoading(false);
     }

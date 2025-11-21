@@ -17,7 +17,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<User>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loadUser();
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
+  const login = async (credentials: LoginCredentials): Promise<User> => {
     try {
       const response: AuthResponse = await authService.login(credentials);
       // Store user with required fields
@@ -62,6 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         updatedAt: new Date().toISOString(),
       };
       setUser(userWithDefaults);
+      return userWithDefaults;
     } catch (error) {
       console.error('Login failed:', error);
       throw error;

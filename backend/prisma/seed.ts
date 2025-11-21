@@ -19,72 +19,273 @@ async function main() {
 
   // ========== CREATE PERMISSIONS ==========
   console.log('\n📋 Creating permissions...');
-  
+
   const permissions = [
     // Menu Items permissions
-    { name: 'menu-items.create', description: 'Create menu items', resource: 'menu-items', action: 'create' },
-    { name: 'menu-items.read', description: 'View menu items', resource: 'menu-items', action: 'read' },
-    { name: 'menu-items.update', description: 'Update menu items', resource: 'menu-items', action: 'update' },
-    { name: 'menu-items.delete', description: 'Delete menu items', resource: 'menu-items', action: 'delete' },
-    
+    {
+      name: 'menu-items.create',
+      description: 'Create menu items',
+      resource: 'menu-items',
+      action: 'create',
+    },
+    {
+      name: 'menu-items.read',
+      description: 'View menu items',
+      resource: 'menu-items',
+      action: 'read',
+    },
+    {
+      name: 'menu-items.update',
+      description: 'Update menu items',
+      resource: 'menu-items',
+      action: 'update',
+    },
+    {
+      name: 'menu-items.delete',
+      description: 'Delete menu items',
+      resource: 'menu-items',
+      action: 'delete',
+    },
+
     // Categories permissions
-    { name: 'categories.create', description: 'Create categories', resource: 'categories', action: 'create' },
-    { name: 'categories.read', description: 'View categories', resource: 'categories', action: 'read' },
-    { name: 'categories.update', description: 'Update categories', resource: 'categories', action: 'update' },
-    { name: 'categories.delete', description: 'Delete categories', resource: 'categories', action: 'delete' },
-    
+    {
+      name: 'categories.create',
+      description: 'Create categories',
+      resource: 'categories',
+      action: 'create',
+    },
+    {
+      name: 'categories.read',
+      description: 'View categories',
+      resource: 'categories',
+      action: 'read',
+    },
+    {
+      name: 'categories.update',
+      description: 'Update categories',
+      resource: 'categories',
+      action: 'update',
+    },
+    {
+      name: 'categories.delete',
+      description: 'Delete categories',
+      resource: 'categories',
+      action: 'delete',
+    },
+
     // Tables permissions
-    { name: 'tables.create', description: 'Create tables', resource: 'tables', action: 'create' },
-    { name: 'tables.read', description: 'View tables', resource: 'tables', action: 'read' },
-    { name: 'tables.update', description: 'Update table status', resource: 'tables', action: 'update' },
-    { name: 'tables.delete', description: 'Delete tables', resource: 'tables', action: 'delete' },
-    
+    {
+      name: 'tables.create',
+      description: 'Create tables',
+      resource: 'tables',
+      action: 'create',
+    },
+    {
+      name: 'tables.read',
+      description: 'View tables',
+      resource: 'tables',
+      action: 'read',
+    },
+    {
+      name: 'tables.update',
+      description: 'Update table status',
+      resource: 'tables',
+      action: 'update',
+    },
+    {
+      name: 'tables.delete',
+      description: 'Delete tables',
+      resource: 'tables',
+      action: 'delete',
+    },
+
     // Customers permissions
-    { name: 'customers.create', description: 'Create customers', resource: 'customers', action: 'create' },
-    { name: 'customers.read', description: 'View customers', resource: 'customers', action: 'read' },
-    { name: 'customers.update', description: 'Update customers', resource: 'customers', action: 'update' },
-    { name: 'customers.delete', description: 'Delete customers', resource: 'customers', action: 'delete' },
-    
+    {
+      name: 'customers.create',
+      description: 'Create customers',
+      resource: 'customers',
+      action: 'create',
+    },
+    {
+      name: 'customers.read',
+      description: 'View customers',
+      resource: 'customers',
+      action: 'read',
+    },
+    {
+      name: 'customers.update',
+      description: 'Update customers',
+      resource: 'customers',
+      action: 'update',
+    },
+    {
+      name: 'customers.delete',
+      description: 'Delete customers',
+      resource: 'customers',
+      action: 'delete',
+    },
+
     // Orders permissions
-    { name: 'orders.create', description: 'Create orders', resource: 'orders', action: 'create' },
-    { name: 'orders.read', description: 'View orders', resource: 'orders', action: 'read' },
-    { name: 'orders.update', description: 'Update orders', resource: 'orders', action: 'update' },
-    { name: 'orders.delete', description: 'Delete orders', resource: 'orders', action: 'delete' },
-    { name: 'orders.cancel', description: 'Cancel orders', resource: 'orders', action: 'cancel' },
-    
+    {
+      name: 'orders.create',
+      description: 'Create orders',
+      resource: 'orders',
+      action: 'create',
+    },
+    {
+      name: 'orders.read',
+      description: 'View orders',
+      resource: 'orders',
+      action: 'read',
+    },
+    {
+      name: 'orders.update',
+      description: 'Update orders',
+      resource: 'orders',
+      action: 'update',
+    },
+    {
+      name: 'orders.delete',
+      description: 'Delete orders',
+      resource: 'orders',
+      action: 'delete',
+    },
+    {
+      name: 'orders.cancel',
+      description: 'Cancel orders',
+      resource: 'orders',
+      action: 'cancel',
+    },
+
     // Users permissions
-    { name: 'users.create', description: 'Create users', resource: 'users', action: 'create' },
-    { name: 'users.read', description: 'View users', resource: 'users', action: 'read' },
-    { name: 'users.update', description: 'Update users', resource: 'users', action: 'update' },
-    { name: 'users.delete', description: 'Delete users', resource: 'users', action: 'delete' },
-    
+    {
+      name: 'users.create',
+      description: 'Create users',
+      resource: 'users',
+      action: 'create',
+    },
+    {
+      name: 'users.read',
+      description: 'View users',
+      resource: 'users',
+      action: 'read',
+    },
+    {
+      name: 'users.update',
+      description: 'Update users',
+      resource: 'users',
+      action: 'update',
+    },
+    {
+      name: 'users.delete',
+      description: 'Delete users',
+      resource: 'users',
+      action: 'delete',
+    },
+
     // Roles permissions
-    { name: 'roles.create', description: 'Create roles', resource: 'roles', action: 'create' },
-    { name: 'roles.read', description: 'View roles', resource: 'roles', action: 'read' },
-    { name: 'roles.update', description: 'Update roles', resource: 'roles', action: 'update' },
-    { name: 'roles.delete', description: 'Delete roles', resource: 'roles', action: 'delete' },
-    
+    {
+      name: 'roles.create',
+      description: 'Create roles',
+      resource: 'roles',
+      action: 'create',
+    },
+    {
+      name: 'roles.read',
+      description: 'View roles',
+      resource: 'roles',
+      action: 'read',
+    },
+    {
+      name: 'roles.update',
+      description: 'Update roles',
+      resource: 'roles',
+      action: 'update',
+    },
+    {
+      name: 'roles.delete',
+      description: 'Delete roles',
+      resource: 'roles',
+      action: 'delete',
+    },
+
     // Reports permissions
-    { name: 'reports.view', description: 'View reports', resource: 'reports', action: 'read' },
-    { name: 'reports.export', description: 'Export reports', resource: 'reports', action: 'export' },
-    
+    {
+      name: 'reports.view',
+      description: 'View reports',
+      resource: 'reports',
+      action: 'read',
+    },
+    {
+      name: 'reports.export',
+      description: 'Export reports',
+      resource: 'reports',
+      action: 'export',
+    },
+
     // Kitchen permissions
-    { name: 'kitchen.view-orders', description: 'View kitchen orders', resource: 'kitchen', action: 'read' },
-    { name: 'kitchen.update-status', description: 'Update order cooking status', resource: 'kitchen', action: 'update' },
-    
+    {
+      name: 'kitchen.view-orders',
+      description: 'View kitchen orders',
+      resource: 'kitchen',
+      action: 'read',
+    },
+    {
+      name: 'kitchen.update-status',
+      description: 'Update order cooking status',
+      resource: 'kitchen',
+      action: 'update',
+    },
+
     // Payment permissions
-    { name: 'payments.process', description: 'Process payments', resource: 'payments', action: 'create' },
-    { name: 'payments.refund', description: 'Refund payments', resource: 'payments', action: 'refund' },
+    {
+      name: 'payments.process',
+      description: 'Process payments',
+      resource: 'payments',
+      action: 'create',
+    },
+    {
+      name: 'payments.refund',
+      description: 'Refund payments',
+      resource: 'payments',
+      action: 'refund',
+    },
+
+    // Module Access permissions (for frontend navigation)
+    {
+      name: 'module.admin.access',
+      description: 'Access admin module',
+      resource: 'module',
+      action: 'admin-access',
+    },
+    {
+      name: 'module.waiter.access',
+      description: 'Access waiter module',
+      resource: 'module',
+      action: 'waiter-access',
+    },
+    {
+      name: 'module.kitchen.access',
+      description: 'Access kitchen module',
+      resource: 'module',
+      action: 'kitchen-access',
+    },
+    {
+      name: 'module.cashier.access',
+      description: 'Access cashier module',
+      resource: 'module',
+      action: 'cashier-access',
+    },
   ];
 
   const createdPermissions = await Promise.all(
-    permissions.map(p => prisma.permission.create({ data: p }))
+    permissions.map((p) => prisma.permission.create({ data: p })),
   );
   console.log(`✅ Created ${createdPermissions.length} permissions`);
 
   // ========== CREATE ROLES ==========
   console.log('\n👥 Creating roles...');
-  
+
   const adminRole = await prisma.role.create({
     data: {
       name: RoleName.ADMIN,
@@ -131,87 +332,130 @@ async function main() {
   console.log('\n🔐 Assigning permissions to roles...');
 
   // Admin: ALL permissions
-  const allPermissionIds = createdPermissions.map(p => p.id);
+  const allPermissionIds = createdPermissions.map((p) => p.id);
   await Promise.all(
-    allPermissionIds.map(permissionId =>
+    allPermissionIds.map((permissionId) =>
       prisma.rolePermission.create({
         data: { roleId: adminRole.id, permissionId },
-      })
-    )
+      }),
+    ),
   );
   console.log(`✅ Admin: ${allPermissionIds.length} permissions`);
 
-  // Manager: Most permissions except user/role management
+  // Manager: Most permissions except user/role management + access to all modules
   const managerPermissionNames = [
-    'menu-items.create', 'menu-items.read', 'menu-items.update', 'menu-items.delete',
-    'categories.create', 'categories.read', 'categories.update', 'categories.delete',
-    'tables.create', 'tables.read', 'tables.update', 'tables.delete',
-    'customers.create', 'customers.read', 'customers.update', 'customers.delete',
-    'orders.create', 'orders.read', 'orders.update', 'orders.delete', 'orders.cancel',
+    'menu-items.create',
+    'menu-items.read',
+    'menu-items.update',
+    'menu-items.delete',
+    'categories.create',
+    'categories.read',
+    'categories.update',
+    'categories.delete',
+    'tables.create',
+    'tables.read',
+    'tables.update',
+    'tables.delete',
+    'customers.create',
+    'customers.read',
+    'customers.update',
+    'customers.delete',
+    'orders.create',
+    'orders.read',
+    'orders.update',
+    'orders.delete',
+    'orders.cancel',
     'users.read',
-    'reports.view', 'reports.export',
-    'payments.process', 'payments.refund',
+    'reports.view',
+    'reports.export',
+    'payments.process',
+    'payments.refund',
+    'module.admin.access',
+    'module.waiter.access',
+    'module.kitchen.access',
+    'module.cashier.access',
   ];
-  const managerPermissions = createdPermissions.filter(p => managerPermissionNames.includes(p.name));
+  const managerPermissions = createdPermissions.filter((p) =>
+    managerPermissionNames.includes(p.name),
+  );
   await Promise.all(
-    managerPermissions.map(p =>
+    managerPermissions.map((p) =>
       prisma.rolePermission.create({
         data: { roleId: managerRole.id, permissionId: p.id },
-      })
-    )
+      }),
+    ),
   );
   console.log(`✅ Manager: ${managerPermissions.length} permissions`);
 
-  // Cashier: Orders, payments, customers, view menu
+  // Cashier: Orders, payments, customers, view menu + access cashier module
   const cashierPermissionNames = [
     'menu-items.read',
     'categories.read',
-    'tables.read', 'tables.update',
-    'customers.create', 'customers.read', 'customers.update',
-    'orders.create', 'orders.read', 'orders.update',
-    'payments.process', 'payments.refund',
+    'tables.read',
+    'tables.update',
+    'customers.create',
+    'customers.read',
+    'customers.update',
+    'orders.create',
+    'orders.read',
+    'orders.update',
+    'payments.process',
+    'payments.refund',
+    'module.cashier.access',
   ];
-  const cashierPermissions = createdPermissions.filter(p => cashierPermissionNames.includes(p.name));
+  const cashierPermissions = createdPermissions.filter((p) =>
+    cashierPermissionNames.includes(p.name),
+  );
   await Promise.all(
-    cashierPermissions.map(p =>
+    cashierPermissions.map((p) =>
       prisma.rolePermission.create({
         data: { roleId: cashierRole.id, permissionId: p.id },
-      })
-    )
+      }),
+    ),
   );
   console.log(`✅ Cashier: ${cashierPermissions.length} permissions`);
 
-  // Waiter: Tables, orders, view menu and customers
+  // Waiter: Tables, orders, view menu and customers + access waiter module
   const waiterPermissionNames = [
     'menu-items.read',
     'categories.read',
-    'tables.read', 'tables.update',
+    'tables.read',
+    'tables.update',
     'customers.read',
-    'orders.create', 'orders.read', 'orders.update',
+    'orders.create',
+    'orders.read',
+    'orders.update',
+    'module.waiter.access',
   ];
-  const waiterPermissions = createdPermissions.filter(p => waiterPermissionNames.includes(p.name));
+  const waiterPermissions = createdPermissions.filter((p) =>
+    waiterPermissionNames.includes(p.name),
+  );
   await Promise.all(
-    waiterPermissions.map(p =>
+    waiterPermissions.map((p) =>
       prisma.rolePermission.create({
         data: { roleId: waiterRole.id, permissionId: p.id },
-      })
-    )
+      }),
+    ),
   );
   console.log(`✅ Waiter: ${waiterPermissions.length} permissions`);
 
-  // Kitchen: View orders and update cooking status
+  // Kitchen: View orders and update cooking status + access kitchen module
   const kitchenPermissionNames = [
     'menu-items.read',
     'orders.read',
-    'kitchen.view-orders', 'kitchen.update-status',
+    'kitchen.view-orders',
+    'kitchen.update-status',
+    'module.kitchen.access',
   ];
-  const kitchenPermissions = createdPermissions.filter(p => kitchenPermissionNames.includes(p.name));
+  const kitchenPermissions = createdPermissions.filter((p) =>
+    kitchenPermissionNames.includes(p.name),
+  );
   await Promise.all(
-    kitchenPermissions.map(p =>
+    kitchenPermissions.map((p) =>
       prisma.rolePermission.create({
         data: { roleId: kitchenRole.id, permissionId: p.id },
-      })
-    )
+      }),
+    ),
   );
   console.log(`✅ Kitchen: ${kitchenPermissions.length} permissions`);
 
@@ -304,7 +548,9 @@ async function main() {
     },
   });
 
-  console.log('✅ Created 8 users (1 admin, 1 manager, 2 cashiers, 2 waiters, 2 kitchen staff)');
+  console.log(
+    '✅ Created 8 users (1 admin, 1 manager, 2 cashiers, 2 waiters, 2 kitchen staff)',
+  );
   console.log('   Login credentials:');
   console.log('   - admin/admin123');
   console.log('   - manager/manager123');
@@ -333,172 +579,218 @@ async function main() {
 
   console.log('✅ Created 5 categories successfully!');
 
-  // Create sample menu items
+  // Create sample menu items (Prices in USD)
   const menuItems = await prisma.menuItem.createMany({
     data: [
       // 🍗 Combo
       {
         name: 'Combo 1 Miếng Gà + Pepsi',
-        price: 45000,
+        description: '1 piece of fried chicken with Pepsi',
+        price: 4.99,
         image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec',
         categoryId: comboCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Combo 2 Miếng Gà + Khoai Tây + Pepsi',
-        price: 85000,
+        description: '2 pieces of fried chicken with fries and Pepsi',
+        price: 8.99,
         image: 'https://images.unsplash.com/photo-1562967914-608f82629710',
         categoryId: comboCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Combo 3 Miếng Gà + 2 Khoai Tây + 2 Pepsi',
-        price: 125000,
+        description: '3 pieces of fried chicken with 2 fries and 2 Pepsi',
+        price: 12.99,
         image: 'https://images.unsplash.com/photo-1598511757337-fe2cafc31ba0',
         categoryId: comboCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Combo Gia Đình (6 Miếng Gà + 3 Khoai + 4 Pepsi)',
-        price: 249000,
+        description: 'Family combo: 6 chicken pieces, 3 fries, 4 drinks',
+        price: 24.99,
         image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec',
         categoryId: comboCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Combo Tiệc Tùng (9 Miếng Gà + 4 Khoai + 6 Pepsi)',
-        price: 359000,
+        description: 'Party combo: 9 chicken pieces, 4 fries, 6 drinks',
+        price: 34.99,
         image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec',
         categoryId: comboCategory.id,
+        isAvailable: true,
         isActive: true,
       },
 
       // 🍗 Fried Chicken
       {
         name: 'Gà Rán Giòn Cay (1 Miếng)',
-        price: 38000,
+        description: 'Crispy spicy fried chicken - 1 piece',
+        price: 3.99,
         image: 'https://images.unsplash.com/photo-1562967914-608f82629710',
         categoryId: friedChickenCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Gà Rán Truyền Thống (1 Miếng)',
-        price: 35000,
+        description: 'Traditional fried chicken - 1 piece',
+        price: 3.49,
         image: 'https://images.unsplash.com/photo-1598511757337-fe2cafc31ba0',
         categoryId: friedChickenCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Gà Rán Không Xương (3 Miếng)',
-        price: 45000,
+        description: 'Boneless fried chicken - 3 pieces',
+        price: 4.99,
         image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec',
         categoryId: friedChickenCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Gà Rán Giòn Cay (2 Miếng)',
-        price: 72000,
+        description: 'Crispy spicy fried chicken - 2 pieces',
+        price: 7.49,
         image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec',
         categoryId: friedChickenCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Gà Rán Truyền Thống (3 Miếng)',
-        price: 99000,
+        description: 'Traditional fried chicken - 3 pieces',
+        price: 9.99,
         categoryId: friedChickenCategory.id,
+        isAvailable: true,
         isActive: true,
       },
 
       // 🍔 Burgers
       {
         name: 'Burger Gà Giòn',
-        price: 42000,
+        description: 'Crispy chicken burger',
+        price: 4.49,
         image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd',
         categoryId: burgerCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Burger Gà Teriyaki',
-        price: 45000,
+        description: 'Teriyaki chicken burger',
+        price: 4.99,
         image: 'https://images.unsplash.com/photo-1550547660-d9450f859349',
         categoryId: burgerCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Burger Gà Phô Mai',
-        price: 48000,
+        description: 'Chicken cheeseburger',
+        price: 5.49,
         image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add',
         categoryId: burgerCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Burger Gà Cay Đặc Biệt',
-        price: 52000,
+        description: 'Special spicy chicken burger',
+        price: 5.99,
         image: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9',
         categoryId: burgerCategory.id,
+        isAvailable: true,
         isActive: true,
       },
 
       // 🍟 Sides
       {
         name: 'Khoai Tây Chiên (Vừa)',
-        price: 25000,
+        description: 'French fries - Medium',
+        price: 2.49,
         image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877',
         categoryId: sideCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Khoai Tây Chiên (Lớn)',
-        price: 35000,
+        description: 'French fries - Large',
+        price: 3.49,
         image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877',
         categoryId: sideCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Khoai Tây Lắc Phô Mai',
-        price: 32000,
+        description: 'Cheese-shaken fries',
+        price: 2.99,
         categoryId: sideCategory.id,
+        isAvailable: true,
         isActive: true,
       },
 
       // 🥤 Drinks
       {
         name: 'Pepsi (Lon)',
-        price: 15000,
+        description: 'Pepsi - Can',
+        price: 1.49,
         image: 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e',
         categoryId: drinkCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Pepsi (Ly)',
-        price: 12000,
+        description: 'Pepsi - Cup',
+        price: 0.99,
         categoryId: drinkCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: '7Up (Lon)',
-        price: 15000,
+        description: '7Up - Can',
+        price: 1.49,
         categoryId: drinkCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Mirinda (Lon)',
-        price: 15000,
+        description: 'Mirinda - Can',
+        price: 1.49,
         categoryId: drinkCategory.id,
+        isAvailable: true,
         isActive: true,
       },
       {
         name: 'Nước Suối',
-        price: 10000,
+        description: 'Bottled water',
+        price: 0.99,
         categoryId: drinkCategory.id,
+        isAvailable: true,
         isActive: true,
       },
 
       // ❌ Inactive Items
       {
         name: 'Gà Sốt Phô Mai (Ngưng Bán)',
-        price: 55000,
+        description: 'Cheese sauce chicken - Discontinued',
+        price: 5.99,
         categoryId: friedChickenCategory.id,
+        isAvailable: false,
         isActive: false,
       },
       {

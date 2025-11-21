@@ -71,9 +71,7 @@ class AuthService {
   /**
    * Register new user
    */
-  async register(
-    data: RegisterData
-  ): Promise<{
+  async register(data: RegisterData): Promise<{
     id: string;
     name: string;
     username: string;

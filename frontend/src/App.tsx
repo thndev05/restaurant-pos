@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts';
 import { ProtectedRoute } from '@/components/auth';
+import { Toaster } from '@/components/ui/toaster';
 import StaffLoginPage from './pages/staff/LoginPage';
 import StaffLayout from './layouts/staff/StaffLayout';
 // Admin Pages
-import DashboardPage from './pages/staff/admin/DashboardPage';
+import AdminDashboardPage from './pages/staff/admin/DashboardPage';
 import MenuManagementPage from './pages/staff/admin/MenuManagementPage';
 import TableManagementPage from './pages/staff/admin/TableManagementPage';
 import StaffManagementPage from './pages/staff/admin/StaffManagementPage';
@@ -38,9 +39,9 @@ function App() {
           <Route
             path="/staff/admin/dashboard"
             element={
-              <ProtectedRoute requiredRole="ADMIN">
+              <ProtectedRoute requiredPermission="module.admin.access">
                 <StaffLayout>
-                  <DashboardPage />
+                  <AdminDashboardPage />
                 </StaffLayout>
               </ProtectedRoute>
             }
@@ -48,7 +49,7 @@ function App() {
           <Route
             path="/staff/admin/menu"
             element={
-              <ProtectedRoute requiredRole="ADMIN">
+              <ProtectedRoute requiredPermission="module.admin.access">
                 <StaffLayout>
                   <MenuManagementPage />
                 </StaffLayout>
@@ -58,7 +59,7 @@ function App() {
           <Route
             path="/staff/admin/tables"
             element={
-              <ProtectedRoute requiredRole="ADMIN">
+              <ProtectedRoute requiredPermission="module.admin.access">
                 <StaffLayout>
                   <TableManagementPage />
                 </StaffLayout>
@@ -68,7 +69,7 @@ function App() {
           <Route
             path="/staff/admin/staff-management"
             element={
-              <ProtectedRoute requiredRole="ADMIN">
+              <ProtectedRoute requiredPermission="module.admin.access">
                 <StaffLayout>
                   <StaffManagementPage />
                 </StaffLayout>
@@ -80,7 +81,7 @@ function App() {
           <Route
             path="/staff/waiter/dashboard"
             element={
-              <ProtectedRoute requiredRole="WAITER">
+              <ProtectedRoute requiredPermission="module.waiter.access">
                 <StaffLayout>
                   <WaiterDashboardPage />
                 </StaffLayout>
@@ -90,7 +91,7 @@ function App() {
           <Route
             path="/staff/waiter/orders"
             element={
-              <ProtectedRoute requiredRole="WAITER">
+              <ProtectedRoute requiredPermission="module.waiter.access">
                 <StaffLayout>
                   <WaiterOrdersQueuePage />
                 </StaffLayout>
@@ -100,7 +101,7 @@ function App() {
           <Route
             path="/staff/waiter/orders/:orderId"
             element={
-              <ProtectedRoute requiredRole="WAITER">
+              <ProtectedRoute requiredPermission="module.waiter.access">
                 <StaffLayout>
                   <WaiterOrderDetailPage />
                 </StaffLayout>
@@ -110,7 +111,7 @@ function App() {
           <Route
             path="/staff/waiter/actions"
             element={
-              <ProtectedRoute requiredRole="WAITER">
+              <ProtectedRoute requiredPermission="module.waiter.access">
                 <StaffLayout>
                   <WaiterActionsPage />
                 </StaffLayout>
@@ -122,7 +123,7 @@ function App() {
           <Route
             path="/staff/kitchen/dashboard"
             element={
-              <ProtectedRoute requiredRole="KITCHEN">
+              <ProtectedRoute requiredPermission="module.kitchen.access">
                 <StaffLayout>
                   <KitchenDashboardPage />
                 </StaffLayout>
@@ -134,7 +135,7 @@ function App() {
           <Route
             path="/staff/cashier/payments"
             element={
-              <ProtectedRoute requiredRole="CASHIER">
+              <ProtectedRoute requiredPermission="module.cashier.access">
                 <StaffLayout>
                   <CashierPaymentQueuePage />
                 </StaffLayout>
@@ -161,6 +162,7 @@ function App() {
           <Route path="/customer/menu" element={<MenuPage />} />
           <Route path="/customer/table/:tableId" element={<TableOrderPage />} />
         </Routes>
+        <Toaster />
       </AuthProvider>
     </BrowserRouter>
   );
