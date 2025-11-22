@@ -1,39 +1,21 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { QRCodeSVG } from 'qrcode.react';
 import {
-  Plus,
-  QrCode,
-  Edit,
-  Trash2,
-  Loader2,
-  Download,
-  Search,
-  Eye,
-  Users,
-  Clock,
-  RefreshCw,
-  Settings,
-} from 'lucide-react';
-import { tablesService, type Table } from '@/lib/api/services/tables.service';
-import { TableFormDialog, type TableFormData } from '@/components/staff/TableFormDialog';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TableSessionDialog } from '@/components/staff/TableSessionDialog';
+import { tablesService } from '@/lib/api/services';
+import type { Table, TableStatus } from '@/lib/api/services/tables.service';
 import { useToast } from '@/hooks/use-toast';
+import { Search, Plus, Users, Clock, RefreshCw, Settings, ChevronRight } from 'lucide-react';
 
 const TABLE_STATUS_CONFIG = {
   AVAILABLE: {
@@ -60,38 +42,27 @@ const TABLE_STATUS_CONFIG = {
 
 export default function TableManagementPage() {
   const { toast } = useToast();
-  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [showQRDialog, setShowQRDialog] = useState(false);
-  const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [tables, setTables] = useState<Table[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
-  const [selectedTableForEdit, setSelectedTableForEdit] = useState<Table | undefined>();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [tableToDelete, setTableToDelete] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const selectedTableIdRef = useRef<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<TableStatus | 'ALL'>('ALL');
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
 
-  // Update ref when selectedTable changes
-  useEffect(() => {
-    selectedTableIdRef.current = selectedTable?.id || null;
-  }, [selectedTable]);
-
-  const loadTables = useCallback(async () => {
-    setIsLoading(true);
+  const loadTables = async () => {
+    setLoading(true);
     try {
-      const data = await tablesService.getTables();
+      const data = await tablesService.getTables(statusFilter !== 'ALL' ? statusFilter : undefined);
       setTables(data);
 
       // Update selectedTable if it exists to reflect new data
-      const currentSelectedId = selectedTableIdRef.current;
-      if (currentSelectedId) {
-        const updatedTable = data.find((t) => t.id === currentSelectedId);
-        if (updatedTable) {
-          setSelectedTable(updatedTable);
+      setSelectedTable((prev) => {
+        if (prev) {
+          const updatedTable = data.find((t) => t.id === prev.id);
+          return updatedTable || prev;
         }
-      }
+        return prev;
+      });
     } catch (error) {
       console.error('Failed to load tables:', error);
       toast({
@@ -100,152 +71,15 @@ export default function TableManagementPage() {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [toast]);
+  };
 
   useEffect(() => {
     loadTables();
-  }, [loadTables]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter]);
 
-  const handleCreateTable = async (data: TableFormData) => {
-    try {
-      await tablesService.createTable(data);
-      toast({
-        title: 'Success',
-        description: 'Table created successfully',
-      });
-      loadTables();
-    } catch (error) {
-      console.error('Failed to create table:', error);
-      const message =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to create table',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const handleEditTable = async (data: TableFormData) => {
-    if (!selectedTableForEdit) return;
-    try {
-      await tablesService.updateTable(selectedTableForEdit.id, data);
-      toast({
-        title: 'Success',
-        description: 'Table updated successfully',
-      });
-      loadTables();
-    } catch (error) {
-      console.error('Failed to update table:', error);
-      const message =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to update table',
-        variant: 'destructive',
-      });
-      throw error;
-    }
-  };
-
-  const handleShowQR = (table: Table) => {
-    setSelectedTable(table);
-    setShowQRDialog(true);
-  };
-
-  const handleViewSession = (table: Table) => {
-    setSelectedTable(table);
-    setShowSessionDialog(true);
-  };
-
-  const handleSessionDialogClose = (open: boolean) => {
-    setShowSessionDialog(open);
-    if (!open) {
-      // Refresh data when dialog closes
-      loadTables();
-    }
-  };
-
-  const handleDownloadQR = () => {
-    if (!selectedTable) return;
-
-    const svg = document.getElementById('qr-code-svg');
-    if (!svg) return;
-
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `table-${selectedTable.number}-qr-code.png`;
-          link.click();
-          URL.revokeObjectURL(url);
-        }
-      });
-    };
-
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
-  };
-
-  const confirmDelete = (tableId: string) => {
-    setTableToDelete(tableId);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (!tableToDelete) return;
-    try {
-      await tablesService.deleteTable(tableToDelete);
-      toast({
-        title: 'Success',
-        description: 'Table deleted successfully',
-      });
-      loadTables();
-      setDeleteDialogOpen(false);
-      setTableToDelete(null);
-    } catch (error) {
-      console.error('Failed to delete table:', error);
-      const message =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to delete table',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const openCreateDialog = () => {
-    setDialogMode('create');
-    setSelectedTableForEdit(undefined);
-    setDialogOpen(true);
-  };
-
-  const openEditDialog = (table: Table) => {
-    setDialogMode('edit');
-    setSelectedTableForEdit(table);
-    setDialogOpen(true);
-  };
-
-  // Filter tables based on search
   const filteredTables = tables.filter((table) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -254,12 +88,20 @@ export default function TableManagementPage() {
     return matchesSearch;
   });
 
-  // Group tables by status for tabs
   const groupedTables = {
     AVAILABLE: filteredTables.filter((t) => t.status === 'AVAILABLE'),
     OCCUPIED: filteredTables.filter((t) => t.status === 'OCCUPIED'),
     RESERVED: filteredTables.filter((t) => t.status === 'RESERVED'),
     OUT_OF_SERVICE: filteredTables.filter((t) => t.status === 'OUT_OF_SERVICE'),
+  };
+
+  const handleTableClick = (table: Table) => {
+    setSelectedTable(table);
+    setSessionDialogOpen(true);
+  };
+
+  const handleSessionUpdate = () => {
+    loadTables();
   };
 
   const getSessionInfo = (table: Table) => {
@@ -287,13 +129,13 @@ export default function TableManagementPage() {
   const TableCard = ({ table }: { table: Table }) => {
     const statusConfig = TABLE_STATUS_CONFIG[table.status];
     const sessionInfo = getSessionInfo(table);
-    const hasActiveSession = sessionInfo !== null;
 
     return (
       <Card
-        className={`transition-all hover:shadow-lg ${
+        className={`cursor-pointer transition-all hover:shadow-lg ${
           table.status === 'OCCUPIED' ? 'ring-2 ring-red-200' : ''
         }`}
+        onClick={() => handleTableClick(table)}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
@@ -345,31 +187,18 @@ export default function TableManagementPage() {
             </>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={hasActiveSession ? 'default' : 'outline'}
-              size="sm"
-              className="flex-1"
-              onClick={() => handleViewSession(table)}
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              {hasActiveSession ? 'Manage' : 'View'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleShowQR(table)}>
-              <QrCode className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => openEditDialog(table)}>
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => confirmDelete(table.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTableClick(table);
+            }}
+          >
+            {table.status === 'OCCUPIED' ? 'Manage Session' : 'View Details'}
+            <ChevronRight className="ml-2 h-4 w-4" />
+          </Button>
         </CardContent>
       </Card>
     );
@@ -382,15 +211,15 @@ export default function TableManagementPage() {
         <div>
           <h1 className="text-3xl font-bold">Table Management</h1>
           <p className="text-muted-foreground mt-1">
-            Manage restaurant tables, sessions, and seating arrangements
+            Monitor and manage all restaurant tables and sessions
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={loadTables} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="sm" onClick={loadTables} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button size="sm" onClick={openCreateDialog}>
+          <Button size="sm">
             <Plus className="mr-2 h-4 w-4" />
             Add Table
           </Button>
@@ -437,8 +266,8 @@ export default function TableManagementPage() {
         </Card>
       </div>
 
-      {/* Search and Filter */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      {/* Filters */}
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
@@ -448,11 +277,26 @@ export default function TableManagementPage() {
             className="pl-9"
           />
         </div>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as TableStatus | 'ALL')}
+        >
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Tables</SelectItem>
+            <SelectItem value="AVAILABLE">Available</SelectItem>
+            <SelectItem value="OCCUPIED">Occupied</SelectItem>
+            <SelectItem value="RESERVED">Reserved</SelectItem>
+            <SelectItem value="OUT_OF_SERVICE">Out of Service</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Tables Grid with Tabs */}
+      {/* Tables Grid */}
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList>
           <TabsTrigger value="all">All ({filteredTables.length})</TabsTrigger>
           <TabsTrigger value="available">Available ({groupedTables.AVAILABLE.length})</TabsTrigger>
           <TabsTrigger value="occupied">Occupied ({groupedTables.OCCUPIED.length})</TabsTrigger>
@@ -460,20 +304,15 @@ export default function TableManagementPage() {
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          {isLoading ? (
+          {loading ? (
             <div className="py-12 text-center">
-              <Loader2 className="text-muted-foreground mx-auto h-8 w-8 animate-spin" />
+              <RefreshCw className="text-muted-foreground mx-auto h-8 w-8 animate-spin" />
               <p className="text-muted-foreground mt-2">Loading tables...</p>
             </div>
           ) : filteredTables.length === 0 ? (
             <div className="py-12 text-center">
               <Settings className="text-muted-foreground mx-auto h-12 w-12" />
               <p className="text-muted-foreground mt-4">No tables found</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {searchQuery
-                  ? 'Try adjusting your search'
-                  : 'Create your first table to get started'}
-              </p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -527,71 +366,13 @@ export default function TableManagementPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Table Form Dialog */}
-      <TableFormDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        mode={dialogMode}
-        initialData={selectedTableForEdit}
-        onSubmit={dialogMode === 'create' ? handleCreateTable : handleEditTable}
-      />
-
-      {/* Table Session Dialog */}
+      {/* Session Dialog */}
       <TableSessionDialog
-        open={showSessionDialog}
-        onOpenChange={handleSessionDialogClose}
+        open={sessionDialogOpen}
+        onOpenChange={setSessionDialogOpen}
         table={selectedTable}
-        onSessionUpdate={loadTables}
+        onSessionUpdate={handleSessionUpdate}
       />
-
-      {/* QR Code Dialog */}
-      <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-base sm:text-lg">
-              QR Code - Table {selectedTable?.number}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center space-y-3 py-4 sm:space-y-4">
-            {selectedTable && (
-              <>
-                <QRCodeSVG
-                  id="qr-code-svg"
-                  value={`${window.location.origin}/customer/table/${selectedTable.qrCodeKey}`}
-                  size={window.innerWidth < 640 ? 200 : 256}
-                  level="H"
-                  includeMargin
-                />
-                <p className="text-muted-foreground text-center text-xs sm:text-sm">
-                  Scan this QR code to access the menu for Table {selectedTable.number}
-                </p>
-                <Button className="w-full" onClick={handleDownloadQR}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download QR Code
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the table.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

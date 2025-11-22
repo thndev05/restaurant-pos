@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { TableStatus } from 'src/generated/prisma';
 
 export class UpdateTableDto {
@@ -13,4 +13,8 @@ export class UpdateTableDto {
   @IsOptional()
   @IsEnum(TableStatus)
   status?: TableStatus;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 }

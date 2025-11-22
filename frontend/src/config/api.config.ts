@@ -55,4 +55,23 @@ export const API_ENDPOINTS = {
     BASE: 'customers',
     BY_ID: (id: string | number) => `customers/${id}`,
   },
+  // Sessions endpoints
+  SESSIONS: {
+    BASE: 'sessions',
+    BY_ID: (id: string | number) => `sessions/${id}`,
+    CLOSE: (id: string | number) => `sessions/${id}/close`,
+  },
+  // Orders endpoints
+  ORDERS: {
+    BASE: 'orders',
+    BY_ID: (id: string | number) => `orders/${id}`,
+    UPDATE_STATUS: (id: string | number) => `orders/${id}/status`,
+    ADD_ITEMS: (id: string | number) => `orders/${id}/items`,
+    CANCEL: (id: string | number) => `orders/${id}/cancel`,
+    ITEMS: {
+      UPDATE: (itemId: string | number) => `orders/items/${itemId}`,
+      UPDATE_STATUS: (itemId: string | number) => `orders/items/${itemId}/status`,
+      DELETE: (itemId: string | number) => `orders/items/${itemId}`,
+    },
+  },
 } as const;

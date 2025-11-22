@@ -10,6 +10,8 @@ export { categoriesService } from './categories.service';
 export { menuItemsService } from './menu-items.service';
 export { tablesService } from './tables.service';
 export { customersService } from './customers.service';
+export { sessionsService } from './sessions.service';
+export { ordersService } from './orders.service';
 
 // Export types from auth service (User type is exported here explicitly)
 export type {
@@ -33,3 +35,9 @@ export type { Table, CreateTableData, UpdateTableData } from './tables.service';
 
 // Export types from customers service
 export type { Customer, CreateCustomerData, UpdateCustomerData } from './customers.service';
+
+// Export types from sessions service
+export type { UpdateSessionData, CloseSessionData } from './sessions.service';
+
+// Export types from orders service
+export type { UpdateOrderStatusData, UpdateOrderItemStatusData } from './orders.service';

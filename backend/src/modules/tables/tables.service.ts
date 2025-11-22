@@ -22,12 +22,64 @@ export class TablesService {
       where: {
         ...(status && { status }),
       },
+      include: {
+        sessions: {
+          where: {
+            status: 'ACTIVE',
+          },
+          include: {
+            orders: {
+              include: {
+                orderItems: {
+                  include: {
+                    menuItem: true,
+                  },
+                },
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+            },
+          },
+          orderBy: {
+            startTime: 'desc',
+          },
+          take: 1,
+        },
+      },
       orderBy: { number: 'asc' },
     });
   }
 
   async getTableById(id: string) {
-    const table = await this.db.findUnique({ where: { id } });
+    const table = await this.db.findUnique({
+      where: { id },
+      include: {
+        sessions: {
+          where: {
+            status: 'ACTIVE',
+          },
+          include: {
+            orders: {
+              include: {
+                orderItems: {
+                  include: {
+                    menuItem: true,
+                  },
+                },
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+            },
+          },
+          orderBy: {
+            startTime: 'desc',
+          },
+          take: 1,
+        },
+      },
+    });
 
     if (!table) {
       throw new BadRequestException(`Table with ID "${id}" does not exist.`);

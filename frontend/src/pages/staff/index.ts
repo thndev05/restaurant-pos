@@ -12,6 +12,7 @@ export { default as WaiterDashboardPage } from './waiter/WaiterDashboardPage';
 export { default as WaiterOrdersQueuePage } from './waiter/WaiterOrdersQueuePage';
 export { default as WaiterOrderDetailPage } from './waiter/WaiterOrderDetailPage';
 export { default as WaiterActionsPage } from './waiter/WaiterActionsPage';
+export { default as WaiterTableManagementPage } from './waiter/TableManagementPage';
 
 // Kitchen Pages
 export { default as KitchenDashboardPage } from './kitchen/KitchenDashboardPage';

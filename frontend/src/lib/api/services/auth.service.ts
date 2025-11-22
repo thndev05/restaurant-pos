@@ -5,7 +5,6 @@
 
 import apiClient from '../client';
 import { API_ENDPOINTS } from '@/config/api.config';
-import type { ApiResponse } from '../types';
 
 export interface LoginCredentials {
   username: string;

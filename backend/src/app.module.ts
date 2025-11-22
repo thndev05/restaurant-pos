@@ -7,6 +7,8 @@ import { CloudinaryModule } from './config/cloudinary/cloudinary.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TablesModule } from './modules/tables/tables.module';
 import { CustomersModule } from './modules/customers/customers.module';
+import { SessionsModule } from './modules/sessions/sessions.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -27,6 +29,8 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     CategoriesModule,
     TablesModule,
     CustomersModule,
+    SessionsModule,
+    OrdersModule,
     UsersModule,
   ],
   providers: [

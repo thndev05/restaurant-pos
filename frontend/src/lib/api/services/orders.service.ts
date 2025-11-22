@@ -1,0 +1,138 @@
+/**
+ * Orders API Service
+ * Handles order management API calls
+ */
+
+import { BaseApiService } from '../base.service';
+import { API_ENDPOINTS } from '@/config/api.config';
+import apiClient from '../client';
+
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
+export type OrderItemStatus = 'PENDING' | 'COOKING' | 'READY' | 'SERVED' | 'CANCELLED';
+
+export interface UpdateOrderStatusData {
+  status: OrderStatus;
+}
+
+export interface UpdateOrderItemStatusData {
+  status: OrderItemStatus;
+}
+
+export interface CreateOrderItemData {
+  menuItemId: string;
+  quantity: number;
+  notes?: string;
+}
+
+export interface CreateOrderData {
+  sessionId: string;
+  items: CreateOrderItemData[];
+  notes?: string;
+}
+
+export interface AddOrderItemsData {
+  items: CreateOrderItemData[];
+}
+
+export interface UpdateOrderItemData {
+  quantity?: number;
+  notes?: string;
+}
+
+class OrdersService extends BaseApiService<never> {
+  constructor() {
+    super(API_ENDPOINTS.ORDERS.BASE);
+  }
+
+  /**
+   * Create a new order
+   */
+  async createOrder(data: CreateOrderData): Promise<unknown> {
+    const response = await apiClient.post(this.endpoint, data);
+    return response.data;
+  }
+
+  /**
+   * Get order by ID
+   */
+  async getOrderById(id: string | number): Promise<unknown> {
+    const response = await apiClient.get(`${this.endpoint}/${id}`);
+    return response.data;
+  }
+
+  /**
+   * Update order status
+   */
+  async updateOrderStatus(
+    id: string | number,
+    data: UpdateOrderStatusData
+  ): Promise<{ message: string }> {
+    const response = await apiClient.patch<{ message: string }>(
+      API_ENDPOINTS.ORDERS.UPDATE_STATUS(id),
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Add items to an existing order
+   */
+  async addOrderItems(
+    orderId: string | number,
+    data: AddOrderItemsData
+  ): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      API_ENDPOINTS.ORDERS.ADD_ITEMS(orderId),
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Cancel an order
+   */
+  async cancelOrder(id: string | number): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(API_ENDPOINTS.ORDERS.CANCEL(id), {});
+    return response.data;
+  }
+
+  /**
+   * Update order item (quantity, notes)
+   */
+  async updateOrderItem(
+    itemId: string | number,
+    data: UpdateOrderItemData
+  ): Promise<{ message: string }> {
+    const response = await apiClient.patch<{ message: string }>(
+      API_ENDPOINTS.ORDERS.ITEMS.UPDATE(itemId),
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Update order item status
+   */
+  async updateOrderItemStatus(
+    itemId: string | number,
+    data: UpdateOrderItemStatusData
+  ): Promise<{ message: string }> {
+    const response = await apiClient.patch<{ message: string }>(
+      API_ENDPOINTS.ORDERS.ITEMS.UPDATE_STATUS(itemId),
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete an order item
+   */
+  async deleteOrderItem(itemId: string | number): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(
+      API_ENDPOINTS.ORDERS.ITEMS.DELETE(itemId)
+    );
+    return response.data;
+  }
+}
+
+export const ordersService = new OrdersService();
