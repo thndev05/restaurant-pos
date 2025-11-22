@@ -1,5 +1,15 @@
-import { Controller, Get, Delete, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Delete,
+  Patch,
+  Put,
+  Param,
+  Query,
+  Body,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
+import { UpdateUserDto, ChangePasswordDto } from './dto';
 
 @Controller('users')
 export class UsersController {
@@ -15,8 +25,26 @@ export class UsersController {
     return this.usersService.getUserById(id);
   }
 
+  @Patch(':id')
+  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.updateUser(id, updateUserDto);
+  }
+
+  @Put(':id/change-password')
+  changePassword(
+    @Param('id') id: string,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(id, changePasswordDto);
+  }
+
+  @Delete(':id/soft')
+  softDeleteUser(@Param('id') id: string) {
+    return this.usersService.softDeleteUser(id);
+  }
+
   @Delete(':id')
-  deleteUser(@Param('id') id: string) {
-    return this.usersService.deleteUser(id);
+  hardDeleteUser(@Param('id') id: string) {
+    return this.usersService.hardDeleteUser(id);
   }
 }
