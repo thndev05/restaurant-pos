@@ -25,122 +25,310 @@ enum RoleName {
   KITCHEN
 }
 
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum SessionStatus {
+  ACTIVE
+  PAID
+  CLOSED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum OrderItemStatus {
+  PENDING
+  COOKING
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  BANKING
+  CARD
+}
+
+enum ActionType {
+  CALL_STAFF
+  REQUEST_BILL
+  REQUEST_WATER
+  REQUEST_UTENSILS
+  OTHER
+}
+
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 // ===== MODELS =====
 model MenuItem {
   id          String    @id @default(uuid())
   name        String
   description String?
-  price       Decimal   @db.Decimal(10,2)
+  price       Decimal   @db.Decimal(10, 2)
   image       String?
-  isAvailable Boolean   @default(true)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  isAvailable Boolean   @default(true) @map("is_available")
+  isActive    Boolean   @default(true) @map("is_active")
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  // foreign key
-  categoryId  String?
+  categoryId  String?   @map("category_id")
   category    Category? @relation("CategoryToMenuItems", fields: [categoryId], references: [id])
+
+  orderItems OrderItem[]
 
   @@map("menu_items")
 }
 
 model Category {
-  id          String     @id @default(uuid())
-  name        String     @unique
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  name         String     @unique
+  description  String?
+  displayOrder Int        @default(0) @map("display_order")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  // Relations
-  menuItems   MenuItem[] @relation("CategoryToMenuItems")
+  menuItems MenuItem[] @relation("CategoryToMenuItems")
 
   @@map("categories")
 }
 
 model Table {
-  id          String      @id @default(uuid())
-  number      Int         @unique 
-  capacity    Int         @default(2)
-  status      TableStatus @default(AVAILABLE)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String         @id @default(uuid())
+  number       Int            @unique
+  capacity     Int            @default(2)
+  status       TableStatus    @default(AVAILABLE)
+  qrCodeKey    String         @unique @default(uuid()) @map("qr_code_key")
+  location     String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+  sessions     TableSession[]
 
   @@map("tables")
 }
 
 model Customer {
-  id          String    @id @default(uuid())
-  name        String
-  phone       String    @unique
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String        @id @default(uuid())
+  name         String
+  phone        String        @unique
+  email        String?       @unique
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  reservations Reservation[]
 
   @@map("customers")
 }
 
 model Permission {
-  id             String                @id @default(uuid())
-  name           String                @unique
-  description    String?
-  resource       String                // e.g., "menu-items", "orders", "users"
-  action         String                // e.g., "create", "read", "update", "delete"
-  
-  // Relations
-  roles          RolePermission[]
-  
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  resource    String
+  action      String
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  roles RolePermission[]
 
   @@unique([resource, action])
   @@map("permissions")
 }
 
 model Role {
-  id             String                @id @default(uuid())
-  name           RoleName              @unique
-  displayName    String
-  description    String?
-  
-  // Relations
-  users          User[]                @relation("UserToRole")
-  permissions    RolePermission[]
+  id          String         @id @default(uuid())
+  name        RoleName       @unique
+  displayName String         @map("display_name")
+  description String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
 
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  users       User[]           @relation("UserToRole")
+  permissions RolePermission[]
 
   @@map("roles")
 }
 
 model RolePermission {
-  id             String       @id @default(uuid())
-  
-  // Foreign keys
-  roleId         String
-  role           Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  
-  permissionId   String
-  permission     Permission   @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  
-  createdAt      DateTime     @default(now())
-  
+  id           String     @id @default(uuid())
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
   @@unique([roleId, permissionId])
   @@map("role_permissions")
 }
 
 model User {
-  id             String     @id @default(uuid())
-  name           String
-  username       String     @unique
-  password       String
-  isActive       Boolean    @default(true)
+  id        String   @id @default(uuid())
+  name      String
+  username  String   @unique
+  password  String
+  isActive  Boolean  @default(true) @map("is_active")
+  roleId    String   @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  // foreign key
-  roleId         String
-  role           Role       @relation("UserToRole", fields: [roleId], references: [id])
-
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  role            Role          @relation("UserToRole", fields: [roleId], references: [id])
+  confirmedOrders Order[]       @relation("OrderConfirmedBy")
+  handledActions  StaffAction[] @relation("ActionHandledBy")
 
   @@map("users")
+}
+
+// ===== RESERVATION SYSTEM =====
+model Reservation {
+  id              String            @id @default(uuid())
+  reservationTime DateTime          @map("reservation_time")
+  partySize       Int               @map("party_size")
+  status          ReservationStatus @default(PENDING)
+  notes           String?           @db.Text
+  guestName       String?           @map("guest_name")
+  guestPhone      String?           @map("guest_phone")
+  customerId      String?           @map("customer_id")
+  tableId         String            @map("table_id")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  table    Table     @relation(fields: [tableId], references: [id])
+
+  @@index([tableId, reservationTime])
+  @@index([customerId])
+  @@map("reservations")
+}
+
+// ===== QR ORDERING SYSTEM =====
+model TableSession {
+  id            String        @id @default(uuid())
+  startTime     DateTime      @default(now()) @map("start_time")
+  endTime       DateTime?     @map("end_time")
+  status        SessionStatus @default(ACTIVE)
+  customerCount Int?          @map("customer_count")
+  notes         String?       @db.Text
+  tableId       String        @map("table_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  table        Table         @relation(fields: [tableId], references: [id])
+  orders       Order[]
+  payment      Payment?
+  staffActions StaffAction[]
+
+  @@index([tableId, status])
+  @@index([startTime])
+  @@map("table_sessions")
+}
+
+model Order {
+  id            String       @id @default(uuid())
+  status        OrderStatus  @default(PENDING)
+  notes         String?      @db.Text
+  sessionId     String       @map("session_id")
+  confirmedById String?      @map("confirmed_by_id")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  session     TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  confirmedBy User?        @relation("OrderConfirmedBy", fields: [confirmedById], references: [id])
+  orderItems  OrderItem[]
+
+  @@index([sessionId, status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id              String          @id @default(uuid())
+  quantity        Int
+  priceAtOrder    Decimal         @db.Decimal(10, 2) @map("price_at_order")
+  itemNameAtOrder String          @map("item_name_at_order")
+  status          OrderItemStatus @default(PENDING)
+  notes           String?         @db.Text
+  orderId         String          @map("order_id")
+  menuItemId      String          @map("menu_item_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId, status])
+  @@index([menuItemId])
+  @@map("order_items")
+}
+
+// ===== PAYMENT SYSTEM =====
+model Payment {
+  id            String        @id @default(uuid())
+  totalAmount   Decimal       @db.Decimal(10, 2) @map("total_amount")
+  subTotal      Decimal       @db.Decimal(10, 2) @map("sub_total")
+  tax           Decimal       @default(0) @db.Decimal(10, 2)
+  discount      Decimal       @default(0) @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @map("payment_method")
+  status        PaymentStatus @default(PENDING)
+  transactionId String?       @map("transaction_id")
+  paymentTime   DateTime?     @map("payment_time")
+  notes         String?       @db.Text
+  sessionId     String        @unique @map("session_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([paymentTime])
+  @@map("payments")
+}
+
+// ===== STAFF ACTION SYSTEM =====
+model StaffAction {
+  id          String       @id @default(uuid())
+  actionType  ActionType   @map("action_type")
+  status      ActionStatus @default(PENDING)
+  description String?      @db.Text
+  sessionId   String       @map("session_id")
+  handledById String?      @map("handled_by_id")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  session   TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  handledBy User?        @relation("ActionHandledBy", fields: [handledById], references: [id])
+
+  @@index([sessionId, status])
+  @@index([actionType, status])
+  @@map("staff_actions")
 }
