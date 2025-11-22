@@ -4,6 +4,8 @@ import { ProtectedRoute } from '@/components/auth';
 import { Toaster } from '@/components/ui/toaster';
 import StaffLoginPage from './pages/staff/LoginPage';
 import StaffLayout from './layouts/staff/StaffLayout';
+import ProfilePage from './pages/staff/ProfilePage';
+import SettingsPage from './pages/staff/SettingsPage';
 // Admin Pages
 import AdminDashboardPage from './pages/staff/admin/DashboardPage';
 import MenuManagementPage from './pages/staff/admin/MenuManagementPage';
@@ -34,6 +36,30 @@ function App() {
 
           {/* Staff Routes */}
           <Route path="/staff/login" element={<StaffLoginPage />} />
+
+          {/* Profile Route - Protected (All staff roles) */}
+          <Route
+            path="/staff/profile"
+            element={
+              <ProtectedRoute requiredPermission="module.admin.access">
+                <StaffLayout>
+                  <ProfilePage />
+                </StaffLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Settings Route - Protected (All staff roles) */}
+          <Route
+            path="/staff/settings"
+            element={
+              <ProtectedRoute requiredPermission="module.admin.access">
+                <StaffLayout>
+                  <SettingsPage />
+                </StaffLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin Routes - Protected */}
           <Route
