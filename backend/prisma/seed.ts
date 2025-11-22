@@ -927,7 +927,8 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seeding:', e);
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.error('❌ Error during seeding:', errorMessage);
     process.exit(1);
   })
   .finally(async () => {
