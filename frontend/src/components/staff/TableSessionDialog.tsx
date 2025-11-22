@@ -40,11 +40,40 @@ import {
   Plus,
   Edit2,
   Trash2,
+  DollarSign,
 } from 'lucide-react';
-import type { Table, Order, OrderStatus, OrderItemStatus } from '@/lib/api/services/tables.service';
+import type {
+  Table,
+  Order,
+  OrderStatus,
+  OrderItemStatus,
+  SessionStatus,
+} from '@/lib/api/services/tables.service';
 import { useToast } from '@/hooks/use-toast';
 import { OrderManagementDialog } from './OrderManagementDialog';
 import { EditItemDialog } from './EditItemDialog';
+import { PaymentDialog } from './PaymentDialog';
+
+const SESSION_STATUS_CONFIG: Record<
+  SessionStatus,
+  { label: string; variant: 'default' | 'success' | 'warning' | 'outline'; className: string }
+> = {
+  ACTIVE: {
+    label: 'Active',
+    variant: 'success',
+    className: 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200',
+  },
+  PAID: {
+    label: 'Paid',
+    variant: 'warning',
+    className: 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200',
+  },
+  CLOSED: {
+    label: 'Closed',
+    variant: 'outline',
+    className: 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200',
+  },
+};
 
 interface TableSessionDialogProps {
   open: boolean;
@@ -80,6 +109,7 @@ export function TableSessionDialog({
   const { toast } = useToast();
   const [_selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [showCloseSessionDialog, setShowCloseSessionDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [customerCount, setCustomerCount] = useState<number>(1);
@@ -330,15 +360,24 @@ export function TableSessionDialog({
     }
   };
 
+  const handlePaymentSuccess = async () => {
+    // Refresh session data after successful payment
+    await Promise.resolve(onSessionUpdate?.());
+    onOpenChange(false);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-3">
               <span>Table {table.number} - Session Management</span>
-              <Badge variant="outline" className="ml-2">
-                {activeSession.status}
+              <Badge
+                variant={SESSION_STATUS_CONFIG[activeSession.status].variant}
+                className={SESSION_STATUS_CONFIG[activeSession.status].className}
+              >
+                {SESSION_STATUS_CONFIG[activeSession.status].label}
               </Badge>
             </DialogTitle>
           </DialogHeader>
@@ -566,14 +605,28 @@ export function TableSessionDialog({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
-              <Button
-                variant="destructive"
-                onClick={() => setShowCloseSessionDialog(true)}
-                disabled={isUpdating}
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                End Session
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  onClick={() => setShowPaymentDialog(true)}
+                  disabled={
+                    isUpdating ||
+                    activeSession.orders.filter((o) => o.status !== 'CANCELLED').length === 0
+                  }
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Process Payment
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowCloseSessionDialog(true)}
+                  disabled={isUpdating}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  End Session
+                </Button>
+              </div>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -633,6 +686,18 @@ export function TableSessionDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        sessionId={activeSession.id}
+        totalAmount={totalAmount}
+        subTotal={totalAmount}
+        tax={0}
+        discount={0}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
 
       {/* Close Session Confirmation Dialog */}
       <AlertDialog open={showCloseSessionDialog} onOpenChange={setShowCloseSessionDialog}>

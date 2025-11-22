@@ -9,6 +9,7 @@ import { TablesModule } from './modules/tables/tables.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -31,6 +32,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     CustomersModule,
     SessionsModule,
     OrdersModule,
+    PaymentsModule,
     UsersModule,
   ],
   providers: [

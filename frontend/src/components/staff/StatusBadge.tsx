@@ -7,39 +7,76 @@ interface StatusBadgeProps {
   className?: string;
 }
 
+const STATUS_CONFIG: Record<
+  string,
+  {
+    variant: 'default' | 'success' | 'warning' | 'outline' | 'destructive' | 'info';
+    className?: string;
+  }
+> = {
+  // Table Status
+  Available: {
+    variant: 'success',
+    className: 'bg-emerald-100 text-emerald-700 border-emerald-300',
+  },
+  Occupied: {
+    variant: 'warning',
+    className: 'bg-rose-100 text-rose-700 border-rose-300',
+  },
+  Reserved: {
+    variant: 'info',
+    className: 'bg-blue-100 text-blue-700 border-blue-300',
+  },
+  // Session Status
+  Active: {
+    variant: 'success',
+    className: 'bg-emerald-100 text-emerald-700 border-emerald-300 font-medium',
+  },
+  Paid: {
+    variant: 'warning',
+    className: 'bg-amber-100 text-amber-700 border-amber-300 font-medium',
+  },
+  Closed: {
+    variant: 'outline',
+    className: 'bg-slate-100 text-slate-600 border-slate-300',
+  },
+  // Order Status
+  Pending: {
+    variant: 'outline',
+    className: 'bg-gray-100 text-gray-600 border-gray-300',
+  },
+  Confirmed: {
+    variant: 'success',
+    className: 'bg-green-100 text-green-700 border-green-300',
+  },
+  Cancelled: {
+    variant: 'destructive',
+    className: 'bg-red-100 text-red-700 border-red-300',
+  },
+  Failed: {
+    variant: 'destructive',
+    className: 'bg-red-100 text-red-700 border-red-300',
+  },
+  // Order Item Status
+  Cooking: {
+    variant: 'warning',
+    className: 'bg-orange-100 text-orange-700 border-orange-300',
+  },
+  Ready: {
+    variant: 'info',
+    className: 'bg-cyan-100 text-cyan-700 border-cyan-300',
+  },
+  Served: {
+    variant: 'success',
+    className: 'bg-teal-100 text-teal-700 border-teal-300',
+  },
+};
+
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const getVariant = (status: string) => {
-    switch (status) {
-      case 'Available':
-        return 'success';
-      case 'Occupied':
-      case 'Active':
-        return 'warning';
-      case 'Reserved':
-        return 'info';
-      case 'Paid':
-      case 'Closed':
-        return 'default';
-      case 'Pending':
-        return 'outline';
-      case 'Confirmed':
-        return 'success';
-      case 'Cancelled':
-      case 'Failed':
-        return 'destructive';
-      case 'Cooking':
-        return 'warning';
-      case 'Ready':
-        return 'info';
-      case 'Served':
-        return 'success';
-      default:
-        return 'default';
-    }
-  };
+  const config = STATUS_CONFIG[status] || { variant: 'default' as const };
 
   return (
-    <Badge variant={getVariant(status)} className={cn('text-xs', className)}>
+    <Badge variant={config.variant} className={cn('text-xs', config.className, className)}>
       {status}
     </Badge>
   );

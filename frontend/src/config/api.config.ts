@@ -74,4 +74,11 @@ export const API_ENDPOINTS = {
       DELETE: (itemId: string | number) => `orders/items/${itemId}`,
     },
   },
+  // Payments endpoints
+  PAYMENTS: {
+    BASE: 'payments',
+    BY_ID: (id: string | number) => `payments/${id}`,
+    BY_SESSION: (sessionId: string | number) => `payments/session/${sessionId}`,
+    PROCESS: (id: string | number) => `payments/${id}/process`,
+  },
 } as const;
