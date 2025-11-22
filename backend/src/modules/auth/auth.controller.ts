@@ -1,7 +1,9 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, RefreshTokenDto } from './dto';
-import { Public } from './decorators';
+import { Public, CurrentUser } from './decorators';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import type { JwtPayload } from './strategies/jwt-payload.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -23,5 +25,11 @@ export class AuthController {
   @Post('refresh')
   refresh(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshToken(refreshTokenDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@CurrentUser() user: JwtPayload) {
+    return this.authService.getMe(user.userId);
   }
 }

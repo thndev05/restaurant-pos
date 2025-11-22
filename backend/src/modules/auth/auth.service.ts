@@ -206,4 +206,49 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
+
+  async getMe(userId: string) {
+    const user = await this.db.findUnique({
+      where: { id: userId },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is inactive');
+    }
+
+    const permissions = user.role.permissions.map((rp) => rp.permission.name);
+
+    return {
+      code: 200,
+      message: 'User information retrieved successfully',
+      data: {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        isActive: user.isActive,
+        role: {
+          name: user.role.name,
+          displayName: user.role.displayName,
+        },
+        permissions,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    };
+  }
 }

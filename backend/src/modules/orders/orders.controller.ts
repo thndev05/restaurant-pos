@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import {
@@ -15,6 +16,7 @@ import {
   UpdateOrderItemDto,
   UpdateOrderStatusDto,
   UpdateOrderItemStatusDto,
+  GetOrdersDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -22,6 +24,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
+
+  @Get()
+  async getOrders(@Query() getOrdersDto: GetOrdersDto) {
+    return this.ordersService.getOrders(getOrdersDto);
+  }
 
   @Post()
   async createOrder(@Body() createOrderDto: CreateOrderDto) {

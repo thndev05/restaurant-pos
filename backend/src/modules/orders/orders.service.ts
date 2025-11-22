@@ -6,8 +6,9 @@ import {
   UpdateOrderItemDto,
   UpdateOrderStatusDto,
   UpdateOrderItemStatusDto,
+  GetOrdersDto,
 } from './dto';
-import { OrderStatus, OrderItemStatus } from 'src/generated/prisma';
+import { OrderStatus, OrderItemStatus, Prisma } from 'src/generated/prisma';
 
 @Injectable()
 export class OrdersService {
@@ -19,6 +20,54 @@ export class OrdersService {
 
   private get orderItemDb() {
     return this.prismaService.orderItem;
+  }
+
+  async getOrders(getOrdersDto: GetOrdersDto) {
+    const where: Prisma.OrderWhereInput = {};
+
+    if (getOrdersDto.status) {
+      where.status = getOrdersDto.status;
+    }
+
+    if (getOrdersDto.sessionId) {
+      where.sessionId = getOrdersDto.sessionId;
+    }
+
+    if (getOrdersDto.startDate || getOrdersDto.endDate) {
+      where.createdAt = {};
+      if (getOrdersDto.startDate) {
+        where.createdAt.gte = new Date(getOrdersDto.startDate);
+      }
+      if (getOrdersDto.endDate) {
+        where.createdAt.lte = new Date(getOrdersDto.endDate);
+      }
+    }
+
+    return this.db.findMany({
+      where,
+      include: {
+        orderItems: {
+          include: {
+            menuItem: true,
+          },
+        },
+        session: {
+          include: {
+            table: true,
+          },
+        },
+        confirmedBy: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
   async createOrder(createOrderDto: CreateOrderDto) {
