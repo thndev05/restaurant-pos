@@ -8,18 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  User,
-  Mail,
-  Phone,
-  Lock,
-  Camera,
-  Save,
-  Calendar,
-  Shield,
-  Eye,
-  EyeOff,
-} from 'lucide-react';
+import { User, Mail, Phone, Lock, Camera, Save, Calendar, Shield, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
@@ -70,7 +59,7 @@ export default function ProfilePage() {
         title: 'Profile Updated',
         description: 'Your profile has been updated successfully.',
       });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to update profile. Please try again.',
@@ -121,7 +110,7 @@ export default function ProfilePage() {
         newPassword: '',
         confirmPassword: '',
       });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to change password. Please try again.',
@@ -167,7 +156,7 @@ export default function ProfilePage() {
                 <Button
                   size="icon"
                   variant="secondary"
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                  className="absolute right-0 bottom-0 h-8 w-8 rounded-full"
                   onClick={handleAvatarUpload}
                 >
                   <Camera className="h-4 w-4" />
@@ -229,7 +218,9 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Update your personal details and contact information</CardDescription>
+                  <CardDescription>
+                    Update your personal details and contact information
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleProfileUpdate} className="space-y-6">
@@ -244,9 +235,7 @@ export default function ProfilePage() {
                           placeholder="Enter your full name"
                           className="pl-10"
                           value={profileForm.name}
-                          onChange={(e) =>
-                            setProfileForm({ ...profileForm, name: e.target.value })
-                          }
+                          onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                         />
                       </div>
                     </div>
@@ -268,9 +257,7 @@ export default function ProfilePage() {
                           disabled
                         />
                       </div>
-                      <p className="text-muted-foreground text-xs">
-                        Username cannot be changed
-                      </p>
+                      <p className="text-muted-foreground text-xs">Username cannot be changed</p>
                     </div>
 
                     {/* Email */}
@@ -325,7 +312,9 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Change Password</CardTitle>
-                  <CardDescription>Update your password to keep your account secure</CardDescription>
+                  <CardDescription>
+                    Update your password to keep your account secure
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handlePasswordChange} className="space-y-6">
@@ -462,9 +451,7 @@ export default function ProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Your Permissions</CardTitle>
-                  <CardDescription>
-                    View the permissions assigned to your role
-                  </CardDescription>
+                  <CardDescription>View the permissions assigned to your role</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -508,8 +495,8 @@ export default function ProfilePage() {
                     <div className="text-muted-foreground rounded-lg border bg-blue-50 p-4 text-sm">
                       <p className="font-medium text-blue-900">Note:</p>
                       <p className="text-blue-800">
-                        Permissions are managed by system administrators. Contact your manager if you
-                        need additional access.
+                        Permissions are managed by system administrators. Contact your manager if
+                        you need additional access.
                       </p>
                     </div>
                   </div>
