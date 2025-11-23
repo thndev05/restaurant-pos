@@ -49,6 +49,18 @@ const STATUS_CONFIG: Record<
     variant: 'success',
     className: 'bg-green-100 text-green-700 border-green-300',
   },
+  Preparing: {
+    variant: 'warning',
+    className: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+  },
+  Ready: {
+    variant: 'info',
+    className: 'bg-blue-100 text-blue-700 border-blue-300',
+  },
+  Served: {
+    variant: 'success',
+    className: 'bg-green-100 text-green-700 border-green-300',
+  },
   Cancelled: {
     variant: 'destructive',
     className: 'bg-red-100 text-red-700 border-red-300',
@@ -62,13 +74,10 @@ const STATUS_CONFIG: Record<
     variant: 'warning',
     className: 'bg-orange-100 text-orange-700 border-orange-300',
   },
-  Ready: {
-    variant: 'info',
-    className: 'bg-cyan-100 text-cyan-700 border-cyan-300',
-  },
-  Served: {
+  // Payment Status
+  Success: {
     variant: 'success',
-    className: 'bg-teal-100 text-teal-700 border-teal-300',
+    className: 'bg-green-100 text-green-700 border-green-300',
   },
 };
 

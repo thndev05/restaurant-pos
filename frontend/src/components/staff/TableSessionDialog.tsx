@@ -494,9 +494,28 @@ export function TableSessionDialog({
                         <CardContent className="space-y-2">
                           {order.orderItems.map((item) => (
                             <div key={item.id} className="rounded-md border p-2">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex flex-1 items-start gap-2">
-                                  <Package className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex flex-1 items-start gap-3">
+                                  {/* Product Image */}
+                                  {item.menuItem?.image ? (
+                                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md border">
+                                      <img
+                                        src={item.menuItem.image}
+                                        alt={item.itemNameAtOrder}
+                                        className="h-full w-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.src =
+                                            'https://via.placeholder.com/64?text=No+Image';
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border bg-gray-100">
+                                      <Package className="text-muted-foreground h-6 w-6" />
+                                    </div>
+                                  )}
+
+                                  {/* Item Details */}
                                   <div className="flex-1">
                                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                                       <span className="text-sm font-medium">

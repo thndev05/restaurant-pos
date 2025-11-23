@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from './StatusBadge';
 import type { Table } from '@/types/staff';
-import { Clock, Users } from 'lucide-react';
+import { Clock, Users, MapPin, Utensils, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TableCardProps {
@@ -14,9 +14,15 @@ interface TableCardProps {
 export function TableCard({ table, onClick, className }: TableCardProps) {
   const session = table.session;
   const pendingOrders = session?.orders?.filter((o) => o.status === 'Pending').length || 0;
+  const confirmedOrders = session?.orders?.filter((o) => o.status === 'Confirmed').length || 0;
+  const totalOrders = session?.orders?.length || 0;
   const readyItems =
     session?.orders?.reduce((count, order) => {
       return count + (order.items?.filter((item) => item.status === 'Ready').length || 0);
+    }, 0) || 0;
+  const totalItems =
+    session?.orders?.reduce((count, order) => {
+      return count + (order.items?.length || 0);
     }, 0) || 0;
 
   const getSessionDuration = (startTime: string) => {
@@ -39,12 +45,26 @@ export function TableCard({ table, onClick, className }: TableCardProps) {
       )}
       onClick={onClick}
     >
-      <CardContent className="p-4">
+      <CardContent className="space-y-3 p-4">
         {/* Table Number and Status */}
-        <div className="mb-3 flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-bold">{table.table_number}</h3>
-            <p className="text-muted-foreground text-xs">Capacity: {table.capacity} guests</p>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-xl font-bold">Table {table.table_number}</h3>
+            <div className="mt-1 flex items-center gap-2">
+              <div className="text-muted-foreground flex items-center gap-1 text-xs">
+                <Users className="h-3 w-3" />
+                <span>{table.capacity} seats</span>
+              </div>
+              {table.area && (
+                <>
+                  <span className="text-muted-foreground text-xs">•</span>
+                  <div className="text-muted-foreground flex items-center gap-1 text-xs">
+                    <MapPin className="h-3 w-3" />
+                    <span>{table.area}</span>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <StatusBadge status={table.status} />
         </div>
@@ -52,29 +72,55 @@ export function TableCard({ table, onClick, className }: TableCardProps) {
         {/* Session Info */}
         {session && session.status === 'Active' && (
           <div className="space-y-2 border-t pt-3">
-            {session.guest_name && <p className="text-sm font-medium">{session.guest_name}</p>}
-            <div className="text-muted-foreground flex items-center gap-3 text-xs">
-              {session.party_size && (
-                <div className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  <span>{session.party_size}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1">
+            {/* Guest and Duration */}
+            <div className="flex items-center justify-between">
+              <div>
+                {session.guest_name && <p className="text-sm font-medium">{session.guest_name}</p>}
+                {session.party_size && (
+                  <div className="text-muted-foreground flex items-center gap-1 text-xs">
+                    <Users className="h-3 w-3" />
+                    <span>{session.party_size} guests</span>
+                  </div>
+                )}
+              </div>
+              <div className="text-muted-foreground flex items-center gap-1 text-xs">
                 <Clock className="h-3 w-3" />
                 <span>{getSessionDuration(session.start_time)}</span>
               </div>
             </div>
 
-            {/* Badges for alerts */}
+            {/* Orders Summary */}
+            {totalOrders > 0 && (
+              <div className="bg-muted/50 rounded-md p-2">
+                <div className="mb-1 flex items-center gap-2 text-xs font-medium">
+                  <Receipt className="h-3 w-3" />
+                  <span>
+                    {totalOrders} {totalOrders === 1 ? 'Order' : 'Orders'}
+                  </span>
+                </div>
+                <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                  <Utensils className="h-3 w-3" />
+                  <span>
+                    {totalItems} {totalItems === 1 ? 'item' : 'items'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Status Badges */}
             <div className="flex flex-wrap gap-1">
               {pendingOrders > 0 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
                   {pendingOrders} Pending
                 </Badge>
               )}
+              {confirmedOrders > 0 && (
+                <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700">
+                  {confirmedOrders} Confirmed
+                </Badge>
+              )}
               {readyItems > 0 && (
-                <Badge variant="info" className="text-xs">
+                <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700">
                   {readyItems} Ready
                 </Badge>
               )}
@@ -82,10 +128,17 @@ export function TableCard({ table, onClick, className }: TableCardProps) {
           </div>
         )}
 
+        {/* Available State */}
+        {table.status === 'Available' && (
+          <div className="border-t pt-3">
+            <p className="text-muted-foreground text-center text-xs">Ready for new guests</p>
+          </div>
+        )}
+
         {/* Reserved Info */}
         {table.status === 'Reserved' && (
           <div className="border-t pt-3">
-            <p className="text-muted-foreground text-xs">Reserved</p>
+            <p className="text-muted-foreground text-center text-xs font-medium">Reserved</p>
           </div>
         )}
       </CardContent>

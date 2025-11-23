@@ -12,9 +12,9 @@ export class CreateTableDto {
   @IsInt()
   number: number;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsInt()
-  capacity?: number;
+  capacity: number;
 
   @IsOptional()
   @IsEnum(TableStatus)

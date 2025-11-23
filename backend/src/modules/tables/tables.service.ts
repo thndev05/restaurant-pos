@@ -131,13 +131,36 @@ export class TablesService {
   }
 
   async updateTableStatus(id: string, status: TableStatus) {
-    const table = await this.getTableById(id);
+    const table = await this.db.findUnique({
+      where: { id },
+      include: {
+        sessions: {
+          where: {
+            status: {
+              in: ['ACTIVE', 'PAID'],
+            },
+          },
+        },
+      },
+    });
+
     if (!table) {
       throw new BadRequestException(`Table with ID "${id}" does not exist.`);
     }
 
     if (!Object.values(TableStatus).includes(status)) {
       throw new BadRequestException(`Invalid table status: ${status}`);
+    }
+
+    // Prevent changing status to AVAILABLE if there's an active session
+    if (
+      status === TableStatus.AVAILABLE &&
+      table.sessions &&
+      table.sessions.length > 0
+    ) {
+      throw new BadRequestException(
+        'Cannot set table to AVAILABLE status while there are active sessions. Please close the session first.',
+      );
     }
 
     await this.db.update({
@@ -152,9 +175,28 @@ export class TablesService {
   }
 
   async deleteTable(id: string) {
-    const table = await this.getTableById(id);
+    const table = await this.db.findUnique({
+      where: { id },
+      include: {
+        sessions: {
+          where: {
+            status: {
+              in: ['ACTIVE', 'PAID'],
+            },
+          },
+        },
+      },
+    });
+
     if (!table) {
       throw new BadRequestException(`Table with ID "${id}" does not exist.`);
+    }
+
+    // Check if table has active sessions
+    if (table.sessions && table.sessions.length > 0) {
+      throw new BadRequestException(
+        'Cannot delete table with active sessions. Please close all sessions first.',
+      );
     }
 
     await this.db.delete({ where: { id } });

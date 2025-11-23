@@ -1,165 +1,131 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { TableCard } from '@/components/staff/TableCard';
-import { StatusBadge } from '@/components/staff/StatusBadge';
-import type { Table, TakeawayOrder } from '@/types/staff';
-import { Search, Package, Clock, Plus, Phone, User, AlertCircle, CheckCircle2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { TableSessionDialog } from '@/components/staff/TableSessionDialog';
+import { tablesService } from '@/lib/api/services';
+import type { Table as ApiTable } from '@/lib/api/services/tables.service';
+import type { Table } from '@/types/staff';
+import { useToast } from '@/hooks/use-toast';
+import { Search, RefreshCw, AlertCircle, CheckCircle2, BarChart3 } from 'lucide-react';
+
+// Helper function to convert API table to staff type
+const convertApiTableToStaffTable = (apiTable: ApiTable): Table => {
+  const activeSession = apiTable.sessions?.[0];
+
+  return {
+    table_id: apiTable.id,
+    table_number: apiTable.number.toString(),
+    capacity: apiTable.capacity,
+    status:
+      apiTable.status === 'AVAILABLE'
+        ? 'Available'
+        : apiTable.status === 'OCCUPIED'
+          ? 'Occupied'
+          : 'Reserved',
+    qr_code_key: apiTable.qrCodeKey,
+    area: apiTable.location,
+    session: activeSession
+      ? {
+          session_id: activeSession.id,
+          table_id: apiTable.id,
+          start_time: activeSession.startTime,
+          end_time: activeSession.endTime,
+          status:
+            activeSession.status === 'ACTIVE'
+              ? 'Active'
+              : activeSession.status === 'PAID'
+                ? 'Paid'
+                : 'Closed',
+          party_size: activeSession.customerCount,
+          orders: activeSession.orders?.map((order) => ({
+            order_id: order.id,
+            session_id: activeSession.id,
+            status:
+              order.status === 'PENDING'
+                ? 'Pending'
+                : order.status === 'CONFIRMED'
+                  ? 'Confirmed'
+                  : 'Cancelled',
+            order_type: 'DineIn',
+            created_at: order.createdAt,
+            items: order.orderItems?.map((item) => ({
+              order_item_id: item.id,
+              order_id: order.id,
+              item_id: item.menuItem?.id || '',
+              item_name_at_order: item.itemNameAtOrder,
+              quantity: item.quantity,
+              price_at_order: item.priceAtOrder,
+              status:
+                item.status === 'PENDING'
+                  ? 'Pending'
+                  : item.status === 'COOKING'
+                    ? 'Cooking'
+                    : item.status === 'READY'
+                      ? 'Ready'
+                      : 'Served',
+              notes: item.notes,
+            })),
+          })),
+        }
+      : undefined,
+  };
+};
 
 export default function WaiterDashboardPage() {
+  const { toast } = useToast();
+  const [tables, setTables] = useState<Table[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedArea, setSelectedArea] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [selectedTable, setSelectedTable] = useState<ApiTable | null>(null);
   const [showTableDialog, setShowTableDialog] = useState(false);
-  const [showTakeawayDialog, setShowTakeawayDialog] = useState(false);
-  const [newTakeaway, setNewTakeaway] = useState({
-    customerName: '',
-    customerPhone: '',
-    pickupTime: '',
-    notes: '',
-  });
 
-  // Mock data - will be replaced with API calls
-  const tables: Table[] = [
-    {
-      table_id: '1',
-      table_number: 'A1',
-      capacity: 4,
-      status: 'Available',
-      qr_code_key: 'qr1',
-      area: 'Main Hall',
-    },
-    {
-      table_id: '2',
-      table_number: 'A2',
-      capacity: 2,
-      status: 'Occupied',
-      qr_code_key: 'qr2',
-      area: 'Main Hall',
-      session: {
-        session_id: 's1',
-        table_id: '2',
-        start_time: new Date(Date.now() - 30 * 60000).toISOString(),
-        status: 'Active',
-        guest_name: 'John Doe',
-        party_size: 2,
-        orders: [
-          {
-            order_id: 'o1',
-            session_id: 's1',
-            status: 'Pending',
-            order_type: 'DineIn',
-            created_at: new Date().toISOString(),
-            items: [
-              {
-                order_item_id: 'oi1',
-                order_id: 'o1',
-                item_id: 'i1',
-                item_name_at_order: 'Beef Steak',
-                quantity: 2,
-                price_at_order: 25.99,
-                status: 'Pending',
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      table_id: '3',
-      table_number: 'A3',
-      capacity: 6,
-      status: 'Occupied',
-      qr_code_key: 'qr3',
-      area: 'Main Hall',
-      session: {
-        session_id: 's2',
-        table_id: '3',
-        start_time: new Date(Date.now() - 45 * 60000).toISOString(),
-        status: 'Active',
-        party_size: 4,
-        orders: [
-          {
-            order_id: 'o2',
-            session_id: 's2',
-            status: 'Confirmed',
-            order_type: 'DineIn',
-            created_at: new Date().toISOString(),
-            items: [
-              {
-                order_item_id: 'oi2',
-                order_id: 'o2',
-                item_id: 'i2',
-                item_name_at_order: 'Salmon',
-                quantity: 1,
-                price_at_order: 22.99,
-                status: 'Ready',
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      table_id: '4',
-      table_number: 'B1',
-      capacity: 4,
-      status: 'Reserved',
-      qr_code_key: 'qr4',
-      area: 'Patio',
-    },
-    {
-      table_id: '5',
-      table_number: 'B2',
-      capacity: 2,
-      status: 'Available',
-      qr_code_key: 'qr5',
-      area: 'Patio',
-    },
-  ];
+  const loadTables = async () => {
+    setLoading(true);
+    try {
+      const data = await tablesService.getTables();
+      const convertedTables = data.map(convertApiTableToStaffTable);
+      setTables(convertedTables);
 
-  const takeawayOrders: TakeawayOrder[] = [
-    {
-      takeaway_id: 't1',
-      order_id: 'o10',
-      customer_name: 'Alice Johnson',
-      customer_phone: '+1234567890',
-      pickup_time: new Date(Date.now() + 30 * 60000).toISOString(),
-      status: 'Pending',
-      otp_code: '1234',
-    },
-    {
-      takeaway_id: 't2',
-      order_id: 'o11',
-      customer_name: 'Bob Smith',
-      customer_phone: '+1234567891',
-      pickup_time: new Date(Date.now() + 15 * 60000).toISOString(),
-      status: 'ReadyForPickup',
-      otp_code: '5678',
-    },
-  ];
+      // Update selected table if it exists
+      if (selectedTable) {
+        const updatedTable = data.find((t) => t.id === selectedTable.id);
+        if (updatedTable) {
+          setSelectedTable(updatedTable);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load tables:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load tables',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const areas = ['all', 'Main Hall', 'Patio', 'VIP Room'];
+  useEffect(() => {
+    loadTables();
+    // Refresh data every 30 seconds
+    const interval = setInterval(loadTables, 30000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const statuses = ['all', 'Available', 'Occupied', 'Reserved'];
 
   const filteredTables = tables.filter((table) => {
-    const matchesSearch = table.table_number.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesArea = selectedArea === 'all' || table.area === selectedArea;
+    const matchesSearch =
+      table.table_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      table.area?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || table.status === selectedStatus;
-    return matchesSearch && matchesArea && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   const stats = {
@@ -182,86 +148,83 @@ export default function WaiterDashboardPage() {
     ),
   };
 
-  const handleTableClick = (table: Table) => {
-    setSelectedTable(table);
-    setShowTableDialog(true);
+  const handleTableClick = async (table: Table) => {
+    try {
+      // Fetch fresh table data
+      const freshTableData = await tablesService.getTableById(table.table_id);
+      setSelectedTable(freshTableData);
+      setShowTableDialog(true);
+    } catch (error) {
+      console.error('Failed to load table details:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load table details',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleCloseSession = () => {
-    // TODO: Implement close session
-    alert('Close session functionality will be implemented with API integration');
-    setShowTableDialog(false);
-  };
-
-  const handleCancelSession = () => {
-    // TODO: Implement cancel session
-    alert('Cancel session functionality will be implemented with API integration');
-    setShowTableDialog(false);
-  };
-
-  const handleCreateTakeaway = () => {
-    // TODO: Implement API call to create takeaway order
-    console.log('Creating takeaway order:', newTakeaway);
-    alert(`Takeaway order created for ${newTakeaway.customerName}`);
-    setShowTakeawayDialog(false);
-    setNewTakeaway({
-      customerName: '',
-      customerPhone: '',
-      pickupTime: '',
-      notes: '',
-    });
-  };
-
-  const handleTakeawayInputChange = (field: keyof typeof newTakeaway, value: string) => {
-    setNewTakeaway((prev) => ({ ...prev, [field]: value }));
+  const handleSessionUpdate = () => {
+    loadTables();
   };
 
   return (
-    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6 md:p-8">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Waiter Dashboard</h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-            Monitor tables, sessions, and manage orders
+          <h1 className="text-3xl font-bold tracking-tight">Waiter Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Real-time overview of tables, sessions, and orders
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={loadTables} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-sm font-medium">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+              <BarChart3 className="h-4 w-4" />
               Total Tables
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-muted-foreground text-xs">All restaurant tables</p>
           </CardContent>
         </Card>
-        <Card className="border-success/30 bg-success/5">
+        <Card className="border-green-200 bg-green-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-sm font-medium">Available</CardTitle>
+            <CardTitle className="text-sm font-medium text-green-800">Available</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-success text-2xl font-bold">{stats.available}</div>
+            <div className="text-2xl font-bold text-green-700">{stats.available}</div>
+            <p className="text-xs text-green-600">Ready for guests</p>
           </CardContent>
         </Card>
-        <Card className="border-warning/30 bg-warning/5">
+        <Card className="border-red-200 bg-red-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-sm font-medium">Occupied</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-800">Occupied</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-warning text-2xl font-bold">{stats.occupied}</div>
+            <div className="text-2xl font-bold text-red-700">{stats.occupied}</div>
+            <p className="text-xs text-red-600">Currently serving</p>
           </CardContent>
         </Card>
-        <Card className="border-info/30 bg-info/5">
+        <Card className="border-blue-200 bg-blue-50">
           <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-sm font-medium">Reserved</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-800">Reserved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-info text-2xl font-bold">{stats.reserved}</div>
+            <div className="text-2xl font-bold text-blue-700">{stats.reserved}</div>
+            <p className="text-xs text-blue-600">Upcoming reservations</p>
           </CardContent>
         </Card>
       </div>
@@ -301,285 +264,77 @@ export default function WaiterDashboardPage() {
       {/* Main Content */}
       <Tabs defaultValue="tables" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="tables">Tables</TabsTrigger>
-          <TabsTrigger value="takeaway">
-            Takeaway
-            {takeawayOrders.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {takeawayOrders.length}
-              </Badge>
-            )}
+          <TabsTrigger value="tables">
+            All Tables
+            <Badge variant="secondary" className="ml-2">
+              {filteredTables.length}
+            </Badge>
           </TabsTrigger>
         </TabsList>
 
         {/* Tables View */}
         <TabsContent value="tables" className="space-y-4">
           {/* Filters */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative flex-1">
-                  <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                  <Input
-                    placeholder="Search table number..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedArea}
-                    onChange={(e) => setSelectedArea(e.target.value)}
-                    className="rounded-md border px-3 py-2 text-sm"
-                  >
-                    {areas.map((area) => (
-                      <option key={area} value={area}>
-                        {area === 'all' ? 'All Areas' : area}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="rounded-md border px-3 py-2 text-sm"
-                  >
-                    {statuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status === 'all' ? 'All Status' : status}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                placeholder="Search by table number or location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="rounded-md border px-3 py-2 text-sm"
+            >
+              {statuses.map((status) => (
+                <option key={status} value={status}>
+                  {status === 'all' ? 'All Status' : status}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Tables Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredTables.map((table) => (
-              <TableCard
-                key={table.table_id}
-                table={table}
-                onClick={() => handleTableClick(table)}
-              />
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Takeaway View */}
-        <TabsContent value="takeaway" className="space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={() => setShowTakeawayDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Takeaway
-            </Button>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {takeawayOrders.map((order) => (
-              <Card key={order.takeaway_id} className="hover:shadow-md">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-base">{order.customer_name}</CardTitle>
-                      <p className="text-muted-foreground text-xs">{order.customer_phone}</p>
-                    </div>
-                    <StatusBadge status={order.status} />
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {order.pickup_time && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="text-muted-foreground h-4 w-4" />
-                      <span>Pickup: {new Date(order.pickup_time).toLocaleTimeString()}</span>
-                    </div>
-                  )}
-                  {order.otp_code && (
-                    <div className="rounded-md bg-slate-100 p-2">
-                      <p className="text-muted-foreground text-xs">OTP Code</p>
-                      <p className="font-mono text-lg font-bold">{order.otp_code}</p>
-                    </div>
-                  )}
-                  <Button variant="outline" className="w-full" size="sm">
-                    <Package className="mr-2 h-4 w-4" />
-                    View Details
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {loading ? (
+            <div className="py-12 text-center">
+              <RefreshCw className="text-muted-foreground mx-auto h-8 w-8 animate-spin" />
+              <p className="text-muted-foreground mt-2">Loading tables...</p>
+            </div>
+          ) : filteredTables.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <BarChart3 className="text-muted-foreground mx-auto h-12 w-12 opacity-20" />
+                <h3 className="mt-4 text-lg font-semibold">No tables found</h3>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  {searchQuery ? 'Try adjusting your search criteria' : 'No tables available'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredTables.map((table) => (
+                <TableCard
+                  key={table.table_id}
+                  table={table}
+                  onClick={() => handleTableClick(table)}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
-      {/* Create Takeaway Dialog */}
-      <Dialog open={showTakeawayDialog} onOpenChange={setShowTakeawayDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Takeaway Order</DialogTitle>
-            <DialogDescription>Enter customer information for the takeaway order</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="customerName">
-                <User className="mr-2 inline h-4 w-4" />
-                Customer Name *
-              </Label>
-              <Input
-                id="customerName"
-                placeholder="Enter customer name"
-                value={newTakeaway.customerName}
-                onChange={(e) => handleTakeawayInputChange('customerName', e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="customerPhone">
-                <Phone className="mr-2 inline h-4 w-4" />
-                Phone Number *
-              </Label>
-              <Input
-                id="customerPhone"
-                type="tel"
-                placeholder="Enter phone number"
-                value={newTakeaway.customerPhone}
-                onChange={(e) => handleTakeawayInputChange('customerPhone', e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pickupTime">
-                <Clock className="mr-2 inline h-4 w-4" />
-                Pickup Time
-              </Label>
-              <Input
-                id="pickupTime"
-                type="datetime-local"
-                value={newTakeaway.pickupTime}
-                onChange={(e) => handleTakeawayInputChange('pickupTime', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                placeholder="Special instructions or notes..."
-                value={newTakeaway.notes}
-                onChange={(e) => handleTakeawayInputChange('notes', e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowTakeawayDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleCreateTakeaway}
-                disabled={!newTakeaway.customerName || !newTakeaway.customerPhone}
-              >
-                Create Order
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Table Detail Dialog */}
-      <Dialog open={showTableDialog} onOpenChange={setShowTableDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Table {selectedTable?.table_number} - {selectedTable?.status}
-            </DialogTitle>
-            <DialogDescription>Manage table session and orders</DialogDescription>
-          </DialogHeader>
-
-          {selectedTable?.session ? (
-            <div className="space-y-4">
-              {/* Session Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Session Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  {selectedTable.session.guest_name && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Guest:</span>
-                      <span className="font-medium">{selectedTable.session.guest_name}</span>
-                    </div>
-                  )}
-                  {selectedTable.session.party_size && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Party Size:</span>
-                      <span className="font-medium">{selectedTable.session.party_size} guests</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Started:</span>
-                    <span className="font-medium">
-                      {new Date(selectedTable.session.start_time).toLocaleTimeString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Orders */}
-              {selectedTable.session.orders && selectedTable.session.orders.length > 0 && (
-                <div>
-                  <h4 className="mb-2 font-semibold">Orders</h4>
-                  <div className="space-y-2">
-                    {selectedTable.session.orders.map((order) => (
-                      <Card key={order.order_id}>
-                        <CardContent className="p-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Order #{order.order_id.slice(0, 8)}</p>
-                              <p className="text-muted-foreground text-xs">
-                                {order.items?.length || 0} items
-                              </p>
-                            </div>
-                            <StatusBadge status={order.status} />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1">
-                  Edit Session
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  Add Order
-                </Button>
-                <Button variant="default" className="flex-1" onClick={handleCloseSession}>
-                  Proceed to Payment
-                </Button>
-              </div>
-              <Button variant="destructive" className="w-full" onClick={handleCancelSession}>
-                Cancel Session
-              </Button>
-            </div>
-          ) : (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground mb-4">No active session for this table</p>
-              <Button>Start New Session</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Table Session Dialog */}
+      <TableSessionDialog
+        open={showTableDialog}
+        onOpenChange={setShowTableDialog}
+        table={selectedTable}
+        onSessionUpdate={handleSessionUpdate}
+      />
     </div>
   );
 }

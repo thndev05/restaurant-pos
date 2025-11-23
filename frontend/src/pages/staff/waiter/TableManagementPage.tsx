@@ -11,11 +11,31 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { TableSessionDialog } from '@/components/staff/TableSessionDialog';
+import { CreateTableDialog } from '@/components/staff/CreateTableDialog';
+import { EditTableDialog } from '@/components/staff/EditTableDialog';
 import { tablesService } from '@/lib/api/services';
 import type { Table, TableStatus } from '@/lib/api/services/tables.service';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Plus, Users, Clock, RefreshCw, Settings, ChevronRight } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Users,
+  Clock,
+  RefreshCw,
+  Settings,
+  ChevronRight,
+  MoreVertical,
+  Edit2,
+  Trash2,
+} from 'lucide-react';
 
 const TABLE_STATUS_CONFIG = {
   AVAILABLE: {
@@ -48,6 +68,9 @@ export default function TableManagementPage() {
   const [statusFilter, setStatusFilter] = useState<TableStatus | 'ALL'>('ALL');
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [tableToEdit, setTableToEdit] = useState<Table | null>(null);
 
   const loadTables = async () => {
     setLoading(true);
@@ -126,26 +149,86 @@ export default function TableManagementPage() {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
+  const handleEditTable = (table: Table, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTableToEdit(table);
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteTable = async (table: Table, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete Table ${table.number}?`)) {
+      return;
+    }
+
+    try {
+      await tablesService.deleteTable(table.id);
+      toast({
+        title: 'Success',
+        description: 'Table deleted successfully',
+      });
+      loadTables();
+    } catch (error) {
+      console.error('Failed to delete table:', error);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast({
+        title: 'Error',
+        description: message || 'Failed to delete table',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const TableCard = ({ table }: { table: Table }) => {
     const statusConfig = TABLE_STATUS_CONFIG[table.status];
     const sessionInfo = getSessionInfo(table);
 
     return (
       <Card
-        className={`cursor-pointer transition-all hover:shadow-lg ${
+        className={`group relative cursor-pointer transition-all hover:shadow-lg ${
           table.status === 'OCCUPIED' ? 'ring-2 ring-red-200' : ''
         }`}
         onClick={() => handleTableClick(table)}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex-1">
               <CardTitle className="text-xl font-bold">Table {table.number}</CardTitle>
               {table.location && <p className="text-muted-foreground text-sm">{table.location}</p>}
             </div>
-            <Badge className={statusConfig.color} variant="outline">
-              {statusConfig.icon} {statusConfig.label}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={statusConfig.color} variant="outline">
+                {statusConfig.icon} {statusConfig.label}
+              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={(e) => handleEditTable(table, e)}>
+                    <Edit2 className="mr-2 h-4 w-4" />
+                    Edit Table
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={(e) => handleDeleteTable(table, e)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Table
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -219,7 +302,7 @@ export default function TableManagementPage() {
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Table
           </Button>
@@ -310,10 +393,23 @@ export default function TableManagementPage() {
               <p className="text-muted-foreground mt-2">Loading tables...</p>
             </div>
           ) : filteredTables.length === 0 ? (
-            <div className="py-12 text-center">
-              <Settings className="text-muted-foreground mx-auto h-12 w-12" />
-              <p className="text-muted-foreground mt-4">No tables found</p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <Settings className="text-muted-foreground mx-auto h-12 w-12 opacity-20" />
+                <h3 className="mt-4 text-lg font-semibold">No tables found</h3>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  {searchQuery
+                    ? 'Try adjusting your search criteria'
+                    : 'Get started by adding your first table'}
+                </p>
+                {!searchQuery && (
+                  <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Your First Table
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredTables.map((table) => (
@@ -325,9 +421,11 @@ export default function TableManagementPage() {
 
         <TabsContent value="available" className="space-y-4">
           {groupedTables.AVAILABLE.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground">No available tables</p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No available tables at the moment</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {groupedTables.AVAILABLE.map((table) => (
@@ -339,9 +437,11 @@ export default function TableManagementPage() {
 
         <TabsContent value="occupied" className="space-y-4">
           {groupedTables.OCCUPIED.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground">No occupied tables</p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No occupied tables at the moment</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {groupedTables.OCCUPIED.map((table) => (
@@ -353,9 +453,11 @@ export default function TableManagementPage() {
 
         <TabsContent value="reserved" className="space-y-4">
           {groupedTables.RESERVED.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground">No reserved tables</p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No reserved tables at the moment</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {groupedTables.RESERVED.map((table) => (
@@ -366,12 +468,23 @@ export default function TableManagementPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Session Dialog */}
+      {/* Dialogs */}
       <TableSessionDialog
         open={sessionDialogOpen}
         onOpenChange={setSessionDialogOpen}
         table={selectedTable}
         onSessionUpdate={handleSessionUpdate}
+      />
+      <CreateTableDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onTableCreated={loadTables}
+      />
+      <EditTableDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        table={tableToEdit}
+        onTableUpdated={loadTables}
       />
     </div>
   );
