@@ -287,7 +287,7 @@ export default function OrderManagementPage() {
 
     return (
       <Card className="hover:border-primary/50 border-2 transition-all hover:shadow-lg">
-        <CardHeader className="from-background to-muted/20 bg-gradient-to-r pb-3">
+        <CardHeader className="from-background to-muted/20 bg-linear-to-r pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <CardTitle className="truncate text-lg font-bold">
@@ -356,7 +356,7 @@ export default function OrderManagementPage() {
               <Button
                 variant="outline"
                 size="default"
-                className="h-10 w-full cursor-default border-2 border-emerald-500 bg-gradient-to-r from-emerald-100 to-green-100 font-bold text-emerald-900 hover:from-emerald-200 hover:to-green-200 dark:border-emerald-600 dark:from-emerald-900/50 dark:to-green-900/50 dark:text-emerald-100 dark:hover:from-emerald-800/60 dark:hover:to-green-800/60"
+                className="h-10 w-full cursor-default border-2 border-emerald-500 bg-linear-to-r from-emerald-100 to-green-100 font-bold text-emerald-900 hover:from-emerald-200 hover:to-green-200 dark:border-emerald-600 dark:from-emerald-900/50 dark:to-green-900/50 dark:text-emerald-100 dark:hover:from-emerald-800/60 dark:hover:to-green-800/60"
                 disabled
               >
                 <span className="mr-2">💰</span>
@@ -366,7 +366,7 @@ export default function OrderManagementPage() {
               <Button
                 variant="outline"
                 size="default"
-                className="h-10 w-full cursor-default border-2 border-rose-500 bg-gradient-to-r from-rose-100 to-red-100 font-bold text-rose-900 hover:from-rose-200 hover:to-red-200 dark:border-rose-600 dark:from-rose-900/50 dark:to-red-900/50 dark:text-rose-100 dark:hover:from-rose-800/60 dark:hover:to-red-800/60"
+                className="h-10 w-full cursor-default border-2 border-rose-500 bg-linear-to-r from-rose-100 to-red-100 font-bold text-rose-900 hover:from-rose-200 hover:to-red-200 dark:border-rose-600 dark:from-rose-900/50 dark:to-red-900/50 dark:text-rose-100 dark:hover:from-rose-800/60 dark:hover:to-red-800/60"
                 disabled
               >
                 <span className="mr-2">✕</span>
@@ -440,7 +440,7 @@ export default function OrderManagementPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="from-primary to-primary/60 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent sm:text-2xl md:text-3xl">
+              <div className="from-primary to-primary/60 bg-linear-to-r bg-clip-text text-xl font-bold text-transparent sm:text-2xl md:text-3xl">
                 {stat.value}
               </div>
             </CardContent>
