@@ -4,7 +4,6 @@
  */
 
 import apiClient from '../client';
-import { API_ENDPOINTS } from '@/config/api.config';
 
 export interface Role {
   id: string;
