@@ -30,41 +30,34 @@ import { ordersService, type Order, type OrderStatus } from '@/lib/api/services/
 import { useToast } from '@/hooks/use-toast';
 import { OrderDetailDialog } from '@/components/staff/OrderDetailDialog';
 
-const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: string }> = {
+const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; color: string }> = {
   PENDING: {
     label: 'Pending',
     color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-    icon: '◐',
   },
   CONFIRMED: {
     label: 'Confirmed',
     color: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-    icon: '✓',
   },
   PREPARING: {
     label: 'Preparing',
     color: 'bg-purple-100 text-purple-800 hover:bg-purple-200',
-    icon: '🔥',
   },
   READY: {
     label: 'Ready',
     color: 'bg-green-100 text-green-800 hover:bg-green-200',
-    icon: '✓✓',
   },
   SERVED: {
     label: 'Served',
     color: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
-    icon: '✓✓✓',
   },
   PAID: {
     label: 'Paid',
     color: 'bg-green-100 text-green-800 hover:bg-green-200',
-    icon: '💰',
   },
   CANCELLED: {
     label: 'Cancelled',
     color: 'bg-red-100 text-red-800 hover:bg-red-200',
-    icon: '✕',
   },
 };
 
@@ -305,7 +298,6 @@ export default function OrderManagementPage() {
               </p>
             </div>
             <Badge className={`${statusConfig.color} shrink-0 px-3 py-1 font-semibold`}>
-              <span className="mr-1">{statusConfig.icon}</span>
               {statusConfig.label}
             </Badge>
           </div>
@@ -415,45 +407,40 @@ export default function OrderManagementPage() {
   };
 
   return (
-    <div className="from-background to-muted/20 min-h-screen space-y-6 bg-gradient-to-br p-4 md:p-6">
+    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6 md:p-8">
       {/* Header */}
-      <div className="bg-card flex flex-col items-start justify-between gap-4 rounded-lg border-2 p-6 shadow-md sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="from-primary to-primary/60 bg-gradient-to-r bg-clip-text text-3xl font-bold tracking-tight text-transparent md:text-4xl">
-            🍽️ Order Management
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm md:text-base">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Order Management</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Real-time order tracking and management system
           </p>
         </div>
-        <Button
-          onClick={loadOrders}
-          disabled={isLoading}
-          size="lg"
-          className="bg-primary hover:bg-primary/90 shadow-lg"
-        >
-          <RefreshCw className={`mr-2 h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh Orders
+        <Button onClick={loadOrders} disabled={isLoading} size="sm" variant="outline">
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
         </Button>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8">
         {stats.map((stat) => (
           <Card
             key={stat.title}
             className="hover:border-primary/30 border-2 transition-all hover:shadow-lg"
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-muted-foreground text-xs font-semibold md:text-sm">
+              <CardTitle className="text-muted-foreground text-[10px] font-semibold sm:text-xs md:text-sm">
                 {stat.title}
               </CardTitle>
-              <div className={`bg-muted/50 flex h-8 w-8 items-center justify-center rounded-full`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <div
+                className={`bg-muted/50 flex h-7 w-7 items-center justify-center rounded-full sm:h-8 sm:w-8`}
+              >
+                <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 ${stat.color}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="from-primary to-primary/60 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent md:text-3xl">
+              <div className="from-primary to-primary/60 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent sm:text-2xl md:text-3xl">
                 {stat.value}
               </div>
             </CardContent>
@@ -505,14 +492,14 @@ export default function OrderManagementPage() {
             value="ALL"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            📋 All{' '}
+            All{' '}
             <Badge className="bg-background text-foreground ml-2">{groupedOrders.ALL.length}</Badge>
           </TabsTrigger>
           <TabsTrigger
             value="PENDING"
             className="data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
           >
-            ⏳ Pending{' '}
+            Pending{' '}
             <Badge className="bg-background text-foreground ml-2">
               {groupedOrders.PENDING.length}
             </Badge>
@@ -521,7 +508,7 @@ export default function OrderManagementPage() {
             value="CONFIRMED"
             className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
           >
-            ✓ Confirmed{' '}
+            Confirmed{' '}
             <Badge className="bg-background text-foreground ml-2">
               {groupedOrders.CONFIRMED.length}
             </Badge>
@@ -530,7 +517,7 @@ export default function OrderManagementPage() {
             value="PREPARING"
             className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
           >
-            🔥 Preparing{' '}
+            Preparing{' '}
             <Badge className="bg-background text-foreground ml-2">
               {groupedOrders.PREPARING.length}
             </Badge>
@@ -539,7 +526,7 @@ export default function OrderManagementPage() {
             value="READY"
             className="data-[state=active]:bg-green-500 data-[state=active]:text-white"
           >
-            ✓✓ Ready{' '}
+            Ready{' '}
             <Badge className="bg-background text-foreground ml-2">
               {groupedOrders.READY.length}
             </Badge>
@@ -548,7 +535,7 @@ export default function OrderManagementPage() {
             value="SERVED"
             className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white"
           >
-            ✓✓✓ Served{' '}
+            Served{' '}
             <Badge className="bg-background text-foreground ml-2">
               {groupedOrders.SERVED.length}
             </Badge>
@@ -557,7 +544,7 @@ export default function OrderManagementPage() {
             value="PAID"
             className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
           >
-            💰 Paid{' '}
+            Paid{' '}
             <Badge className="bg-background text-foreground ml-2">
               {groupedOrders.PAID.length}
             </Badge>
@@ -566,7 +553,7 @@ export default function OrderManagementPage() {
             value="CANCELLED"
             className="data-[state=active]:bg-red-500 data-[state=active]:text-white"
           >
-            ✕ Cancelled{' '}
+            Cancelled{' '}
             <Badge className="bg-background text-foreground ml-2">
               {groupedOrders.CANCELLED.length}
             </Badge>
