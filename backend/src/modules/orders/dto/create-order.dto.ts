@@ -6,8 +6,12 @@ import {
   ValidateNested,
   IsInt,
   Min,
+  IsEnum,
+  ValidateIf,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { OrderType } from 'src/generated/prisma';
 
 export class CreateOrderItemDto {
   @IsUUID()
@@ -23,8 +27,23 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
+  @IsEnum(OrderType)
+  orderType: OrderType;
+
+  @ValidateIf((o) => o.orderType === OrderType.DINE_IN)
+  @IsNotEmpty()
   @IsUUID()
-  sessionId: string;
+  sessionId?: string;
+
+  @ValidateIf((o) => o.orderType === OrderType.TAKE_AWAY)
+  @IsNotEmpty()
+  @IsString()
+  customerName?: string;
+
+  @ValidateIf((o) => o.orderType === OrderType.TAKE_AWAY)
+  @IsNotEmpty()
+  @IsString()
+  customerPhone?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -105,12 +105,26 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // Refresh failed - redirect to login
+        // Refresh failed - clear tokens and redirect to login
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        localStorage.removeItem('user');
+        
+        // Redirect to staff login page
+        window.location.href = '/staff/login';
         return Promise.reject(refreshError);
       }
+    }
+
+    // Handle 401 without retry (already attempted or no refresh token)
+    if (error.response?.status === 401) {
+      // Clear all auth data
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      
+      // Redirect to staff login page
+      window.location.href = '/staff/login';
     }
 
     // Handle other errors

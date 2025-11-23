@@ -1,10 +1,14 @@
 import { IsOptional, IsEnum, IsString } from 'class-validator';
-import { OrderStatus } from 'src/generated/prisma';
+import { OrderStatus, OrderType } from 'src/generated/prisma';
 
 export class GetOrdersDto {
   @IsOptional()
   @IsEnum(OrderStatus)
   status?: OrderStatus;
+
+  @IsOptional()
+  @IsEnum(OrderType)
+  orderType?: OrderType;
 
   @IsOptional()
   @IsString()

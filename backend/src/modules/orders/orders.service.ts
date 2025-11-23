@@ -8,7 +8,7 @@ import {
   UpdateOrderItemStatusDto,
   GetOrdersDto,
 } from './dto';
-import { OrderStatus, OrderItemStatus, Prisma } from 'src/generated/prisma';
+import { OrderStatus, OrderItemStatus, OrderType, Prisma } from 'src/generated/prisma';
 
 @Injectable()
 export class OrdersService {
@@ -27,6 +27,10 @@ export class OrdersService {
 
     if (getOrdersDto.status) {
       where.status = getOrdersDto.status;
+    }
+
+    if (getOrdersDto.orderType) {
+      where.orderType = getOrdersDto.orderType;
     }
 
     if (getOrdersDto.sessionId) {
@@ -71,23 +75,36 @@ export class OrdersService {
   }
 
   async createOrder(createOrderDto: CreateOrderDto) {
-    const { sessionId, items, notes } = createOrderDto;
+    const { orderType, sessionId, items, notes, customerName, customerPhone } = createOrderDto;
 
-    // Verify session exists and is active
-    const session = await this.prismaService.tableSession.findUnique({
-      where: { id: sessionId },
-    });
+    // Validate based on order type
+    if (orderType === OrderType.DINE_IN) {
+      if (!sessionId) {
+        throw new BadRequestException('Session ID is required for dine-in orders.');
+      }
 
-    if (!session) {
-      throw new BadRequestException(
-        `Session with ID "${sessionId}" does not exist.`,
-      );
-    }
+      // Verify session exists and is active
+      const session = await this.prismaService.tableSession.findUnique({
+        where: { id: sessionId },
+      });
 
-    if (session.status === 'CLOSED') {
-      throw new BadRequestException(
-        'Cannot create order for a closed session.',
-      );
+      if (!session) {
+        throw new BadRequestException(
+          `Session with ID "${sessionId}" does not exist.`,
+        );
+      }
+
+      if (session.status === 'CLOSED') {
+        throw new BadRequestException(
+          'Cannot create order for a closed session.',
+        );
+      }
+    } else if (orderType === OrderType.TAKE_AWAY) {
+      if (!customerName || !customerPhone) {
+        throw new BadRequestException(
+          'Customer name and phone are required for take-away orders.',
+        );
+      }
     }
 
     // Get menu items and validate
@@ -106,7 +123,10 @@ export class OrdersService {
     // Create order with items
     const order = await this.db.create({
       data: {
-        sessionId,
+        orderType,
+        sessionId: orderType === OrderType.DINE_IN ? sessionId : undefined,
+        customerName: orderType === OrderType.TAKE_AWAY ? customerName : undefined,
+        customerPhone: orderType === OrderType.TAKE_AWAY ? customerPhone : undefined,
         notes,
         status: OrderStatus.PENDING,
         orderItems: {

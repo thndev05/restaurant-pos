@@ -9,7 +9,7 @@ export type PaymentStatus = 'Pending' | 'Success' | 'Failed';
 export type PaymentMethod = 'Cash' | 'Online';
 export type ActionType = 'Call_Staff' | 'Request_Bill';
 export type ActionStatus = 'Pending' | 'Handled';
-export type OrderType = 'DineIn' | 'Takeaway' | 'Delivery' | 'Pickup';
+export type OrderType = 'DINE_IN' | 'TAKE_AWAY';
 export type TakeawayStatus =
   | 'Pending'
   | 'Packed'
@@ -47,12 +47,14 @@ export interface TableSession {
 // Order
 export interface Order {
   order_id: string;
-  session_id: string;
+  order_type: OrderType;
+  session_id?: string;
   session?: TableSession;
+  customer_name?: string;
+  customer_phone?: string;
   staff_id?: string;
   staff_name?: string;
   status: OrderStatus;
-  order_type: OrderType;
   created_at: string;
   items?: OrderItem[];
   notes?: string;

@@ -58,13 +58,16 @@ export interface ConfirmedBy {
 export interface Order {
   id: string;
   status: OrderStatus;
+  orderType: OrderType;
+  customerName?: string;
+  customerPhone?: string;
   notes?: string;
-  sessionId: string;
+  sessionId?: string;
   confirmedById?: string;
   createdAt: string;
   updatedAt: string;
   orderItems: OrderItem[];
-  session: Session;
+  session?: Session;
   confirmedBy?: ConfirmedBy;
 }
 
@@ -89,8 +92,13 @@ export interface CreateOrderItemData {
   notes?: string;
 }
 
+export type OrderType = 'DINE_IN' | 'TAKE_AWAY';
+
 export interface CreateOrderData {
-  sessionId: string;
+  orderType: OrderType;
+  sessionId?: string;
+  customerName?: string;
+  customerPhone?: string;
   items: CreateOrderItemData[];
   notes?: string;
 }

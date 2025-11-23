@@ -149,6 +149,7 @@ export function OrderManagementDialog({
 
       if (mode === 'create') {
         await ordersService.createOrder({
+          orderType: 'DINE_IN',
           sessionId,
           items,
           notes: orderNotes || undefined,
