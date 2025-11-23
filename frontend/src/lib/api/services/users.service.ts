@@ -5,40 +5,58 @@
 
 import { BaseApiService } from '../base.service';
 import { API_ENDPOINTS } from '@/config/api.config';
+import apiClient from '../client';
+import type { AxiosError } from 'axios';
+
+export interface Role {
+  id: string;
+  name: 'ADMIN' | 'MANAGER' | 'CASHIER' | 'WAITER' | 'KITCHEN';
+  displayName: string;
+  description?: string;
+}
 
 export interface User {
   id: string;
-  email: string;
   name: string;
-  role: string;
-  avatar?: string;
-  phone?: string;
+  username: string;
   isActive: boolean;
+  role: Role;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateUserData {
-  email: string;
-  password: string;
   name: string;
-  role: string;
-  phone?: string;
-  avatar?: string;
+  username: string;
+  password: string;
+  roleId: string;
 }
 
 export interface UpdateUserData {
-  email?: string;
   name?: string;
-  role?: string;
-  phone?: string;
-  avatar?: string;
+  roleId?: string;
   isActive?: boolean;
 }
 
 class UsersService extends BaseApiService<User> {
   constructor() {
     super(API_ENDPOINTS.USERS.BASE);
+  }
+
+  /**
+   * Get all users with optional search
+   * Override because backend returns array directly, not paginated response
+   */
+  async getAllUsers(query?: string): Promise<User[]> {
+    try {
+      const response = await apiClient.get<User[]>(this.endpoint, {
+        params: query ? { query } : undefined,
+      });
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
   }
 
   /**
@@ -52,7 +70,7 @@ class UsersService extends BaseApiService<User> {
    * Update user information
    */
   async updateUser(id: string | number, data: UpdateUserData) {
-    return this.update(id, data);
+    return this.patch(id, data);
   }
 
   /**
