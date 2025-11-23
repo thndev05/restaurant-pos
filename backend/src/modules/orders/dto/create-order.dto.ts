@@ -30,17 +30,17 @@ export class CreateOrderDto {
   @IsEnum(OrderType)
   orderType: OrderType;
 
-  @ValidateIf((o) => o.orderType === OrderType.DINE_IN)
+  @ValidateIf((o: CreateOrderDto) => o.orderType === OrderType.DINE_IN)
   @IsNotEmpty()
   @IsUUID()
   sessionId?: string;
 
-  @ValidateIf((o) => o.orderType === OrderType.TAKE_AWAY)
+  @ValidateIf((o: CreateOrderDto) => o.orderType === OrderType.TAKE_AWAY)
   @IsNotEmpty()
   @IsString()
   customerName?: string;
 
-  @ValidateIf((o) => o.orderType === OrderType.TAKE_AWAY)
+  @ValidateIf((o: CreateOrderDto) => o.orderType === OrderType.TAKE_AWAY)
   @IsNotEmpty()
   @IsString()
   customerPhone?: string;

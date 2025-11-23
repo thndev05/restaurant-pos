@@ -8,7 +8,12 @@ import {
   UpdateOrderItemStatusDto,
   GetOrdersDto,
 } from './dto';
-import { OrderStatus, OrderItemStatus, OrderType, Prisma } from 'src/generated/prisma';
+import {
+  OrderStatus,
+  OrderItemStatus,
+  OrderType,
+  Prisma,
+} from 'src/generated/prisma';
 
 @Injectable()
 export class OrdersService {
@@ -75,12 +80,15 @@ export class OrdersService {
   }
 
   async createOrder(createOrderDto: CreateOrderDto) {
-    const { orderType, sessionId, items, notes, customerName, customerPhone } = createOrderDto;
+    const { orderType, sessionId, items, notes, customerName, customerPhone } =
+      createOrderDto;
 
     // Validate based on order type
     if (orderType === OrderType.DINE_IN) {
       if (!sessionId) {
-        throw new BadRequestException('Session ID is required for dine-in orders.');
+        throw new BadRequestException(
+          'Session ID is required for dine-in orders.',
+        );
       }
 
       // Verify session exists and is active
@@ -125,8 +133,10 @@ export class OrdersService {
       data: {
         orderType,
         sessionId: orderType === OrderType.DINE_IN ? sessionId : undefined,
-        customerName: orderType === OrderType.TAKE_AWAY ? customerName : undefined,
-        customerPhone: orderType === OrderType.TAKE_AWAY ? customerPhone : undefined,
+        customerName:
+          orderType === OrderType.TAKE_AWAY ? customerName : undefined,
+        customerPhone:
+          orderType === OrderType.TAKE_AWAY ? customerPhone : undefined,
         notes,
         status: OrderStatus.PENDING,
         orderItems: {
