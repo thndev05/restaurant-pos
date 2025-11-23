@@ -319,23 +319,22 @@ export class OrdersService {
       orderItemStatus = OrderItemStatus.CANCELLED;
     }
 
-    await this.prismaService.$transaction([
-      this.db.update({
-        where: { id },
-        data: { status },
-      }),
-      ...(orderItemStatus
-        ? [
-            this.orderItemDb.updateMany({
-              where: {
-                orderId: id,
-                status: { not: OrderItemStatus.CANCELLED },
-              },
-              data: { status: orderItemStatus },
-            }),
-          ]
-        : []),
-    ]);
+    // Update order status
+    await this.db.update({
+      where: { id },
+      data: { status },
+    });
+
+    // Update order items status if needed
+    if (orderItemStatus) {
+      await this.orderItemDb.updateMany({
+        where: {
+          orderId: id,
+          status: { not: OrderItemStatus.CANCELLED },
+        },
+        data: { status: orderItemStatus },
+      });
+    }
 
     return {
       code: 200,

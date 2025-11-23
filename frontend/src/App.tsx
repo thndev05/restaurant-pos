@@ -8,6 +8,7 @@ import StaffLayout from './layouts/staff/StaffLayout';
 import AdminDashboardPage from './pages/staff/admin/DashboardPage';
 import MenuManagementPage from './pages/staff/admin/MenuManagementPage';
 import TableManagementPage from './pages/staff/admin/TableManagementPage';
+import OrderManagementPage from './pages/staff/admin/OrderManagementPage';
 import StaffManagementPage from './pages/staff/admin/StaffManagementPage';
 // Waiter Pages
 import WaiterDashboardPage from './pages/staff/waiter/WaiterDashboardPage';
@@ -62,6 +63,16 @@ function App() {
               <ProtectedRoute requiredPermission="module.admin.access">
                 <StaffLayout>
                   <TableManagementPage />
+                </StaffLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/staff/admin/orders"
+            element={
+              <ProtectedRoute requiredPermission="module.admin.access">
+                <StaffLayout>
+                  <OrderManagementPage />
                 </StaffLayout>
               </ProtectedRoute>
             }

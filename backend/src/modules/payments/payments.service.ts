@@ -5,6 +5,8 @@ import {
   PaymentStatus,
   SessionStatus,
   TableStatus,
+  OrderStatus,
+  OrderItemStatus,
 } from 'src/generated/prisma';
 
 @Injectable()
@@ -148,6 +150,34 @@ export class PaymentsService {
               table: true,
             },
           },
+        },
+      });
+
+      // Update all orders in this session to PAID status
+      await tx.order.updateMany({
+        where: {
+          sessionId: payment.sessionId,
+          status: {
+            not: OrderStatus.CANCELLED,
+          },
+        },
+        data: {
+          status: OrderStatus.PAID,
+        },
+      });
+
+      // Update all order items in this session to SERVED status
+      await tx.orderItem.updateMany({
+        where: {
+          order: {
+            sessionId: payment.sessionId,
+          },
+          status: {
+            not: OrderItemStatus.CANCELLED,
+          },
+        },
+        data: {
+          status: OrderItemStatus.SERVED,
         },
       });
 

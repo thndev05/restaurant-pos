@@ -52,7 +52,7 @@ import type {
 import { useToast } from '@/hooks/use-toast';
 import { OrderManagementDialog } from './OrderManagementDialog';
 import { EditItemDialog } from './EditItemDialog';
-import { PaymentDialog } from './PaymentDialog';
+import { CreatePaymentDialog } from './CreatePaymentDialog';
 
 const SESSION_STATUS_CONFIG: Record<
   SessionStatus,
@@ -688,15 +688,12 @@ export function TableSessionDialog({
       </AlertDialog>
 
       {/* Payment Dialog */}
-      <PaymentDialog
+      <CreatePaymentDialog
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}
         sessionId={activeSession.id}
-        totalAmount={totalAmount}
-        subTotal={totalAmount}
-        tax={0}
-        discount={0}
-        onPaymentSuccess={handlePaymentSuccess}
+        orderTotal={totalAmount}
+        onPaymentCreated={handlePaymentSuccess}
       />
 
       {/* Close Session Confirmation Dialog */}

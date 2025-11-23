@@ -7,8 +7,73 @@ import { BaseApiService } from '../base.service';
 import { API_ENDPOINTS } from '@/config/api.config';
 import apiClient from '../client';
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'CANCELLED';
+export type OrderStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'PREPARING'
+  | 'READY'
+  | 'SERVED'
+  | 'PAID'
+  | 'CANCELLED';
 export type OrderItemStatus = 'PENDING' | 'COOKING' | 'READY' | 'SERVED' | 'CANCELLED';
+
+export interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  image?: string;
+}
+
+export interface OrderItem {
+  id: string;
+  quantity: number;
+  priceAtOrder: number;
+  itemNameAtOrder: string;
+  status: OrderItemStatus;
+  notes?: string;
+  orderId: string;
+  menuItemId: string;
+  menuItem: MenuItem;
+}
+
+export interface Table {
+  id: string;
+  number: number;
+  status: string;
+}
+
+export interface Session {
+  id: string;
+  table: Table;
+  customerCount?: number;
+  startTime: string;
+}
+
+export interface ConfirmedBy {
+  id: string;
+  name: string;
+  username: string;
+}
+
+export interface Order {
+  id: string;
+  status: OrderStatus;
+  notes?: string;
+  sessionId: string;
+  confirmedById?: string;
+  createdAt: string;
+  updatedAt: string;
+  orderItems: OrderItem[];
+  session: Session;
+  confirmedBy?: ConfirmedBy;
+}
+
+export interface GetOrdersParams {
+  status?: OrderStatus;
+  sessionId?: string;
+  startDate?: string;
+  endDate?: string;
+}
 
 export interface UpdateOrderStatusData {
   status: OrderStatus;
@@ -45,6 +110,14 @@ class OrdersService extends BaseApiService<never> {
   }
 
   /**
+   * Get all orders with optional filters
+   */
+  async getOrders(params?: GetOrdersParams): Promise<Order[]> {
+    const response = await apiClient.get<Order[]>(this.endpoint, { params });
+    return response.data;
+  }
+
+  /**
    * Create a new order
    */
   async createOrder(data: CreateOrderData): Promise<unknown> {
@@ -55,8 +128,8 @@ class OrdersService extends BaseApiService<never> {
   /**
    * Get order by ID
    */
-  async getOrderById(id: string | number): Promise<unknown> {
-    const response = await apiClient.get(`${this.endpoint}/${id}`);
+  async getOrderById(id: string | number): Promise<Order> {
+    const response = await apiClient.get<Order>(`${this.endpoint}/${id}`);
     return response.data;
   }
 

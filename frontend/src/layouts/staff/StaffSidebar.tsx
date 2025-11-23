@@ -33,6 +33,7 @@ const adminNavigationItems = [
   { path: '/staff/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/staff/admin/menu', icon: UtensilsCrossed, label: 'Menu Management' },
   { path: '/staff/admin/tables', icon: TableIcon, label: 'Table Management' },
+  { path: '/staff/admin/orders', icon: ClipboardList, label: 'Order Management' },
   { path: '/staff/admin/staff-management', icon: Users, label: 'Staff Management' },
 ];
 

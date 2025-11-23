@@ -1,6 +1,6 @@
 // ===== CONFIG =====
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -44,6 +44,7 @@ enum OrderStatus {
   PREPARING
   READY
   SERVED
+  PAID
   CANCELLED
 }
 
