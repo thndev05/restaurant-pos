@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
-import { UpdateUserDto, ChangePasswordDto } from './dto';
+import { CreateUserDto, UpdateUserDto, ChangePasswordDto } from './dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -37,6 +37,58 @@ export class UsersService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  async createUser(createUserDto: CreateUserDto) {
+    // Check if username already exists
+    const existingUser = await this.db.user.findUnique({
+      where: { username: createUserDto.username },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Username already exists');
+    }
+
+    // Validate roleId
+    const role = await this.db.role.findUnique({
+      where: { id: createUserDto.roleId },
+    });
+
+    if (!role) {
+      throw new BadRequestException(
+        `Role with ID ${createUserDto.roleId} not found`,
+      );
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
+
+    // Create user
+    const user = await this.db.user.create({
+      data: {
+        name: createUserDto.name,
+        username: createUserDto.username,
+        password: hashedPassword,
+        roleId: createUserDto.roleId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        isActive: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      code: 201,
+      message: 'User created successfully',
+      data: user,
+    };
   }
 
   async getUserById(id: string) {
@@ -144,30 +196,7 @@ export class UsersService {
     };
   }
 
-  async softDeleteUser(id: string) {
-    const user = await this.db.user.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-
-    await this.db.user.update({
-      where: { id },
-      data: {
-        isActive: false,
-        updatedAt: new Date(),
-      },
-    });
-
-    return {
-      code: 200,
-      message: `User with ID ${id} has been soft deleted successfully`,
-    };
-  }
-
-  async hardDeleteUser(id: string) {
+  async deleteUser(id: string) {
     const user = await this.db.user.findUnique({
       where: { id },
     });
@@ -182,7 +211,7 @@ export class UsersService {
 
     return {
       code: 200,
-      message: `User with ID ${id} has been permanently deleted`,
+      message: `User with ID ${id} has been deleted successfully`,
     };
   }
 }

@@ -6,6 +6,7 @@
 // Export services
 export { authService } from './auth.service';
 export { usersService } from './users.service';
+export { rolesService } from './roles.service';
 export { categoriesService } from './categories.service';
 export { menuItemsService } from './menu-items.service';
 export { tablesService } from './tables.service';
@@ -24,6 +25,9 @@ export type {
 
 // Export types from users service
 export type { User, CreateUserData, UpdateUserData } from './users.service';
+
+// Export types from roles service
+export type { Role } from './roles.service';
 
 // Export types from categories service
 export type { Category, CreateCategoryData, UpdateCategoryData } from './categories.service';
