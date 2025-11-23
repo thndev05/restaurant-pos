@@ -45,11 +45,11 @@ export type { Customer, CreateCustomerData, UpdateCustomerData } from './custome
 export type { UpdateSessionData, CloseSessionData } from './sessions.service';
 
 // Export types from orders service
-export type { 
-  OrderType, 
-  CreateOrderData, 
-  UpdateOrderStatusData, 
-  UpdateOrderItemStatusData 
+export type {
+  OrderType,
+  CreateOrderData,
+  UpdateOrderStatusData,
+  UpdateOrderItemStatusData,
 } from './orders.service';
 
 // Export types from payments service

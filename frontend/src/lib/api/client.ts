@@ -109,7 +109,7 @@ apiClient.interceptors.response.use(
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
-        
+
         // Redirect to staff login page
         window.location.href = '/staff/login';
         return Promise.reject(refreshError);
@@ -122,7 +122,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
-      
+
       // Redirect to staff login page
       window.location.href = '/staff/login';
     }
