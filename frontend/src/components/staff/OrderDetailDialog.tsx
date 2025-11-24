@@ -653,18 +653,20 @@ export function OrderDetailDialog({
           </ScrollArea>
 
           <DialogFooter className="border-t pt-4">
-            <div className="flex w-full flex-col gap-2">
+            <div className="flex w-full flex-col gap-3">
               {/* Quick Status Update Buttons */}
               {order.status !== 'PAID' && order.status !== 'CANCELLED' && (
-                <div className="flex w-full gap-2">
+                <div className="flex w-full flex-col gap-2 sm:flex-row">
+                  {/* Primary Action Button - Full width on mobile, flex-1 on desktop */}
                   {order.status === 'PENDING' && (
                     <Button
                       onClick={() => handleUpdateStatus('CONFIRMED')}
                       disabled={isUpdating}
                       className="flex-1"
-                      size="sm"
+                      size="lg"
                     >
-                      ✓ Confirm
+                      <span className="mr-2 text-lg">✓</span>
+                      Confirm Order
                     </Button>
                   )}
                   {order.status === 'CONFIRMED' && (
@@ -672,9 +674,10 @@ export function OrderDetailDialog({
                       onClick={() => handleUpdateStatus('PREPARING')}
                       disabled={isUpdating}
                       className="flex-1 bg-purple-600 hover:bg-purple-700"
-                      size="sm"
+                      size="lg"
                     >
-                      🔥 Start Preparing
+                      <span className="mr-2 text-lg">🔥</span>
+                      Start Preparing
                     </Button>
                   )}
                   {order.status === 'PREPARING' && (
@@ -682,9 +685,10 @@ export function OrderDetailDialog({
                       onClick={() => handleUpdateStatus('READY')}
                       disabled={isUpdating}
                       className="flex-1 bg-green-600 hover:bg-green-700"
-                      size="sm"
+                      size="lg"
                     >
-                      ✓✓ Mark Ready
+                      <span className="mr-2 text-lg">✓✓</span>
+                      Mark Ready
                     </Button>
                   )}
                   {order.status === 'READY' && (
@@ -692,9 +696,10 @@ export function OrderDetailDialog({
                       onClick={() => handleUpdateStatus('SERVED')}
                       disabled={isUpdating}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                      size="sm"
+                      size="lg"
                     >
-                      ✓✓✓ Mark Served
+                      <span className="mr-2 text-lg">✓✓✓</span>
+                      Mark Served
                     </Button>
                   )}
                   {order.status === 'SERVED' && canProcessPayment && (
@@ -702,29 +707,37 @@ export function OrderDetailDialog({
                       onClick={() => setShowPaymentDialog(true)}
                       disabled={isUpdating}
                       className="flex-1 bg-green-600 hover:bg-green-700"
-                      size="sm"
+                      size="lg"
                     >
-                      <DollarSign className="mr-2 h-4 w-4" />
+                      <DollarSign className="mr-2 h-5 w-5" />
                       Process Payment
                     </Button>
                   )}
+
+                  {/* Cancel Button - Always on the right/bottom */}
                   {canCancel && (
                     <Button
                       variant="destructive"
                       onClick={() => setShowCancelDialog(true)}
                       disabled={isUpdating}
-                      size="sm"
+                      size="lg"
+                      className="sm:w-auto"
                     >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Cancel
+                      <XCircle className="mr-2 h-5 w-5" />
+                      Cancel Order
                     </Button>
                   )}
                 </div>
               )}
 
-              {/* Close Button */}
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
+              {/* Close Button - Separated with border on top for better visual hierarchy */}
+              <div className="flex justify-end border-t pt-3">
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  size="lg"
+                  className="min-w-[120px]"
+                >
                   Close
                 </Button>
               </div>
