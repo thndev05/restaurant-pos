@@ -142,10 +142,15 @@ export function OrderManagementDialog({
       const { ordersService } = await import('@/lib/api/services');
 
       // Validate and prepare items
+      interface ItemData {
+        menuItemId: string;
+        quantity: number;
+        notes?: string;
+      }
       const items = selectedItems
         .filter((item) => item.quantity > 0) // Only include items with quantity > 0
         .map((item) => {
-          const itemData: any = {
+          const itemData: ItemData = {
             menuItemId: item.menuItemId,
             quantity: item.quantity,
           };
@@ -236,7 +241,15 @@ export function OrderManagementDialog({
 
       if (error && typeof error === 'object') {
         if ('response' in error) {
-          const response = (error as any).response;
+          interface ErrorResponse {
+            status?: number;
+            statusText?: string;
+            data?: {
+              message?: string;
+              error?: string;
+            };
+          }
+          const response = (error as { response?: ErrorResponse }).response;
           errorMessage = response?.data?.message || errorMessage;
           errorDetails = response?.data?.error || '';
 

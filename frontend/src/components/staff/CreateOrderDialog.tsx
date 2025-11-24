@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -72,16 +72,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated }: Create
   const [isLoadingTables, setIsLoadingTables] = useState(false);
 
   // Load menu items
-  useEffect(() => {
-    if (open) {
-      loadMenuItems();
-      if (orderType === 'DINE_IN') {
-        loadTables();
-      }
-    }
-  }, [open, orderType]);
-
-  const loadMenuItems = async () => {
+  const loadMenuItems = useCallback(async () => {
     setIsLoadingMenu(true);
     try {
       const response = await menuItemsService.getAll();
@@ -97,9 +88,9 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated }: Create
     } finally {
       setIsLoadingMenu(false);
     }
-  };
+  }, [toast]);
 
-  const loadTables = async () => {
+  const loadTables = useCallback(async () => {
     setIsLoadingTables(true);
     try {
       const allTables = await tablesService.getTables();
@@ -116,7 +107,16 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated }: Create
     } finally {
       setIsLoadingTables(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (open) {
+      loadMenuItems();
+      if (orderType === 'DINE_IN') {
+        loadTables();
+      }
+    }
+  }, [open, orderType, loadMenuItems, loadTables]);
 
   const handleAddItem = (menuItem: MenuItem) => {
     const existingItem = orderItems.find((item) => item.menuItemId === menuItem.id);
@@ -210,7 +210,13 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated }: Create
             tableId: selectedTable,
             customerCount: 1,
           });
-          sessionId = (sessionResponse as any).data?.id || (sessionResponse as any).id;
+          interface SessionResponse {
+            data?: { id: string };
+            id?: string;
+          }
+          sessionId =
+            (sessionResponse as SessionResponse).data?.id ||
+            (sessionResponse as SessionResponse).id;
         }
       }
 
