@@ -1,126 +1,86 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/staff/StatusBadge';
-import type { StaffAction } from '@/types/staff';
-import { Bell, Clock, CheckCircle, User, AlertCircle } from 'lucide-react';
+import { Bell, Clock, CheckCircle, User, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { actionsService } from '@/lib/api/services';
+import type { Action, ActionStatus as APIActionStatus } from '@/lib/api/services';
+import { useAuth } from '@/contexts';
+import { useToast } from '@/hooks/use-toast';
 
 export default function WaiterActionsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'handled'>('pending');
+  const [actions, setActions] = useState<Action[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Mock data
-  const mockActions: StaffAction[] = [
-    {
-      action_id: 'act-001',
-      session_id: 'ses-001',
-      action_type: 'Call_Staff',
-      status: 'Pending',
-      created_at: new Date(Date.now() - 2 * 60000).toISOString(),
-      session: {
-        session_id: 'ses-001',
-        table_id: 'tbl-001',
-        start_time: new Date(Date.now() - 30 * 60000).toISOString(),
-        status: 'Active',
-        guest_name: 'John Doe',
-        party_size: 2,
-        table: {
-          table_id: 'tbl-001',
-          table_number: 'A1',
-          capacity: 4,
-          status: 'Occupied',
-          qr_code_key: 'qr1',
-        },
-      },
-    },
-    {
-      action_id: 'act-002',
-      session_id: 'ses-002',
-      action_type: 'Request_Bill',
-      status: 'Pending',
-      created_at: new Date(Date.now() - 5 * 60000).toISOString(),
-      session: {
-        session_id: 'ses-002',
-        table_id: 'tbl-002',
-        start_time: new Date(Date.now() - 60 * 60000).toISOString(),
-        status: 'Active',
-        party_size: 4,
-        table: {
-          table_id: 'tbl-002',
-          table_number: 'B2',
-          capacity: 6,
-          status: 'Occupied',
-          qr_code_key: 'qr2',
-        },
-      },
-    },
-    {
-      action_id: 'act-003',
-      session_id: 'ses-003',
-      action_type: 'Call_Staff',
-      status: 'Handled',
-      created_at: new Date(Date.now() - 15 * 60000).toISOString(),
-      handled_by_staff_id: 'staff-001',
-      handled_by_staff_name: 'Jane Smith',
-      handled_at: new Date(Date.now() - 13 * 60000).toISOString(),
-      session: {
-        session_id: 'ses-003',
-        table_id: 'tbl-003',
-        start_time: new Date(Date.now() - 45 * 60000).toISOString(),
-        status: 'Active',
-        guest_name: 'Alice Johnson',
-        table: {
-          table_id: 'tbl-003',
-          table_number: 'A3',
-          capacity: 4,
-          status: 'Occupied',
-          qr_code_key: 'qr3',
-        },
-      },
-    },
-    {
-      action_id: 'act-004',
-      session_id: 'ses-001',
-      action_type: 'Call_Staff',
-      status: 'Pending',
-      created_at: new Date(Date.now() - 8 * 60000).toISOString(),
-      session: {
-        session_id: 'ses-001',
-        table_id: 'tbl-001',
-        start_time: new Date(Date.now() - 30 * 60000).toISOString(),
-        status: 'Active',
-        guest_name: 'John Doe',
-        party_size: 2,
-        table: {
-          table_id: 'tbl-001',
-          table_number: 'A1',
-          capacity: 4,
-          status: 'Occupied',
-          qr_code_key: 'qr1',
-        },
-      },
-    },
-  ];
+  // Fetch actions from API
+  const fetchActions = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await actionsService.getAllActions();
+      setActions(data);
+    } catch (error) {
+      console.error('Failed to fetch actions:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load customer requests. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
-  const filteredActions = mockActions
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    fetchActions();
+    const interval = setInterval(fetchActions, 30000);
+    return () => clearInterval(interval);
+  }, [fetchActions]);
+
+  // Manual refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchActions();
+    setIsRefreshing(false);
+    toast({
+      title: 'Refreshed',
+      description: 'Customer requests updated.',
+    });
+  };
+
+  // Map API status to display status
+  const mapStatus = (status: APIActionStatus): 'Pending' | 'Handled' => {
+    if (status === 'PENDING') return 'Pending';
+    return 'Handled'; // IN_PROGRESS, COMPLETED, CANCELLED all map to Handled
+  };
+
+  const filteredActions = actions
     .filter((action) => {
+      const displayStatus = mapStatus(action.status);
       if (filter === 'all') return true;
-      if (filter === 'pending') return action.status === 'Pending';
-      if (filter === 'handled') return action.status === 'Handled';
+      if (filter === 'pending') return displayStatus === 'Pending';
+      if (filter === 'handled') return displayStatus === 'Handled';
       return true;
     })
     .sort((a, b) => {
       // Pending first, then by time
-      if (a.status === 'Pending' && b.status !== 'Pending') return -1;
-      if (a.status !== 'Pending' && b.status === 'Pending') return 1;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      const statusA = mapStatus(a.status);
+      const statusB = mapStatus(b.status);
+      if (statusA === 'Pending' && statusB !== 'Pending') return -1;
+      if (statusA !== 'Pending' && statusB === 'Pending') return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
   const stats = {
-    total: mockActions.length,
-    pending: mockActions.filter((a) => a.status === 'Pending').length,
-    handled: mockActions.filter((a) => a.status === 'Handled').length,
+    total: actions.length,
+    pending: actions.filter((a) => mapStatus(a.status) === 'Pending').length,
+    handled: actions.filter((a) => mapStatus(a.status) === 'Handled').length,
   };
 
   const getTimeSince = (dateString: string) => {
@@ -140,31 +100,73 @@ export default function WaiterActionsPage() {
     return diffMinutes > 5;
   };
 
-  const handleTakeAction = (actionId: string) => {
-    alert(`Taking action ${actionId}`);
+  const handleTakeAction = async (actionId: string) => {
+    if (!user) return;
+
+    try {
+      await actionsService.handleAction(actionId, user.id);
+      toast({
+        title: 'Success',
+        description: 'Action marked as in progress.',
+      });
+      await fetchActions();
+    } catch (error) {
+      console.error('Failed to handle action:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update action. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleMarkHandled = (actionId: string) => {
-    alert(`Marking action ${actionId} as handled`);
+  const handleMarkHandled = async (actionId: string) => {
+    if (!user) return;
+
+    try {
+      await actionsService.completeAction(actionId, user.id);
+      toast({
+        title: 'Success',
+        description: 'Action marked as completed.',
+      });
+      await fetchActions();
+    } catch (error) {
+      console.error('Failed to complete action:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update action. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getActionIcon = (type: string) => {
     switch (type) {
-      case 'Call_Staff':
+      case 'CALL_STAFF':
         return Bell;
-      case 'Request_Bill':
+      case 'REQUEST_BILL':
         return CheckCircle;
-      default:
+      case 'REQUEST_WATER':
+      case 'REQUEST_UTENSILS':
+      case 'OTHER':
         return AlertCircle;
+      default:
+        return Bell;
     }
   };
 
   const getActionLabel = (type: string) => {
     switch (type) {
-      case 'Call_Staff':
+      case 'CALL_STAFF':
         return 'Call Staff';
-      case 'Request_Bill':
+      case 'REQUEST_BILL':
         return 'Request Bill';
+      case 'REQUEST_WATER':
+        return 'Request Water';
+      case 'REQUEST_UTENSILS':
+        return 'Request Utensils';
+      case 'OTHER':
+        return 'Other Request';
       default:
         return type;
     }
@@ -172,10 +174,14 @@ export default function WaiterActionsPage() {
 
   const getActionColor = (type: string) => {
     switch (type) {
-      case 'Call_Staff':
+      case 'CALL_STAFF':
         return 'bg-blue-500';
-      case 'Request_Bill':
+      case 'REQUEST_BILL':
         return 'bg-green-500';
+      case 'REQUEST_WATER':
+        return 'bg-cyan-500';
+      case 'REQUEST_UTENSILS':
+        return 'bg-purple-500';
       default:
         return 'bg-gray-500';
     }
@@ -184,11 +190,16 @@ export default function WaiterActionsPage() {
   return (
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6 md:p-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Customer Requests</h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-          Manage customer service requests and actions
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Customer Requests</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+            Manage customer service requests and actions
+          </p>
+        </div>
+        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing}>
+          <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
+        </Button>
       </div>
 
       {/* Stats */}
@@ -254,100 +265,113 @@ export default function WaiterActionsPage() {
       </Card>
 
       {/* Actions List */}
-      <div className="space-y-3">
-        {filteredActions.map((action) => {
-          const ActionIcon = getActionIcon(action.action_type);
-          const urgent = isUrgent(action.created_at);
+      {isLoading ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="text-muted-foreground h-12 w-12 animate-spin" />
+            <p className="text-muted-foreground mt-4 text-sm">Loading customer requests...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredActions.map((action) => {
+            const ActionIcon = getActionIcon(action.actionType);
+            const urgent = isUrgent(action.createdAt);
+            const displayStatus = mapStatus(action.status);
 
-          return (
-            <Card
-              key={action.action_id}
-              className={cn(
-                'transition-all hover:shadow-md',
-                action.status === 'Pending' && 'border-amber-500/30 bg-amber-50/50',
-                urgent && action.status === 'Pending' && 'border-red-500/50 bg-red-50'
-              )}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  {/* Icon */}
-                  <div
-                    className={cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                      action.status === 'Pending'
-                        ? urgent
-                          ? 'bg-red-500'
-                          : getActionColor(action.action_type)
-                        : 'bg-slate-300'
-                    )}
-                  >
-                    <ActionIcon className="h-5 w-5 text-white" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold">{getActionLabel(action.action_type)}</h3>
-                      <span className="text-muted-foreground text-sm">•</span>
-                      <span className="text-sm font-medium">
-                        Table {action.session?.table?.table_number}
-                      </span>
-                      {action.session?.guest_name && (
-                        <>
-                          <span className="text-muted-foreground text-sm">•</span>
-                          <span className="text-muted-foreground text-sm">
-                            {action.session.guest_name}
-                          </span>
-                        </>
+            return (
+              <Card
+                key={action.id}
+                className={cn(
+                  'transition-all hover:shadow-md',
+                  displayStatus === 'Pending' && 'border-amber-500/30 bg-amber-50/50',
+                  urgent && displayStatus === 'Pending' && 'border-red-500/50 bg-red-50'
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    {/* Icon */}
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                        displayStatus === 'Pending'
+                          ? urgent
+                            ? 'bg-red-500'
+                            : getActionColor(action.actionType)
+                          : 'bg-slate-300'
                       )}
-                      <StatusBadge status={action.status} className="ml-auto" />
+                    >
+                      <ActionIcon className="h-5 w-5 text-white" />
                     </div>
 
-                    <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{getTimeSince(action.created_at)}</span>
+                    {/* Content */}
+                    <div className="flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">{getActionLabel(action.actionType)}</h3>
+                        <span className="text-muted-foreground text-sm">•</span>
+                        <span className="text-sm font-medium">
+                          Table {action.session?.table?.number || 'N/A'}
+                        </span>
+                        <StatusBadge status={displayStatus} className="ml-auto" />
                       </div>
-                      {urgent && action.status === 'Pending' && (
-                        <Badge variant="destructive" className="text-xs">
-                          <AlertCircle className="mr-1 h-3 w-3" />
-                          Urgent
-                        </Badge>
+
+                      {action.description && (
+                        <div className="rounded-md bg-blue-50 p-2 text-sm text-blue-900">
+                          {action.description}
+                        </div>
+                      )}
+
+                      <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{getTimeSince(action.createdAt)}</span>
+                        </div>
+                        {urgent && displayStatus === 'Pending' && (
+                          <Badge variant="destructive" className="text-xs">
+                            <AlertCircle className="mr-1 h-3 w-3" />
+                            Urgent
+                          </Badge>
+                        )}
+                        {action.status === 'IN_PROGRESS' && (
+                          <Badge variant="warning" className="text-xs">
+                            In Progress
+                          </Badge>
+                        )}
+                      </div>
+
+                      {displayStatus === 'Handled' && action.handledBy && (
+                        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                          <User className="h-4 w-4" />
+                          <span>Handled by {action.handledBy.name}</span>
+                          <span>• {getTimeSince(action.updatedAt)}</span>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      {displayStatus === 'Pending' && (
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" onClick={() => handleTakeAction(action.id)}>
+                            Take Action
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMarkHandled(action.id)}
+                          >
+                            Mark as Handled
+                          </Button>
+                        </div>
                       )}
                     </div>
-
-                    {action.status === 'Handled' && action.handled_by_staff_name && (
-                      <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                        <User className="h-4 w-4" />
-                        <span>Handled by {action.handled_by_staff_name}</span>
-                        {action.handled_at && <span>• {getTimeSince(action.handled_at)}</span>}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    {action.status === 'Pending' && (
-                      <div className="flex gap-2 pt-2">
-                        <Button size="sm" onClick={() => handleTakeAction(action.action_id)}>
-                          Take Action
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMarkHandled(action.action_id)}
-                        >
-                          Mark as Handled
-                        </Button>
-                      </div>
-                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-      {filteredActions.length === 0 && (
+      {!isLoading && filteredActions.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CheckCircle className="text-success mb-4 h-12 w-12" />

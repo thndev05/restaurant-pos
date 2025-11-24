@@ -60,3 +60,15 @@ export type {
   ProcessPaymentData,
   Payment,
 } from './payments.service';
+
+// Export actions service
+export { actionsService } from './actions.service';
+
+// Export types from actions service
+export type {
+  ActionType,
+  ActionStatus,
+  CreateActionData,
+  UpdateActionData,
+  Action,
+} from './actions.service';

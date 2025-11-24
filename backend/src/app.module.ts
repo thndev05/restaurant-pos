@@ -13,6 +13,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { ActionsModule } from './modules/actions/actions.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
@@ -36,6 +37,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     PaymentsModule,
     UsersModule,
     RolesModule,
+    ActionsModule,
   ],
   providers: [
     // Global guards for RBAC

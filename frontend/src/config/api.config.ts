@@ -81,4 +81,11 @@ export const API_ENDPOINTS = {
     BY_SESSION: (sessionId: string | number) => `payments/session/${sessionId}`,
     PROCESS: (id: string | number) => `payments/${id}/process`,
   },
+  // Actions endpoints
+  ACTIONS: {
+    BASE: 'actions',
+    BY_ID: (id: string | number) => `actions/${id}`,
+    BY_SESSION: (sessionId: string | number) => `actions/session/${sessionId}`,
+    PENDING: 'actions/pending',
+  },
 } as const;

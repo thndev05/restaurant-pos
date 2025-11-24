@@ -15,7 +15,6 @@ import StaffManagementPage from './pages/staff/admin/StaffManagementPage';
 // Waiter Pages
 import WaiterDashboardPage from './pages/staff/waiter/WaiterDashboardPage';
 import WaiterOrdersQueuePage from './pages/staff/waiter/WaiterOrdersQueuePage';
-import WaiterOrderDetailPage from './pages/staff/waiter/WaiterOrderDetailPage';
 import WaiterActionsPage from './pages/staff/waiter/WaiterActionsPage';
 // Kitchen Pages
 import KitchenDashboardPage from './pages/staff/kitchen/KitchenDashboardPage';
@@ -131,16 +130,6 @@ function App() {
               <ProtectedRoute requiredPermission="module.waiter.access">
                 <StaffLayout>
                   <WaiterOrdersQueuePage />
-                </StaffLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/staff/waiter/orders/:orderId"
-            element={
-              <ProtectedRoute requiredPermission="module.waiter.access">
-                <StaffLayout>
-                  <WaiterOrderDetailPage />
                 </StaffLayout>
               </ProtectedRoute>
             }
