@@ -101,6 +101,7 @@ export interface CreateOrderData {
   customerPhone?: string;
   items: CreateOrderItemData[];
   notes?: string;
+  autoConfirm?: boolean;
 }
 
 export interface AddOrderItemsData {

@@ -128,6 +128,15 @@ export class OrdersService {
       throw new BadRequestException('Some menu items are not available.');
     }
 
+    // Determine initial status based on autoConfirm flag
+    // When created by staff (Session Management or Create Order button), skip PENDING
+    const initialStatus = createOrderDto.autoConfirm
+      ? OrderStatus.CONFIRMED
+      : OrderStatus.PENDING;
+    const initialItemStatus = createOrderDto.autoConfirm
+      ? OrderItemStatus.COOKING
+      : OrderItemStatus.PENDING;
+
     // Create order with items
     const order = await this.db.create({
       data: {
@@ -138,7 +147,7 @@ export class OrdersService {
         customerPhone:
           orderType === OrderType.TAKE_AWAY ? customerPhone : undefined,
         notes,
-        status: OrderStatus.PENDING,
+        status: initialStatus,
         orderItems: {
           create: items.map((item) => {
             const menuItem = menuItems.find((m) => m.id === item.menuItemId);
@@ -148,7 +157,7 @@ export class OrdersService {
               priceAtOrder: menuItem!.price,
               itemNameAtOrder: menuItem!.name,
               notes: item.notes,
-              status: OrderItemStatus.PENDING,
+              status: initialItemStatus,
             };
           }),
         },
@@ -176,8 +185,8 @@ export class OrdersService {
       throw new BadRequestException('Cannot add items to a cancelled order.');
     }
 
-    if (order.status === OrderStatus.SERVED) {
-      throw new BadRequestException('Cannot add items to a served order.');
+    if (order.status === OrderStatus.PAID) {
+      throw new BadRequestException('Cannot add items to a paid order.');
     }
 
     const { items } = addOrderItemsDto;
@@ -195,7 +204,8 @@ export class OrdersService {
       throw new BadRequestException('Some menu items are not available.');
     }
 
-    // Add items to order
+    // Add items to order - use COOKING status for items added to existing orders
+    // (skip PENDING stage and go directly to kitchen)
     await this.orderItemDb.createMany({
       data: items.map((item) => {
         const menuItem = menuItems.find((m) => m.id === item.menuItemId);
@@ -206,7 +216,7 @@ export class OrdersService {
           priceAtOrder: menuItem!.price,
           itemNameAtOrder: menuItem!.name,
           notes: item.notes,
-          status: OrderItemStatus.PENDING,
+          status: OrderItemStatus.COOKING,
         };
       }),
     });

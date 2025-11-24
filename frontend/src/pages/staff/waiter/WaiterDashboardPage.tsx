@@ -10,7 +10,8 @@ import { tablesService } from '@/lib/api/services';
 import type { Table as ApiTable } from '@/lib/api/services/tables.service';
 import type { Table } from '@/types/staff';
 import { useToast } from '@/hooks/use-toast';
-import { Search, RefreshCw, AlertCircle, CheckCircle2, BarChart3 } from 'lucide-react';
+import { CreateOrderDialog } from '@/components/staff/CreateOrderDialog';
+import { Search, RefreshCw, AlertCircle, CheckCircle2, BarChart3, Plus } from 'lucide-react';
 
 // Helper function to convert API table to staff type
 const convertApiTableToStaffTable = (apiTable: ApiTable): Table => {
@@ -83,6 +84,7 @@ export default function WaiterDashboardPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedTable, setSelectedTable] = useState<ApiTable | null>(null);
   const [showTableDialog, setShowTableDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const loadTables = async () => {
     setLoading(true);
@@ -179,6 +181,10 @@ export default function WaiterDashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={() => setShowCreateDialog(true)} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Order
+          </Button>
           <Button variant="outline" size="sm" onClick={loadTables} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -327,6 +333,13 @@ export default function WaiterDashboardPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Create Order Dialog */}
+      <CreateOrderDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onOrderCreated={loadTables}
+      />
 
       {/* Table Session Dialog */}
       <TableSessionDialog

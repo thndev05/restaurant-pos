@@ -141,46 +141,133 @@ export function OrderManagementDialog({
     try {
       const { ordersService } = await import('@/lib/api/services');
 
-      const items = selectedItems.map((item) => ({
-        menuItemId: item.menuItemId,
-        quantity: item.quantity,
-        notes: item.notes || undefined,
-      }));
+      // Validate and prepare items
+      const items = selectedItems
+        .filter((item) => item.quantity > 0) // Only include items with quantity > 0
+        .map((item) => {
+          const itemData: any = {
+            menuItemId: item.menuItemId,
+            quantity: item.quantity,
+          };
+
+          // Only add notes if it's not empty
+          if (item.notes && item.notes.trim()) {
+            itemData.notes = item.notes.trim();
+          }
+
+          return itemData;
+        });
+
+      if (items.length === 0) {
+        toast({
+          title: 'Error',
+          description: 'No valid items to add',
+          variant: 'destructive',
+        });
+        setSubmitting(false);
+        return;
+      }
 
       if (mode === 'create') {
-        await ordersService.createOrder({
-          orderType: 'DINE_IN',
+        const orderData = {
+          orderType: 'DINE_IN' as const,
           sessionId,
           items,
-          notes: orderNotes || undefined,
-        });
+          autoConfirm: true, // Staff-created orders skip PENDING and go directly to CONFIRMED
+          ...(orderNotes && orderNotes.trim() ? { notes: orderNotes.trim() } : {}),
+        };
+        console.log('Creating order:', orderData);
+        await ordersService.createOrder(orderData);
         toast({
           title: 'Success',
           description: 'Order created successfully',
         });
       } else {
-        await ordersService.addOrderItems(orderId!, { items });
+        if (!orderId) {
+          throw new Error('Order ID is required for adding items');
+        }
+
+        // Validate items before sending
+        for (const item of items) {
+          if (!item.menuItemId || typeof item.menuItemId !== 'string') {
+            throw new Error(`Invalid menuItemId: ${item.menuItemId}`);
+          }
+          if (!item.quantity || item.quantity < 1) {
+            throw new Error(`Invalid quantity for item: ${item.quantity}`);
+          }
+        }
+
+        console.log('Adding items to order:', {
+          orderId,
+          itemsCount: items.length,
+          items: items.map((i) => ({
+            menuItemId: i.menuItemId,
+            quantity: i.quantity,
+            hasNotes: !!i.notes,
+          })),
+        });
+
+        const result = await ordersService.addOrderItems(orderId, { items });
+        console.log('Add items result:', result);
+
+        // Call onSuccess to refresh the order data
+        await Promise.resolve(onSuccess());
+
         toast({
           title: 'Success',
-          description: 'Items added to order successfully',
+          description: `${items.length} item(s) added to order successfully`,
         });
       }
 
-      // Call onSuccess and wait for it to complete before closing
-      await Promise.resolve(onSuccess());
+      // For all modes, call onSuccess if not already called
+      if (mode === 'create') {
+        await Promise.resolve(onSuccess());
+      }
 
       setSelectedItems([]);
       setOrderNotes('');
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to submit order:', error);
-      const message =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
+
+      // Extract detailed error information
+      let errorMessage = 'Failed to submit order';
+      let errorDetails = '';
+
+      if (error && typeof error === 'object') {
+        if ('response' in error) {
+          const response = (error as any).response;
+          errorMessage = response?.data?.message || errorMessage;
+          errorDetails = response?.data?.error || '';
+
+          // Log full error details for debugging
+          console.error('API Error Details:', {
+            status: response?.status,
+            statusText: response?.statusText,
+            data: response?.data,
+            orderId: orderId,
+            itemsCount: selectedItems.length,
+          });
+
+          // Log the full response data separately for easier inspection
+          console.error('Response Data:', response?.data);
+
+          // Check for validation errors
+          if (response?.data?.message) {
+            console.error('Error Message:', response.data.message);
+          }
+          if (response?.data?.error) {
+            console.error('Error Type:', response.data.error);
+          }
+          if (Array.isArray(response?.data?.message)) {
+            console.error('Validation Errors:', response.data.message);
+          }
+        }
+      }
+
       toast({
         title: 'Error',
-        description: message || 'Failed to submit order',
+        description: errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage,
         variant: 'destructive',
       });
     } finally {

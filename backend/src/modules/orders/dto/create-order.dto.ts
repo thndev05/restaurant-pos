@@ -53,4 +53,7 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  autoConfirm?: boolean;
 }

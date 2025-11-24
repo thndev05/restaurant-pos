@@ -25,10 +25,12 @@ import {
   XCircle,
   Loader2,
   Calendar,
+  Plus,
 } from 'lucide-react';
 import { ordersService, type Order, type OrderStatus } from '@/lib/api/services/orders.service';
 import { useToast } from '@/hooks/use-toast';
 import { OrderDetailDialog } from '@/components/staff/OrderDetailDialog';
+import { CreateOrderDialog } from '@/components/staff/CreateOrderDialog';
 
 const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; color: string }> = {
   PENDING: {
@@ -72,6 +74,7 @@ export default function OrderManagementPage() {
   const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setIsLoading(true);
@@ -103,10 +106,26 @@ export default function OrderManagementPage() {
     setShowDetailDialog(true);
   };
 
+  const handleOrderUpdate = async () => {
+    // Refresh orders list
+    await loadOrders();
+
+    // If there's a selected order, refresh it with the latest data
+    if (selectedOrder) {
+      try {
+        const updatedOrder = await ordersService.getOrderById(selectedOrder.id);
+        setSelectedOrder(updatedOrder);
+      } catch (error) {
+        console.error('Failed to refresh selected order:', error);
+      }
+    }
+  };
+
   const handleDetailDialogClose = (open: boolean) => {
     setShowDetailDialog(open);
     if (!open) {
       // Refresh data when dialog closes
+      setSelectedOrder(null);
       loadOrders();
     }
   };
@@ -168,7 +187,10 @@ export default function OrderManagementPage() {
     const matchesSearch =
       searchQuery === '' ||
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.session.table.number.toString().includes(searchQuery) ||
+      (order.session && order.session.table.number.toString().includes(searchQuery)) ||
+      (order.orderType === 'TAKE_AWAY' &&
+        order.customerName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (order.orderType === 'TAKE_AWAY' && order.customerPhone?.includes(searchQuery)) ||
       order.notes?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
@@ -294,7 +316,11 @@ export default function OrderManagementPage() {
                 Order #{order.id.slice(0, 8).toUpperCase()}
               </CardTitle>
               <p className="text-muted-foreground mt-1 text-sm font-medium">
-                🍽️ Table {order.session.table.number}
+                {order.orderType === 'DINE_IN' && order.session ? (
+                  <>🍽️ Table {order.session.table.number}</>
+                ) : (
+                  <>📦 Takeaway - {order.customerName}</>
+                )}
               </p>
             </div>
             <Badge className={`${statusConfig.color} shrink-0 px-3 py-1 font-semibold`}>
@@ -308,10 +334,18 @@ export default function OrderManagementPage() {
               <Clock className="h-4 w-4 text-blue-600" />
               <span className="font-medium">{formatDuration(order.createdAt)}</span>
             </div>
-            <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
-              <Users className="h-4 w-4 text-green-600" />
-              <span className="font-medium">{order.session.customerCount || 0} guests</span>
-            </div>
+            {order.orderType === 'DINE_IN' && order.session && (
+              <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
+                <Users className="h-4 w-4 text-green-600" />
+                <span className="font-medium">{order.session.customerCount || 0} guests</span>
+              </div>
+            )}
+            {order.orderType === 'TAKE_AWAY' && (
+              <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
+                <Package className="h-4 w-4 text-purple-600" />
+                <span className="font-medium">Takeaway</span>
+              </div>
+            )}
             <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
               <Package className="h-4 w-4 text-purple-600" />
               <span className="font-medium">{order.orderItems.length} items</span>
@@ -416,10 +450,16 @@ export default function OrderManagementPage() {
             Real-time order tracking and management system
           </p>
         </div>
-        <Button onClick={loadOrders} disabled={isLoading} size="sm" variant="outline">
-          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowCreateDialog(true)} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Order
+          </Button>
+          <Button onClick={loadOrders} disabled={isLoading} size="sm" variant="outline">
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -605,12 +645,19 @@ export default function OrderManagementPage() {
         ))}
       </Tabs>
 
+      {/* Create Order Dialog */}
+      <CreateOrderDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onOrderCreated={loadOrders}
+      />
+
       {/* Order Detail Dialog */}
       <OrderDetailDialog
         open={showDetailDialog}
         onOpenChange={handleDetailDialogClose}
         order={selectedOrder}
-        onOrderUpdate={loadOrders}
+        onOrderUpdate={handleOrderUpdate}
       />
 
       {/* Cancel Confirmation Dialog */}

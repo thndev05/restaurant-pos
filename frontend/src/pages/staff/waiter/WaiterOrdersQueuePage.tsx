@@ -1,10 +1,21 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { OrderCard } from '@/components/staff/OrderCard';
-import type { Order } from '@/types/staff';
-import { Search, Filter, ArrowUpDown, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Search,
+  RefreshCw,
+  Clock,
+  Loader2,
+  Plus,
+  Receipt,
+  Users,
+  Package,
+  XCircle,
+  Eye,
+} from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -13,408 +24,632 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { ordersService, type Order, type OrderStatus } from '@/lib/api/services/orders.service';
+import { OrderDetailDialog } from '@/components/staff/OrderDetailDialog';
+import { CreateOrderDialog } from '@/components/staff/CreateOrderDialog';
+
+const ORDER_STATUS_BADGE: Record<OrderStatus, { label: string; color: string }> = {
+  PENDING: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+  CONFIRMED: { label: 'Confirmed', color: 'bg-blue-100 text-blue-800' },
+  PREPARING: { label: 'Preparing', color: 'bg-purple-100 text-purple-800' },
+  READY: { label: 'Ready', color: 'bg-green-100 text-green-800' },
+  SERVED: { label: 'Served', color: 'bg-emerald-100 text-emerald-800' },
+  PAID: { label: 'Paid', color: 'bg-green-600 text-white' },
+  CANCELLED: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
+};
+
+interface OrderCardProps {
+  order: Order;
+  onViewOrder: (order: Order) => void;
+  onUpdateStatus: (orderId: string, status: OrderStatus) => void;
+  onCancelOrder: (orderId: string) => void;
+  formatCurrency: (amount: number) => string;
+  formatDuration: (startTime: string) => string;
+  formatDateTime: (dateString: string) => string;
+}
+
+function OrderCard({
+  order,
+  onViewOrder,
+  onUpdateStatus,
+  onCancelOrder,
+  formatCurrency,
+  formatDuration,
+  formatDateTime,
+}: OrderCardProps) {
+  const statusConfig = ORDER_STATUS_BADGE[order.status];
+  const total = order.orderItems.reduce((sum, item) => sum + item.priceAtOrder * item.quantity, 0);
+
+  const getNextStatus = (currentStatus: OrderStatus): OrderStatus | null => {
+    const statusFlow: Record<OrderStatus, OrderStatus | null> = {
+      PENDING: 'CONFIRMED',
+      CONFIRMED: 'PREPARING',
+      PREPARING: 'READY',
+      READY: 'SERVED',
+      SERVED: 'PAID',
+      PAID: null,
+      CANCELLED: null,
+    };
+    return statusFlow[currentStatus];
+  };
+
+  const nextStatus = getNextStatus(order.status);
+  const canUpdateStatus = nextStatus !== null;
+  const canCancel =
+    order.status !== 'SERVED' && order.status !== 'CANCELLED' && order.status !== 'PAID';
+
+  return (
+    <Card className="hover:border-primary/50 border-2 transition-all hover:shadow-lg">
+      <CardHeader className="from-background to-muted/20 bg-linear-to-r pb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="truncate text-lg font-bold">
+              Order #{order.id.slice(0, 8).toUpperCase()}
+            </CardTitle>
+            <p className="text-muted-foreground mt-1 text-sm font-medium">
+              {order.orderType === 'DINE_IN' && order.session ? (
+                <>🍽️ Table {order.session.table.number}</>
+              ) : (
+                <>📦 Takeaway - {order.customerName}</>
+              )}
+            </p>
+          </div>
+          <Badge className={`${statusConfig.color} shrink-0 px-3 py-1 font-semibold`}>
+            {statusConfig.label}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4">
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
+            <Clock className="h-4 w-4 text-blue-600" />
+            <span className="font-medium">{formatDuration(order.createdAt)}</span>
+          </div>
+          {order.orderType === 'DINE_IN' && order.session && (
+            <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
+              <Users className="h-4 w-4 text-green-600" />
+              <span className="font-medium">{order.session.customerCount || 0} guests</span>
+            </div>
+          )}
+          {order.orderType === 'TAKE_AWAY' && (
+            <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
+              <Package className="h-4 w-4 text-purple-600" />
+              <span className="font-medium">Takeaway</span>
+            </div>
+          )}
+          <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
+            <Package className="h-4 w-4 text-purple-600" />
+            <span className="font-medium">{order.orderItems.length} items</span>
+          </div>
+          <div className="bg-muted/50 flex items-center gap-2 rounded-md px-2 py-1.5">
+            <Receipt className="h-4 w-4 text-orange-600" />
+            <span className="text-primary font-bold">{formatCurrency(total)}</span>
+          </div>
+        </div>
+
+        {order.notes && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/20">
+            <p className="line-clamp-2 font-medium text-amber-900 dark:text-amber-100">
+              📝 {order.notes}
+            </p>
+          </div>
+        )}
+
+        {order.confirmedBy && (
+          <div className="inline-block rounded-md bg-green-50 px-2 py-1 text-xs text-green-700 dark:bg-green-950/20 dark:text-green-300">
+            ✓ Confirmed by: <span className="font-semibold">{order.confirmedBy.name}</span>
+          </div>
+        )}
+
+        <div className="text-muted-foreground border-t pt-2 text-xs">
+          📅 Created: {formatDateTime(order.createdAt)}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="outline"
+            size="default"
+            className="h-10 w-full"
+            onClick={() => onViewOrder(order)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            View Details
+          </Button>
+
+          {/* Action buttons based on status */}
+          {order.status === 'PAID' ? (
+            <Button
+              variant="outline"
+              size="default"
+              className="h-10 w-full cursor-default border-2 border-emerald-500 bg-linear-to-r from-emerald-100 to-green-100 font-bold text-emerald-900 hover:from-emerald-200 hover:to-green-200 dark:border-emerald-600 dark:from-emerald-900/50 dark:to-green-900/50 dark:text-emerald-100 dark:hover:from-emerald-800/60 dark:hover:to-green-800/60"
+              disabled
+            >
+              <span className="mr-2">💰</span>
+              Completed & Paid
+            </Button>
+          ) : order.status === 'CANCELLED' ? (
+            <Button
+              variant="outline"
+              size="default"
+              className="h-10 w-full cursor-default border-2 border-rose-500 bg-linear-to-r from-rose-100 to-red-100 font-bold text-rose-900 hover:from-rose-200 hover:to-red-200 dark:border-rose-600 dark:from-rose-900/50 dark:to-red-900/50 dark:text-rose-100 dark:hover:from-rose-800/60 dark:hover:to-red-800/60"
+              disabled
+            >
+              <span className="mr-2">✕</span>
+              Order Cancelled
+            </Button>
+          ) : (
+            <>
+              {canUpdateStatus && nextStatus && (
+                <Button
+                  size="default"
+                  className="bg-primary hover:bg-primary/90 h-10 w-full"
+                  onClick={() => onUpdateStatus(order.id, nextStatus)}
+                >
+                  {nextStatus === 'CONFIRMED' && '✓ Confirm Order'}
+                  {nextStatus === 'PREPARING' && '🔥 Start Preparing'}
+                  {nextStatus === 'READY' && '✓✓ Mark as Ready'}
+                  {nextStatus === 'SERVED' && '✓✓✓ Mark as Served'}
+                  {nextStatus === 'PAID' && '💰 Mark as Paid'}
+                </Button>
+              )}
+              {canCancel && (
+                <Button
+                  variant="destructive"
+                  size="default"
+                  className="h-10 w-full"
+                  onClick={() => onCancelOrder(order.id)}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Cancel Order
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function WaiterOrdersQueuePage() {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'time' | 'priority'>('time');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
-  const [confirmNotes, setConfirmNotes] = useState('');
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data
-  const mockOrders: Order[] = [
+  // Load orders from API
+  const loadOrders = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await ordersService.getOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load orders',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    loadOrders();
+    // Auto refresh every 30 seconds
+    const interval = setInterval(loadOrders, 30000);
+    return () => clearInterval(interval);
+  }, [loadOrders]);
+
+  // Filter orders based on search
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      searchQuery === '' ||
+      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (order.session && order.session.table.number.toString().includes(searchQuery)) ||
+      (order.orderType === 'TAKE_AWAY' &&
+        order.customerName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (order.orderType === 'TAKE_AWAY' && order.customerPhone?.includes(searchQuery)) ||
+      order.notes?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  // Group orders by status for tabs
+  const groupedOrders: Record<OrderStatus | 'ALL', Order[]> = {
+    ALL: filteredOrders,
+    PENDING: filteredOrders.filter((o) => o.status === 'PENDING'),
+    CONFIRMED: filteredOrders.filter((o) => o.status === 'CONFIRMED'),
+    PREPARING: filteredOrders.filter((o) => o.status === 'PREPARING'),
+    READY: filteredOrders.filter((o) => o.status === 'READY'),
+    SERVED: filteredOrders.filter((o) => o.status === 'SERVED'),
+    PAID: filteredOrders.filter((o) => o.status === 'PAID'),
+    CANCELLED: filteredOrders.filter((o) => o.status === 'CANCELLED'),
+  };
+
+  // Calculate statistics
+  const stats = [
     {
-      order_id: 'ord-001',
-      session_id: 'ses-001',
-      status: 'Pending',
-      order_type: 'DineIn',
-      created_at: new Date(Date.now() - 5 * 60000).toISOString(),
-      total_amount: 45.99,
-      session: {
-        session_id: 'ses-001',
-        table_id: 'tbl-001',
-        start_time: new Date(Date.now() - 30 * 60000).toISOString(),
-        status: 'Active',
-        table: {
-          table_id: 'tbl-001',
-          table_number: 'A1',
-          capacity: 4,
-          status: 'Occupied',
-          qr_code_key: 'qr1',
-        },
-      },
-      items: [
-        {
-          order_item_id: 'oi-001',
-          order_id: 'ord-001',
-          item_id: 'item-001',
-          item_name_at_order: 'Beef Steak',
-          quantity: 2,
-          price_at_order: 19.99,
-          status: 'Pending',
-          notes: 'Medium rare, no onions',
-          allergies: ['Dairy'],
-        },
-        {
-          order_item_id: 'oi-002',
-          order_id: 'ord-001',
-          item_id: 'item-002',
-          item_name_at_order: 'Caesar Salad',
-          quantity: 1,
-          price_at_order: 6.01,
-          status: 'Pending',
-        },
-      ],
+      title: 'Total Orders',
+      value: orders.length,
+      icon: Receipt,
+      color: 'text-blue-600',
     },
     {
-      order_id: 'ord-002',
-      session_id: 'ses-002',
-      status: 'Confirmed',
-      order_type: 'DineIn',
-      created_at: new Date(Date.now() - 15 * 60000).toISOString(),
-      staff_name: 'John Smith',
-      total_amount: 32.98,
-      session: {
-        session_id: 'ses-002',
-        table_id: 'tbl-002',
-        start_time: new Date(Date.now() - 45 * 60000).toISOString(),
-        status: 'Active',
-        table: {
-          table_id: 'tbl-002',
-          table_number: 'A3',
-          capacity: 6,
-          status: 'Occupied',
-          qr_code_key: 'qr2',
-        },
-      },
-      items: [
-        {
-          order_item_id: 'oi-003',
-          order_id: 'ord-002',
-          item_id: 'item-003',
-          item_name_at_order: 'Grilled Salmon',
-          quantity: 1,
-          price_at_order: 22.99,
-          status: 'Cooking',
-          station: 'Grill',
-        },
-        {
-          order_item_id: 'oi-004',
-          order_id: 'ord-002',
-          item_id: 'item-004',
-          item_name_at_order: 'French Fries',
-          quantity: 1,
-          price_at_order: 4.99,
-          status: 'Ready',
-          station: 'Fryer',
-        },
-        {
-          order_item_id: 'oi-005',
-          order_id: 'ord-002',
-          item_id: 'item-005',
-          item_name_at_order: 'Cola',
-          quantity: 1,
-          price_at_order: 5.0,
-          status: 'Ready',
-          station: 'Bar',
-        },
-      ],
+      title: 'Pending',
+      value: groupedOrders.PENDING.length,
+      icon: Clock,
+      color: 'text-yellow-600',
     },
     {
-      order_id: 'ord-003',
-      session_id: 'ses-003',
-      status: 'Pending',
-      order_type: 'Takeaway',
-      created_at: new Date(Date.now() - 2 * 60000).toISOString(),
-      total_amount: 28.5,
-      items: [
-        {
-          order_item_id: 'oi-006',
-          order_id: 'ord-003',
-          item_id: 'item-006',
-          item_name_at_order: 'Margherita Pizza',
-          quantity: 2,
-          price_at_order: 14.25,
-          status: 'Pending',
-        },
-      ],
+      title: 'Confirmed',
+      value: groupedOrders.CONFIRMED.length,
+      icon: Package,
+      color: 'text-blue-600',
+    },
+    {
+      title: 'Preparing',
+      value: groupedOrders.PREPARING.length,
+      icon: Package,
+      color: 'text-purple-600',
+    },
+    {
+      title: 'Ready',
+      value: groupedOrders.READY.length,
+      icon: Package,
+      color: 'text-green-600',
+    },
+    {
+      title: 'Served',
+      value: groupedOrders.SERVED.length,
+      icon: Package,
+      color: 'text-emerald-600',
+    },
+    {
+      title: 'Paid',
+      value: groupedOrders.PAID.length,
+      icon: Receipt,
+      color: 'text-green-600',
+    },
+    {
+      title: 'Cancelled',
+      value: groupedOrders.CANCELLED.length,
+      icon: XCircle,
+      color: 'text-red-600',
     },
   ];
 
-  const filteredOrders = mockOrders
-    .filter((order) => {
-      const matchesSearch =
-        order.order_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.session?.table?.table_number?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
-      const matchesType = filterType === 'all' || order.order_type === filterType;
-      return matchesSearch && matchesStatus && matchesType;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'time') {
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setShowDetailDialog(true);
+  };
+
+  const handleOrderUpdate = async () => {
+    // Refresh orders list
+    await loadOrders();
+
+    // If there's a selected order, refresh it with the latest data
+    if (selectedOrder) {
+      try {
+        const updatedOrder = await ordersService.getOrderById(selectedOrder.id);
+        setSelectedOrder(updatedOrder);
+      } catch (error) {
+        console.error('Failed to refresh selected order:', error);
       }
-      // Priority: Pending first, then by time
-      if (a.status === 'Pending' && b.status !== 'Pending') return -1;
-      if (a.status !== 'Pending' && b.status === 'Pending') return 1;
-      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-    });
-
-  const stats = {
-    total: mockOrders.length,
-    pending: mockOrders.filter((o) => o.status === 'Pending').length,
-    confirmed: mockOrders.filter((o) => o.status === 'Confirmed').length,
-    readyItems: mockOrders.reduce(
-      (sum, o) => sum + (o.items?.filter((i) => i.status === 'Ready').length || 0),
-      0
-    ),
-  };
-
-  const handleConfirmOrder = (order: Order) => {
-    setSelectedOrder(order);
-    setShowConfirmDialog(true);
-  };
-
-  const handleCancelOrder = (order: Order) => {
-    setSelectedOrder(order);
-    setShowCancelDialog(true);
-  };
-
-  const confirmOrderAction = () => {
-    // TODO: API call to confirm order
-    alert(`Confirming order ${selectedOrder?.order_id}`);
-    setShowConfirmDialog(false);
-    setConfirmNotes('');
-    setSelectedOrder(null);
-  };
-
-  const cancelOrderAction = () => {
-    if (!cancelReason.trim()) {
-      alert('Please provide a reason for cancellation');
-      return;
     }
-    // TODO: API call to cancel order
-    alert(`Cancelling order ${selectedOrder?.order_id}: ${cancelReason}`);
-    setShowCancelDialog(false);
-    setCancelReason('');
-    setSelectedOrder(null);
+  };
+
+  const handleDetailDialogClose = (open: boolean) => {
+    setShowDetailDialog(open);
+    if (!open) {
+      setSelectedOrder(null);
+      loadOrders();
+    }
+  };
+
+  const confirmCancel = (orderId: string) => {
+    setOrderToCancel(orderId);
+    setCancelDialogOpen(true);
+  };
+
+  const formatCurrencyFn = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Intl.DateTimeFormat('vi-VN', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(dateString));
+  };
+
+  const formatDuration = (startTime: string) => {
+    const start = new Date(startTime);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - start.getTime()) / 60000);
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  };
+
+  const handleUpdateStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      await ordersService.updateOrderStatus(orderId, { status });
+      toast({
+        title: 'Success',
+        description: 'Order status updated successfully',
+      });
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast({
+        title: 'Error',
+        description: message || 'Failed to update order status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!orderToCancel) return;
+    try {
+      await ordersService.cancelOrder(orderToCancel);
+      toast({
+        title: 'Success',
+        description: 'Order cancelled successfully',
+      });
+      loadOrders();
+      setCancelDialogOpen(false);
+      setOrderToCancel(null);
+    } catch (error) {
+      console.error('Failed to cancel order:', error);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast({
+        title: 'Error',
+        description: message || 'Failed to cancel order',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6 md:p-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Orders Queue</h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-          Manage and process customer orders
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Orders Queue</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+            Real-time order tracking and management
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowCreateDialog(true)} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Order
+          </Button>
+          <Button onClick={loadOrders} disabled={isLoading} size="sm" variant="outline">
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-muted-foreground text-sm">Total Orders</div>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-amber-500/30 bg-amber-50">
-          <CardContent className="p-4">
-            <div className="text-sm text-amber-700">Pending</div>
-            <div className="text-2xl font-bold text-amber-900">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-success/30 bg-success/5">
-          <CardContent className="p-4">
-            <div className="text-muted-foreground text-sm">Confirmed</div>
-            <div className="text-success text-2xl font-bold">{stats.confirmed}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-info/30 bg-info/5">
-          <CardContent className="p-4">
-            <div className="text-muted-foreground text-sm">Ready Items</div>
-            <div className="text-info text-2xl font-bold">{stats.readyItems}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                placeholder="Search orders..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="rounded-md border px-3 py-2 text-sm"
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8">
+        {stats.map((stat) => (
+          <Card
+            key={stat.title}
+            className="hover:border-primary/30 border-2 transition-all hover:shadow-lg"
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-muted-foreground text-[10px] font-semibold sm:text-xs md:text-sm">
+                {stat.title}
+              </CardTitle>
+              <div
+                className={`bg-muted/50 flex h-7 w-7 items-center justify-center rounded-full sm:h-8 sm:w-8`}
               >
-                <option value="all">All Status</option>
-                <option value="Pending">Pending</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="rounded-md border px-3 py-2 text-sm"
-              >
-                <option value="all">All Types</option>
-                <option value="DineIn">Dine-In</option>
-                <option value="Takeaway">Takeaway</option>
-                <option value="Delivery">Delivery</option>
-              </select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSortBy(sortBy === 'time' ? 'priority' : 'time')}
-              >
-                <ArrowUpDown className="mr-2 h-4 w-4" />
-                {sortBy === 'time' ? 'Time' : 'Priority'}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Orders List */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredOrders.map((order) => (
-          <OrderCard
-            key={order.order_id}
-            order={order}
-            onConfirm={() => handleConfirmOrder(order)}
-            onCancel={() => handleCancelOrder(order)}
-            onView={() => alert(`View order ${order.order_id}`)}
-          />
+                <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 ${stat.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="from-primary to-primary/60 bg-linear-to-r bg-clip-text text-xl font-bold text-transparent sm:text-2xl md:text-3xl">
+                {stat.value}
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {filteredOrders.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Filter className="text-muted-foreground mb-4 h-12 w-12" />
-            <p className="text-lg font-medium">No orders found</p>
-            <p className="text-muted-foreground text-sm">Try adjusting your filters</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Filters */}
+      <Card className="border-2 p-4 shadow-md">
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="relative flex-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 transform" />
+            <Input
+              placeholder="🔍 Search by order ID, table number, or notes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="focus:border-primary h-11 border-2 pl-10"
+            />
+          </div>
+        </div>
+      </Card>
 
-      {/* Confirm Order Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Order</DialogTitle>
-            <DialogDescription>
-              Review order details and confirm to send to kitchen
-            </DialogDescription>
-          </DialogHeader>
+      {/* Tabs */}
+      <Tabs defaultValue="ALL" className="space-y-4">
+        <TabsList className="bg-card h-auto flex-wrap gap-1 rounded-lg border-2 p-2 shadow-sm">
+          <TabsTrigger
+            value="ALL"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            All{' '}
+            <Badge className="bg-background text-foreground ml-2">{groupedOrders.ALL.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="PENDING"
+            className="data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
+          >
+            Pending{' '}
+            <Badge className="bg-background text-foreground ml-2">
+              {groupedOrders.PENDING.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="CONFIRMED"
+            className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+          >
+            Confirmed{' '}
+            <Badge className="bg-background text-foreground ml-2">
+              {groupedOrders.CONFIRMED.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="PREPARING"
+            className="data-[state=active]:bg-purple-500 data-[state=active]:text-white"
+          >
+            Preparing{' '}
+            <Badge className="bg-background text-foreground ml-2">
+              {groupedOrders.PREPARING.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="READY"
+            className="data-[state=active]:bg-green-500 data-[state=active]:text-white"
+          >
+            Ready{' '}
+            <Badge className="bg-background text-foreground ml-2">
+              {groupedOrders.READY.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="SERVED"
+            className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white"
+          >
+            Served{' '}
+            <Badge className="bg-background text-foreground ml-2">
+              {groupedOrders.SERVED.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="PAID"
+            className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
+          >
+            Paid{' '}
+            <Badge className="bg-background text-foreground ml-2">
+              {groupedOrders.PAID.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="CANCELLED"
+            className="data-[state=active]:bg-red-500 data-[state=active]:text-white"
+          >
+            Cancelled{' '}
+            <Badge className="bg-background text-foreground ml-2">
+              {groupedOrders.CANCELLED.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
 
-          {selectedOrder && (
-            <div className="space-y-4">
-              {/* Order Summary */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="font-semibold">
-                      Order #{selectedOrder.order_id.slice(0, 8)}
-                    </span>
-                    <span className="font-bold">${selectedOrder.total_amount?.toFixed(2)}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {selectedOrder.items?.map((item) => (
-                      <div key={item.order_item_id} className="text-sm">
-                        <div className="flex justify-between">
-                          <span>
-                            {item.quantity}x {item.item_name_at_order}
-                          </span>
-                          <span>${(item.quantity * item.price_at_order).toFixed(2)}</span>
-                        </div>
-                        {item.notes && (
-                          <p className="text-muted-foreground mt-1 text-xs">Note: {item.notes}</p>
-                        )}
-                        {item.allergies && item.allergies.length > 0 && (
-                          <div className="mt-1 flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3 text-amber-600" />
-                            <p className="text-xs text-amber-600">
-                              Allergies: {item.allergies.join(', ')}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
+        {(
+          [
+            'ALL',
+            'PENDING',
+            'CONFIRMED',
+            'PREPARING',
+            'READY',
+            'SERVED',
+            'PAID',
+            'CANCELLED',
+          ] as const
+        ).map((status) => (
+          <TabsContent key={status} value={status} className="space-y-4">
+            {isLoading ? (
+              <Card className="border-2 p-12">
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Loader2 className="text-primary mb-4 h-12 w-12 animate-spin" />
+                  <p className="text-muted-foreground text-lg font-semibold">Loading orders...</p>
+                </div>
               </Card>
-
-              {/* Additional Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="confirm-notes">Additional Notes (Optional)</Label>
-                <Textarea
-                  id="confirm-notes"
-                  placeholder="Add any notes for the kitchen..."
-                  value={confirmNotes}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setConfirmNotes(e.target.value)
-                  }
-                  rows={3}
-                />
+            ) : groupedOrders[status].length === 0 ? (
+              <Card className="bg-muted/20 border-2 border-dashed p-12">
+                <div className="text-center">
+                  <div className="bg-muted/50 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full">
+                    <Receipt className="text-muted-foreground/50 h-10 w-10" />
+                  </div>
+                  <p className="text-foreground mb-2 text-xl font-bold">No orders found</p>
+                  <p className="text-muted-foreground mx-auto max-w-sm text-sm">
+                    {status === 'ALL'
+                      ? '📋 There are no orders to display. Orders will appear here once they are created.'
+                      : `🔍 There are no ${status.toLowerCase()} orders at the moment.`}
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                {groupedOrders[status].map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    onViewOrder={handleViewOrder}
+                    onUpdateStatus={handleUpdateStatus}
+                    onCancelOrder={confirmCancel}
+                    formatCurrency={formatCurrencyFn}
+                    formatDuration={formatDuration}
+                    formatDateTime={formatDateTime}
+                  />
+                ))}
               </div>
-            </div>
-          )}
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={confirmOrderAction}>Confirm Order</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Create Order Dialog */}
+      <CreateOrderDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onOrderCreated={loadOrders}
+      />
 
-      {/* Cancel Order Dialog */}
-      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+      {/* Order Detail Dialog */}
+      <OrderDetailDialog
+        open={showDetailDialog}
+        onOpenChange={handleDetailDialogClose}
+        order={selectedOrder}
+        onOrderUpdate={handleOrderUpdate}
+      />
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Cancel Order</DialogTitle>
-            <DialogDescription>Please provide a reason for cancelling this order</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to cancel this order? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="cancel-reason">Cancellation Reason *</Label>
-              <Textarea
-                id="cancel-reason"
-                placeholder="e.g., Customer changed mind, item not available..."
-                value={cancelReason}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setCancelReason(e.target.value)
-                }
-                rows={4}
-              />
-            </div>
-          </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
               Back
             </Button>
-            <Button variant="destructive" onClick={cancelOrderAction}>
-              Cancel Order
+            <Button variant="destructive" onClick={handleCancelOrder}>
+              Confirm Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
