@@ -8,19 +8,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { User, Mail, Phone, Lock, Camera, Save, Calendar, Shield, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Camera, Save, Calendar, Shield, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usersService } from '@/lib/api/services/users.service';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
 
   // Profile Form State
   const [profileForm, setProfileForm] = useState({
     name: user?.name || '',
     username: user?.username || '',
-    email: 'admin@restaurant.com', // Placeholder
-    phone: '0123456789', // Placeholder
   });
 
   // Password Form State
@@ -52,8 +51,13 @@ export default function ProfilePage() {
     setIsSaving(true);
 
     try {
-      // TODO: Implement API call to update profile
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!user?.id) return;
+
+      await usersService.updateUser(user.id, {
+        name: profileForm.name,
+      });
+
+      await refreshProfile();
 
       toast({
         title: 'Profile Updated',
@@ -260,41 +264,7 @@ export default function ProfilePage() {
                       <p className="text-muted-foreground text-xs">Username cannot be changed</p>
                     </div>
 
-                    {/* Email */}
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <div className="relative">
-                        <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="Enter your email"
-                          className="pl-10"
-                          value={profileForm.email}
-                          onChange={(e) =>
-                            setProfileForm({ ...profileForm, email: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
 
-                    {/* Phone */}
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <div className="relative">
-                        <Phone className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                        <Input
-                          id="phone"
-                          type="tel"
-                          placeholder="Enter your phone number"
-                          className="pl-10"
-                          value={profileForm.phone}
-                          onChange={(e) =>
-                            setProfileForm({ ...profileForm, phone: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
 
                     <div className="flex justify-end">
                       <Button type="submit" disabled={isSaving}>

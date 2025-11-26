@@ -138,6 +138,18 @@ class AuthService {
   }
 
   /**
+   * Get current user from API
+   */
+  async getMe(): Promise<User> {
+    const response = await apiClient.get<{
+      code: number;
+      message: string;
+      data: User;
+    }>(API_ENDPOINTS.AUTH.ME || '/auth/me');
+    return response.data.data;
+  }
+
+  /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {

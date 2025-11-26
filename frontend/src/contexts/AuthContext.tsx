@@ -20,6 +20,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<User>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
   hasRole: (role: string) => boolean;
 }
@@ -89,6 +90,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const refreshProfile = async () => {
+    try {
+      const updatedUser = await authService.getMe();
+      console.log('Refreshed user profile:', updatedUser);
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+      throw error;
+    }
+  };
+
   const hasPermission = (permission: string): boolean => {
     if (!user || !user.permissions) return false;
     return user.permissions.includes(permission);
@@ -106,6 +119,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     register,
     logout,
+    refreshProfile,
     hasPermission,
     hasRole,
   };

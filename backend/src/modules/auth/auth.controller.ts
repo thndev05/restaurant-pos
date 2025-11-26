@@ -7,7 +7,7 @@ import type { JwtPayload } from './strategies/jwt-payload.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Public()
   @Post('register')
@@ -29,7 +29,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@CurrentUser() user: JwtPayload) {
-    return this.authService.getMe(user.userId);
+  getMe(@CurrentUser() user: any) {
+    return this.authService.getMe(user.id);
   }
 }
