@@ -18,7 +18,54 @@ export class PaymentsService {
   }
 
   async createPayment(createPaymentDto: CreatePaymentDto) {
-    // Check if session exists
+    // For orders without session (TAKEAWAY), we'll directly update order status to PAID
+    // instead of creating a payment record
+    if (createPaymentDto.orderId && !createPaymentDto.sessionId) {
+      const order = await this.prismaService.order.findUnique({
+        where: { id: createPaymentDto.orderId },
+      });
+
+      if (!order) {
+        throw new BadRequestException(
+          `Order with ID "${createPaymentDto.orderId}" does not exist.`,
+        );
+      }
+
+      if (order.status === OrderStatus.PAID) {
+        throw new BadRequestException('Order is already paid.');
+      }
+
+      if (order.status === OrderStatus.CANCELLED) {
+        throw new BadRequestException(
+          'Cannot create payment for cancelled order.',
+        );
+      }
+
+      // Update order status to PAID
+      await this.prismaService.order.update({
+        where: { id: createPaymentDto.orderId },
+        data: { status: OrderStatus.PAID },
+      });
+
+      // Return a mock payment response for consistency
+      return {
+        code: 201,
+        message: 'Order marked as paid successfully.',
+        data: {
+          id: `mock-${createPaymentDto.orderId}`,
+          orderId: createPaymentDto.orderId,
+          totalAmount: createPaymentDto.totalAmount,
+          subTotal: createPaymentDto.subTotal,
+          tax: createPaymentDto.tax || '0',
+          discount: createPaymentDto.discount || '0',
+          paymentMethod: createPaymentDto.paymentMethod,
+          status: PaymentStatus.SUCCESS,
+          notes: createPaymentDto.notes,
+        },
+      };
+    }
+
+    // Original logic for session-based payments
     const session = await this.prismaService.tableSession.findUnique({
       where: { id: createPaymentDto.sessionId },
       include: {
@@ -46,7 +93,7 @@ export class PaymentsService {
     // Create payment
     const payment = await this.db.create({
       data: {
-        sessionId: createPaymentDto.sessionId,
+        sessionId: createPaymentDto.sessionId!,
         totalAmount: createPaymentDto.totalAmount,
         subTotal: createPaymentDto.subTotal,
         tax: createPaymentDto.tax || '0',
@@ -145,58 +192,63 @@ export class PaymentsService {
           notes: processPaymentDto.notes || payment.notes,
         },
         include: {
-          session: {
-            include: {
-              table: true,
+          session: payment.sessionId
+            ? {
+                include: {
+                  table: true,
+                },
+              }
+            : undefined,
+        },
+      });
+
+      if (payment.sessionId) {
+        // Process payment for session-based orders (DINE_IN)
+        // Update all orders in this session to PAID status
+        await tx.order.updateMany({
+          where: {
+            sessionId: payment.sessionId,
+            status: {
+              not: OrderStatus.CANCELLED,
             },
           },
-        },
-      });
-
-      // Update all orders in this session to PAID status
-      await tx.order.updateMany({
-        where: {
-          sessionId: payment.sessionId,
-          status: {
-            not: OrderStatus.CANCELLED,
+          data: {
+            status: OrderStatus.PAID,
           },
-        },
-        data: {
-          status: OrderStatus.PAID,
-        },
-      });
+        });
 
-      // Update all order items in this session to SERVED status
-      await tx.orderItem.updateMany({
-        where: {
-          order: {
-            sessionId: payment.sessionId,
+        // Update all order items in this session to SERVED status
+        await tx.orderItem.updateMany({
+          where: {
+            order: {
+              sessionId: payment.sessionId,
+            },
+            status: {
+              not: OrderItemStatus.CANCELLED,
+            },
           },
-          status: {
-            not: OrderItemStatus.CANCELLED,
+          data: {
+            status: OrderItemStatus.SERVED,
           },
-        },
-        data: {
-          status: OrderItemStatus.SERVED,
-        },
-      });
+        });
 
-      // Update session status to CLOSED
-      await tx.tableSession.update({
-        where: { id: payment.sessionId },
-        data: {
-          status: SessionStatus.CLOSED,
-          endTime: new Date(),
-        },
-      });
+        // Update session status to CLOSED
+        await tx.tableSession.update({
+          where: { id: payment.sessionId },
+          data: {
+            status: SessionStatus.CLOSED,
+            endTime: new Date(),
+          },
+        });
 
-      // Update table status to AVAILABLE
-      await tx.table.update({
-        where: { id: payment.session.tableId },
-        data: {
-          status: TableStatus.AVAILABLE,
-        },
-      });
+        // Update table status to AVAILABLE
+        await tx.table.update({
+          where: { id: payment.session.tableId },
+          data: {
+            status: TableStatus.AVAILABLE,
+          },
+        });
+      }
 
       return updatedPayment;
     });

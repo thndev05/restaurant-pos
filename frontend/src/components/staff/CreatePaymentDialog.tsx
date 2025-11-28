@@ -29,7 +29,8 @@ import { useToast } from '@/hooks/use-toast';
 interface CreatePaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sessionId: string;
+  sessionId?: string;
+  orderId?: string;
   orderTotal: number;
   onPaymentCreated?: () => void;
 }
@@ -60,6 +61,7 @@ export function CreatePaymentDialog({
   open,
   onOpenChange,
   sessionId,
+  orderId,
   orderTotal,
   onPaymentCreated,
 }: CreatePaymentDialogProps) {
@@ -91,7 +93,8 @@ export function CreatePaymentDialog({
     try {
       // Step 1: Create payment
       const createPaymentData: CreatePaymentData = {
-        sessionId,
+        ...(sessionId && { sessionId }),
+        ...(orderId && { orderId }),
         totalAmount,
         subTotal,
         tax: taxAmount,
@@ -101,13 +104,16 @@ export function CreatePaymentDialog({
       };
 
       const createResponse = await paymentsService.createPayment(createPaymentData);
-      const paymentId = createResponse.data.id;
 
-      // Step 2: Process payment immediately
-      await paymentsService.processPayment(paymentId, {
-        transactionId: transactionId || undefined,
-        notes: notes || undefined,
-      });
+      // Step 2: Process payment immediately (only for session-based payments)
+      // For order-based payments, the backend already marks order as PAID
+      if (sessionId && createResponse.data.id) {
+        const paymentId = createResponse.data.id;
+        await paymentsService.processPayment(paymentId, {
+          transactionId: transactionId || undefined,
+          notes: notes || undefined,
+        });
+      }
 
       toast({
         title: 'Success',

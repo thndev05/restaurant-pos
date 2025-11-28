@@ -11,7 +11,8 @@ export type PaymentMethod = 'CASH' | 'BANKING' | 'CARD';
 export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
 
 export interface CreatePaymentData {
-  sessionId: string;
+  sessionId?: string;
+  orderId?: string;
   totalAmount: number;
   subTotal: number;
   tax?: number;

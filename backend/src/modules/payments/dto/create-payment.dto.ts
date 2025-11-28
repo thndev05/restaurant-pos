@@ -8,8 +8,13 @@ import {
 import { PaymentMethod } from 'src/generated/prisma/';
 
 export class CreatePaymentDto {
+  @IsOptional()
   @IsUUID()
-  sessionId: string;
+  sessionId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  orderId?: string;
 
   @IsDecimal()
   totalAmount: string;

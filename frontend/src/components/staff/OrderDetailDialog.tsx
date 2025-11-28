@@ -765,19 +765,18 @@ export function OrderDetailDialog({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Payment Dialog */}
-      {order.sessionId && (
-        <CreatePaymentDialog
-          open={showPaymentDialog}
-          onOpenChange={setShowPaymentDialog}
-          sessionId={order.sessionId}
-          orderTotal={total}
-          onPaymentCreated={() => {
-            onOrderUpdate?.();
-            onOpenChange(false);
-          }}
-        />
-      )}
+      {/* Payment Dialog - Works for both session-based and non-session orders */}
+      <CreatePaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        sessionId={order.sessionId}
+        orderId={!order.sessionId ? order.id : undefined}
+        orderTotal={total}
+        onPaymentCreated={() => {
+          onOrderUpdate?.();
+          onOpenChange(false);
+        }}
+      />
 
       {/* Add Item Dialog - Using OrderManagementDialog */}
       {order.sessionId && (

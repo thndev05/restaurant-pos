@@ -273,6 +273,7 @@ model Order {
   session     TableSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   confirmedBy User?         @relation("OrderConfirmedBy", fields: [confirmedById], references: [id])
   orderItems  OrderItem[]
+  payment     Payment?
 
   @@index([sessionId, status])
   @@index([orderType, status])
@@ -317,11 +318,13 @@ model Payment {
   transactionId String?       @map("transaction_id")
   paymentTime   DateTime?     @map("payment_time")
   notes         String?       @db.Text
-  sessionId     String        @unique @map("session_id")
+  sessionId     String?       @unique @map("session_id")
+  orderId       String?       @unique @map("order_id")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  session TableSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session TableSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  order   Order?        @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([paymentTime])
