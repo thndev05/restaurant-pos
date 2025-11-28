@@ -59,12 +59,14 @@ export const API_ENDPOINTS = {
   SESSIONS: {
     BASE: 'sessions',
     BY_ID: (id: string | number) => `sessions/${id}`,
+    BILL: (id: string | number) => `sessions/${id}/bill`,
     CLOSE: (id: string | number) => `sessions/${id}/close`,
   },
   // Orders endpoints
   ORDERS: {
     BASE: 'orders',
     BY_ID: (id: string | number) => `orders/${id}`,
+    BILL: (id: string | number) => `orders/${id}/bill`,
     UPDATE_STATUS: (id: string | number) => `orders/${id}/status`,
     ADD_ITEMS: (id: string | number) => `orders/${id}/items`,
     CANCEL: (id: string | number) => `orders/${id}/cancel`,

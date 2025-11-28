@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,12 +18,13 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { DollarSign, CreditCard, Building2, Banknote } from 'lucide-react';
+import { DollarSign, CreditCard, Building2, Banknote, Printer, Loader2 } from 'lucide-react';
 import {
   paymentsService,
   type PaymentMethod,
   type CreatePaymentData,
 } from '@/lib/api/services/payments.service';
+import { ordersService, type OrderBill } from '@/lib/api/services/orders.service';
 import { useToast } from '@/hooks/use-toast';
 
 interface CreatePaymentDialogProps {
@@ -31,7 +32,7 @@ interface CreatePaymentDialogProps {
   onOpenChange: (open: boolean) => void;
   sessionId?: string;
   orderId?: string;
-  orderTotal: number;
+  orderTotal?: number;
   onPaymentCreated?: () => void;
 }
 
@@ -67,16 +68,56 @@ export function CreatePaymentDialog({
 }: CreatePaymentDialogProps) {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [discount, setDiscount] = useState<number>(0);
-  const [tax, setTax] = useState<number>(0);
+  const [tax, setTax] = useState<number>(10); // Default 10% tax
   const [notes, setNotes] = useState('');
   const [transactionId, setTransactionId] = useState('');
+  const [cashReceived, setCashReceived] = useState<string>('');
+  const [tipAmount, setTipAmount] = useState<string>('');
+  const [billData, setBillData] = useState<OrderBill | null>(null);
+  const [isLoadingBill, setIsLoadingBill] = useState(false);
 
-  const subTotal = orderTotal;
+  const loadBillDetails = useCallback(async () => {
+    if (!orderId) return;
+
+    setIsLoadingBill(true);
+    try {
+      const bill = await ordersService.getOrderBill(orderId);
+      setBillData(bill);
+      // Set tax from bill if available
+      if (bill.tax > 0) {
+        setTax((bill.tax / bill.subTotal) * 100);
+      }
+      if (bill.discount > 0) {
+        setDiscount((bill.discount / bill.subTotal) * 100);
+      }
+    } catch (error) {
+      console.error('Failed to load bill:', error);
+    } finally {
+      setIsLoadingBill(false);
+    }
+  }, [orderId]);
+
+  // Load bill details when dialog opens
+  useEffect(() => {
+    if (open && orderId) {
+      loadBillDetails();
+    }
+  }, [open, orderId, loadBillDetails]);
+
+  const subTotal = billData?.subTotal || orderTotal || 0;
   const taxAmount = (subTotal * tax) / 100;
   const discountAmount = (subTotal * discount) / 100;
   const totalAmount = subTotal + taxAmount - discountAmount;
+
+  const calculateChange = () => {
+    if (!cashReceived) return 0;
+    const tip = parseFloat(tipAmount) || 0;
+    const received = parseFloat(cashReceived) || 0;
+    return Math.max(0, received - totalAmount - tip);
+  };
 
   const handleCreateAndProcessPayment = async () => {
     // Check if payment method is not CASH
@@ -145,122 +186,409 @@ export function CreatePaymentDialog({
     }
   };
 
+  const handlePrintBill = async () => {
+    if (!billData) {
+      toast({
+        title: 'Error',
+        description: 'No bill data available',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsPrinting(true);
+    try {
+      const printWindow = window.open('', '', 'width=300,height=600');
+      if (!printWindow) {
+        throw new Error('Failed to open print window');
+      }
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Bill #${billData.orderNumber}</title>
+            <style>
+              body {
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                margin: 0;
+                padding: 10px;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 10px;
+                border-bottom: 1px dashed #000;
+                padding-bottom: 10px;
+              }
+              .header h2 {
+                margin: 5px 0;
+                font-size: 16px;
+              }
+              .info {
+                margin: 10px 0;
+                font-size: 11px;
+              }
+              .items {
+                margin: 10px 0;
+                border-top: 1px dashed #000;
+                border-bottom: 1px dashed #000;
+                padding: 10px 0;
+              }
+              .item {
+                display: flex;
+                justify-content: space-between;
+                margin: 5px 0;
+              }
+              .totals {
+                margin: 10px 0;
+              }
+              .total-line {
+                display: flex;
+                justify-content: space-between;
+                margin: 3px 0;
+              }
+              .total-line.grand-total {
+                font-weight: bold;
+                font-size: 14px;
+                border-top: 1px solid #000;
+                padding-top: 5px;
+                margin-top: 5px;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 10px;
+                border-top: 1px dashed #000;
+                padding-top: 10px;
+                font-size: 11px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h2>RESTAURANT POS</h2>
+              <div>Bill Receipt</div>
+            </div>
+            
+            <div class="info">
+              <div>Bill #: ${billData.orderNumber}</div>
+              <div>Date: ${new Date(billData.createdAt).toLocaleString()}</div>
+              ${billData.tableNumber ? `<div>Table: ${billData.tableNumber}</div>` : '<div>Order Type: Take Away</div>'}
+              ${billData.confirmedBy ? `<div>Server: ${billData.confirmedBy}</div>` : ''}
+            </div>
+
+            <div class="items">
+              ${billData.items
+                .map(
+                  (item) => `
+                <div class="item">
+                  <span>${item.quantity}x ${item.name}</span>
+                  <span>${formatCurrency(item.price * item.quantity)}</span>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+
+            <div class="totals">
+              <div class="total-line">
+                <span>Subtotal:</span>
+                <span>${formatCurrency(billData.subTotal)}</span>
+              </div>
+              <div class="total-line">
+                <span>Tax (${tax.toFixed(1)}%):</span>
+                <span>${formatCurrency(taxAmount)}</span>
+              </div>
+              ${
+                discount > 0
+                  ? `
+                <div class="total-line">
+                  <span>Discount (${discount.toFixed(1)}%):</span>
+                  <span>-${formatCurrency(discountAmount)}</span>
+                </div>
+              `
+                  : ''
+              }
+              <div class="total-line grand-total">
+                <span>TOTAL:</span>
+                <span>${formatCurrency(totalAmount)}</span>
+              </div>
+            </div>
+
+            <div class="footer">
+              <div>Thank you for dining with us!</div>
+              <div>Please come again</div>
+            </div>
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+
+      toast({
+        title: 'Success',
+        description: 'Bill printed successfully',
+      });
+    } catch (error) {
+      console.error('Failed to print bill:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to print bill',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Process Payment
+            Process Payment {billData && `- Bill #${billData.orderNumber}`}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Payment Method */}
-          <div className="space-y-2">
-            <Label htmlFor="payment-method">Payment Method</Label>
-            <Select
-              value={paymentMethod}
-              onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
-            >
-              <SelectTrigger id="payment-method">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PAYMENT_METHOD_CONFIG).map(([method, config]) => {
-                  const Icon = config.icon;
-                  return (
-                    <SelectItem key={method} value={method}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        {config.label}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Left Column - Bill Details */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Bill Details</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrintBill}
+                disabled={isPrinting || !billData}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                {isPrinting ? 'Printing...' : 'Print Bill'}
+              </Button>
+            </div>
+
+            {isLoadingBill ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+              </div>
+            ) : billData ? (
+              <div className="space-y-4">
+                {/* Bill Info */}
+                <div className="bg-muted space-y-2 rounded-lg p-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bill Number:</span>
+                    <span className="font-medium">{billData.orderNumber}</span>
+                  </div>
+                  {billData.tableNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Table:</span>
+                      <span className="font-medium">{billData.tableNumber}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type:</span>
+                    <span className="font-medium">
+                      {billData.tableNumber ? 'Dine In' : 'Take Away'}
+                    </span>
+                  </div>
+                  {billData.confirmedBy && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Server:</span>
+                      <span className="font-medium">{billData.confirmedBy}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Date:</span>
+                    <span className="font-medium">
+                      {new Date(billData.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Order Items */}
+                <div className="rounded-lg border">
+                  <div className="bg-muted px-4 py-2 font-semibold">Order Items</div>
+                  <div className="divide-y">
+                    {billData.items.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-muted-foreground text-sm">
+                            {formatCurrency(item.price)} × {item.quantity}
+                          </div>
+                        </div>
+                        <div className="font-medium">
+                          {formatCurrency(item.price * item.quantity)}
+                        </div>
                       </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-muted-foreground py-8 text-center">No bill data available</div>
+            )}
           </div>
 
-          {/* Transaction ID (for non-cash payments) */}
-          {paymentMethod !== 'CASH' && (
+          {/* Right Column - Payment Details */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Payment Details</h3>
+
+            {/* Payment Method */}
             <div className="space-y-2">
-              <Label htmlFor="transaction-id">Transaction ID (Optional)</Label>
-              <Input
-                id="transaction-id"
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-                placeholder="Enter transaction ID"
-              />
-            </div>
-          )}
-
-          <Separator />
-
-          {/* Amount Breakdown */}
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="discount">Discount (%)</Label>
-              <Input
-                id="discount"
-                type="number"
-                min="0"
-                max="100"
-                value={discount}
-                onChange={(e) => setDiscount(Number(e.target.value))}
-              />
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <Select
+                value={paymentMethod}
+                onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+              >
+                <SelectTrigger id="payment-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PAYMENT_METHOD_CONFIG).map(([method, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <SelectItem key={method} value={method}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {config.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tax">Tax/Service (%)</Label>
-              <Input
-                id="tax"
-                type="number"
-                min="0"
-                max="100"
-                value={tax}
-                onChange={(e) => setTax(Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Summary */}
-          <div className="bg-muted space-y-2 rounded-lg p-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal:</span>
-              <span>{formatCurrency(subTotal)}</span>
-            </div>
-            {tax > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tax ({tax}%):</span>
-                <span>{formatCurrency(taxAmount)}</span>
+            {/* Transaction ID (for non-cash payments) */}
+            {paymentMethod !== 'CASH' && (
+              <div className="space-y-2">
+                <Label htmlFor="transaction-id">Transaction ID (Optional)</Label>
+                <Input
+                  id="transaction-id"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                  placeholder="Enter transaction ID"
+                />
               </div>
             )}
-            {discount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Discount ({discount}%):</span>
-                <span className="text-red-600">-{formatCurrency(discountAmount)}</span>
-              </div>
-            )}
+
             <Separator />
-            <div className="flex justify-between text-lg font-bold">
-              <span>Total:</span>
-              <span>{formatCurrency(totalAmount)}</span>
-            </div>
-          </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add payment notes..."
-              rows={3}
-            />
+            {/* Discount and Tax Inputs */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="discount">Discount (%)</Label>
+                <Input
+                  id="discount"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={discount}
+                  onChange={(e) => setDiscount(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tax">Tax/Service (%)</Label>
+                <Input
+                  id="tax"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={tax}
+                  onChange={(e) => setTax(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            {/* Cash Payment Fields */}
+            {paymentMethod === 'CASH' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cash-received">Cash Received</Label>
+                  <Input
+                    id="cash-received"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={cashReceived}
+                    onChange={(e) => setCashReceived(e.target.value)}
+                    placeholder="Enter amount received"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tip">Tip (Optional)</Label>
+                  <Input
+                    id="tip"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={tipAmount}
+                    onChange={(e) => setTipAmount(e.target.value)}
+                    placeholder="Enter tip amount"
+                  />
+                </div>
+
+                {cashReceived && parseFloat(cashReceived) > 0 && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-green-900">Change to Return:</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        {formatCurrency(calculateChange())}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Summary */}
+            <div className="bg-muted space-y-2 rounded-lg p-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal:</span>
+                <span>{formatCurrency(subTotal)}</span>
+              </div>
+              {tax > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tax ({tax.toFixed(1)}%):</span>
+                  <span>{formatCurrency(taxAmount)}</span>
+                </div>
+              )}
+              {discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Discount ({discount.toFixed(1)}%):</span>
+                  <span className="text-red-600">-{formatCurrency(discountAmount)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total:</span>
+                <span>{formatCurrency(totalAmount)}</span>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add payment notes..."
+                rows={3}
+              />
+            </div>
           </div>
         </div>
 

@@ -87,6 +87,7 @@ export interface Order {
 
 export interface GetOrdersParams {
   status?: OrderStatus;
+  orderType?: OrderType;
   sessionId?: string;
   startDate?: string;
   endDate?: string;
@@ -94,6 +95,33 @@ export interface GetOrdersParams {
 
 export interface UpdateOrderStatusData {
   status: OrderStatus;
+}
+
+export interface OrderBillItem {
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+export interface OrderBill {
+  orderId: string;
+  orderNumber: string;
+  orderType: OrderType;
+  createdAt: string;
+  confirmedBy?: string | null;
+  items: OrderBillItem[];
+  subTotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  // For dine-in orders
+  tableNumber?: number;
+  customerCount?: number;
+  sessionId?: string;
+  // For takeaway orders
+  customerName?: string;
+  customerPhone?: string;
 }
 
 export interface UpdateOrderItemStatusData {
@@ -190,6 +218,14 @@ class OrdersService extends BaseApiService<never> {
    */
   async cancelOrder(id: string | number): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(API_ENDPOINTS.ORDERS.CANCEL(id), {});
+    return response.data;
+  }
+
+  /**
+   * Get order bill
+   */
+  async getOrderBill(id: string | number): Promise<OrderBill> {
+    const response = await apiClient.get<OrderBill>(API_ENDPOINTS.ORDERS.BILL(id));
     return response.data;
   }
 

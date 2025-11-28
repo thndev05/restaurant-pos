@@ -17,6 +17,7 @@ import {
   UpdateOrderStatusDto,
   UpdateOrderItemStatusDto,
   GetOrdersDto,
+  OrderBill,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -33,6 +34,19 @@ export class OrdersController {
   @Post()
   async createOrder(@Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.createOrder(createOrderDto);
+  }
+
+  @Get(':id/bill')
+  async getOrderBill(@Param('id') id: string): Promise<OrderBill> {
+    console.log(
+      'Get order bill called with ID:',
+      id,
+      'Type:',
+      typeof id,
+      'Length:',
+      id.length,
+    );
+    return this.ordersService.getOrderBill(id);
   }
 
   @Get(':id')

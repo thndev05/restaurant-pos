@@ -233,17 +233,20 @@ export class PaymentsService {
         });
 
         // Update session status to CLOSED
-        await tx.tableSession.update({
+        const updatedSession = await tx.tableSession.update({
           where: { id: payment.sessionId },
           data: {
             status: SessionStatus.CLOSED,
             endTime: new Date(),
           },
+          include: {
+            table: true,
+          },
         });
 
         // Update table status to AVAILABLE
         await tx.table.update({
-          where: { id: payment.session.tableId },
+          where: { id: updatedSession.tableId },
           data: {
             status: TableStatus.AVAILABLE,
           },

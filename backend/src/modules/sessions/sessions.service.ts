@@ -11,6 +11,36 @@ export class SessionsService {
     return this.prismaService.tableSession;
   }
 
+  async getAllSessions() {
+    const sessions = await this.db.findMany({
+      where: {
+        status: {
+          in: [SessionStatus.ACTIVE, SessionStatus.PAID],
+        },
+      },
+      include: {
+        table: true,
+        orders: {
+          include: {
+            orderItems: {
+              include: {
+                menuItem: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+      orderBy: {
+        startTime: 'asc',
+      },
+    });
+
+    return sessions;
+  }
+
   async createSession(createSessionDto: CreateSessionDto) {
     // Check if table exists
     const table = await this.prismaService.table.findUnique({
@@ -156,6 +186,43 @@ export class SessionsService {
     return {
       code: 200,
       message: `Session with ID "${id}" has been closed.`,
+    };
+  }
+
+  async getSessionBill(id: string) {
+    const session = await this.getSessionById(id);
+
+    // Calculate bill from orders
+    let subTotal = 0;
+    const orderItems: any[] = [];
+
+    session.orders.forEach((order) => {
+      order.orderItems.forEach((item) => {
+        subTotal += Number(item.priceAtOrder) * item.quantity;
+        orderItems.push({
+          name: item.itemNameAtOrder,
+          quantity: item.quantity,
+          price: Number(item.priceAtOrder),
+          total: Number(item.priceAtOrder) * item.quantity,
+        });
+      });
+    });
+
+    const taxRate = 0.1; // 10% VAT
+    const tax = subTotal * taxRate;
+    const discount = 0; // Can be implemented based on business logic
+    const total = subTotal + tax - discount;
+
+    return {
+      sessionId: session.id,
+      tableNumber: session.table.number,
+      customerCount: session.customerCount,
+      startTime: session.startTime,
+      items: orderItems,
+      subTotal: Number(subTotal.toFixed(2)),
+      tax: Number(tax.toFixed(2)),
+      discount: Number(discount.toFixed(2)),
+      total: Number(total.toFixed(2)),
     };
   }
 }

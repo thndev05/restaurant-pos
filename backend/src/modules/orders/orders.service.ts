@@ -7,6 +7,8 @@ import {
   UpdateOrderStatusDto,
   UpdateOrderItemStatusDto,
   GetOrdersDto,
+  OrderBill,
+  OrderBillItem,
 } from './dto';
 import {
   OrderStatus,
@@ -324,6 +326,13 @@ export class OrdersService {
             table: true,
           },
         },
+        confirmedBy: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+          },
+        },
       },
     });
 
@@ -478,5 +487,68 @@ export class OrdersService {
       code: 200,
       message: `Order with ID "${id}" has been cancelled.`,
     };
+  }
+
+  async getOrderBill(id: string): Promise<OrderBill> {
+    console.log('Getting order bill for ID:', id);
+
+    // Validate UUID format
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      throw new BadRequestException(`Invalid order ID format: ${id}`);
+    }
+
+    const order = await this.getOrderById(id);
+
+    if (!order.orderItems || order.orderItems.length === 0) {
+      throw new BadRequestException('Order has no items to calculate bill.');
+    }
+
+    // Calculate bill from order items
+    let subTotal = 0;
+    const orderItems: OrderBillItem[] = [];
+
+    order.orderItems.forEach((item) => {
+      const itemTotal = Number(item.priceAtOrder) * item.quantity;
+      subTotal += itemTotal;
+      orderItems.push({
+        name: item.itemNameAtOrder,
+        quantity: item.quantity,
+        price: Number(item.priceAtOrder),
+        total: Number(itemTotal.toFixed(2)),
+      });
+    });
+
+    const taxRate = 0.1; // 10% VAT
+    const tax = subTotal * taxRate;
+    const discount = 0; // Can be implemented based on business logic
+    const total = subTotal + tax - discount;
+
+    const billData: OrderBill = {
+      orderId: order.id,
+      orderNumber: order.id.substring(0, 8).toUpperCase(), // Use first 8 chars of UUID
+      orderType: order.orderType,
+      createdAt: order.createdAt,
+      confirmedBy: order.confirmedBy ? order.confirmedBy.name : null,
+      items: orderItems,
+      subTotal: Number(subTotal.toFixed(2)),
+      tax: Number(tax.toFixed(2)),
+      discount: Number(discount.toFixed(2)),
+      total: Number(total.toFixed(2)),
+    };
+
+    // Add session/table info for dine-in orders
+    if (order.orderType === OrderType.DINE_IN && order.session) {
+      billData.tableNumber = order.session.table.number;
+      billData.customerCount = order.session.customerCount;
+      billData.sessionId = order.session.id;
+    } else if (order.orderType === OrderType.TAKE_AWAY) {
+      // Add customer info for takeaway orders
+      billData.customerName = order.customerName;
+      billData.customerPhone = order.customerPhone;
+    }
+
+    return billData;
   }
 }

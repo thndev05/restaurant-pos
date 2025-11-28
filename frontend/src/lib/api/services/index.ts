@@ -43,7 +43,13 @@ export type { Table, CreateTableData, UpdateTableData } from './tables.service';
 export type { Customer, CreateCustomerData, UpdateCustomerData } from './customers.service';
 
 // Export types from sessions service
-export type { UpdateSessionData, CloseSessionData } from './sessions.service';
+export type {
+  UpdateSessionData,
+  CloseSessionData,
+  SessionBill,
+  TableSession,
+  SessionStatus,
+} from './sessions.service';
 
 // Export types from orders service
 export type {

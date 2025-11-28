@@ -1,12 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/staff/StatusBadge';
-import type { TableSession } from '@/types/staff';
-import { CreditCard, Banknote, DollarSign, Printer, Mail, Clock, Receipt } from 'lucide-react';
+import {
+  CreditCard,
+  Banknote,
+  DollarSign,
+  Printer,
+  Clock,
+  Receipt,
+  RefreshCw,
+  Loader2,
+  Phone,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,157 +24,421 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { ordersService, type Order, type OrderBillItem } from '@/lib/api/services/orders.service';
+import {
+  paymentsService,
+  type PaymentMethod,
+  type CreatePaymentData,
+} from '@/lib/api/services/payments.service';
 
-interface SessionWithBill extends TableSession {
-  bill?: {
-    sub_total: number;
-    vat: number;
-    discount: number;
+interface OrderBill {
+  orderId: string;
+  orderType: string;
+  createdAt: string;
+  tableNumber?: number;
+  customerCount?: number;
+  sessionId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  items: {
+    name: string;
+    quantity: number;
+    price: number;
     total: number;
-  };
+  }[];
+  subTotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+}
+
+interface OrderWithBill extends Order {
+  bill?: OrderBill;
 }
 
 export default function CashierPaymentQueuePage() {
+  const { toast } = useToast();
+  const toastRef = useRef(toast);
+  const isLoadingRef = useRef(false);
+
+  // Update toast ref when it changes
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSession, setSelectedSession] = useState<SessionWithBill | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithBill | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Online'>('Cash');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [cashReceived, setCashReceived] = useState('');
   const [tipAmount, setTipAmount] = useState('');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
-  // Mock data
-  const mockSessions: SessionWithBill[] = [
-    {
-      session_id: 'ses-001',
-      table_id: 'tbl-001',
-      start_time: new Date(Date.now() - 60 * 60000).toISOString(),
-      status: 'Active',
-      guest_name: 'John Doe',
-      party_size: 2,
-      table: {
-        table_id: 'tbl-001',
-        table_number: 'A1',
-        capacity: 4,
-        status: 'Occupied',
-        qr_code_key: 'qr1',
-      },
-      bill: {
-        sub_total: 45.0,
-        vat: 4.5,
-        discount: 0,
-        total: 49.5,
-      },
-      orders: [
-        {
-          order_id: 'ord-001',
-          session_id: 'ses-001',
-          status: 'Confirmed',
-          order_type: 'DineIn',
-          created_at: new Date(Date.now() - 50 * 60000).toISOString(),
-          items: [
-            {
-              order_item_id: 'oi-001',
-              order_id: 'ord-001',
-              item_id: 'item-001',
-              item_name_at_order: 'Beef Steak',
-              quantity: 2,
-              price_at_order: 19.99,
-              status: 'Served',
-            },
-            {
-              order_item_id: 'oi-002',
-              order_id: 'ord-001',
-              item_id: 'item-002',
-              item_name_at_order: 'Cola',
-              quantity: 2,
-              price_at_order: 2.51,
-              status: 'Served',
-            },
-          ],
-        },
-      ],
-    },
-    {
-      session_id: 'ses-002',
-      table_id: 'tbl-002',
-      start_time: new Date(Date.now() - 90 * 60000).toISOString(),
-      status: 'Active',
-      party_size: 4,
-      table: {
-        table_id: 'tbl-002',
-        table_number: 'B2',
-        capacity: 6,
-        status: 'Occupied',
-        qr_code_key: 'qr2',
-      },
-      bill: {
-        sub_total: 120.0,
-        vat: 12.0,
-        discount: 10.0,
-        total: 122.0,
-      },
-      orders: [
-        {
-          order_id: 'ord-002',
-          session_id: 'ses-002',
-          status: 'Confirmed',
-          order_type: 'DineIn',
-          created_at: new Date(Date.now() - 80 * 60000).toISOString(),
-          items: [
-            {
-              order_item_id: 'oi-003',
-              order_id: 'ord-002',
-              item_id: 'item-003',
-              item_name_at_order: 'Salmon',
-              quantity: 4,
-              price_at_order: 30.0,
-              status: 'Served',
-            },
-          ],
-        },
-      ],
-    },
-  ];
+  // Load orders ready for payment from API
+  const loadOrders = useCallback(async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      return;
+    }
 
-  const filteredSessions = mockSessions.filter((session) => {
+    isLoadingRef.current = true;
+    setIsLoading(true);
+    try {
+      // Get orders with SERVED or READY status in parallel (ready for payment)
+      const [servedOrders, readyOrders] = await Promise.all([
+        ordersService.getOrders({ status: 'SERVED' }),
+        ordersService.getOrders({ status: 'READY' }),
+      ]);
+
+      // Combine both SERVED and READY orders
+      const allReadyOrders = [...servedOrders, ...readyOrders];
+
+      // Filter out orders without items
+      const validOrders = allReadyOrders.filter(
+        (order) => order.orderItems && order.orderItems.length > 0
+      );
+
+      setOrders(validOrders);
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+      toastRef.current({
+        title: 'Error',
+        description: 'Failed to load payment queue',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+      isLoadingRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  const filteredOrders = orders.filter((order) => {
     const matchesSearch =
-      session.table?.table_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      session.guest_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (order.session && order.session.table.number.toString().includes(searchQuery)) ||
+      order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customerPhone?.includes(searchQuery) ||
+      order.notes?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
+  // Calculate stats (will be approximate until bills are loaded)
   const stats = {
-    pending: filteredSessions.length,
-    total_amount: filteredSessions.reduce((sum, s) => sum + (s.bill?.total || 0), 0),
+    pending: filteredOrders.length,
+    // Note: exact total requires loading each bill, showing count for now
+    total_amount: 0, // We'll calculate this differently
   };
 
-  const handleOpenPayment = (session: TableSession) => {
-    setSelectedSession(session);
-    setShowPaymentDialog(true);
-    setCashReceived('');
-    setTipAmount('');
+  const handleOpenPayment = async (order: Order) => {
+    try {
+      // Validate order ID format
+      if (!order.id || order.id.length === 0) {
+        throw new Error('Invalid order ID');
+      }
+
+      // Load bill details
+      const bill = await ordersService.getOrderBill(order.id);
+      setSelectedOrder({ ...order, bill });
+      setShowPaymentDialog(true);
+      setCashReceived('');
+      setTipAmount('');
+      setPaymentMethod('CASH');
+    } catch (error) {
+      console.error('Failed to load bill:', error);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast({
+        title: 'Error',
+        description: message || 'Failed to load bill details',
+        variant: 'destructive',
+      });
+    }
   };
 
   const calculateChange = () => {
-    if (!selectedSession || !cashReceived) return 0;
-    const total = selectedSession.bill?.total || 0;
+    if (!selectedOrder || !cashReceived) return 0;
+    const total = selectedOrder.bill?.total || 0;
     const tip = parseFloat(tipAmount) || 0;
     const received = parseFloat(cashReceived) || 0;
     return Math.max(0, received - total - tip);
   };
 
-  const handleProcessPayment = () => {
-    if (paymentMethod === 'Cash' && !cashReceived) {
-      alert('Please enter the amount received');
+  const handleProcessPayment = async () => {
+    if (!selectedOrder) return;
+
+    if (paymentMethod === 'CASH' && !cashReceived) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter the amount received',
+        variant: 'destructive',
+      });
       return;
     }
 
-    const change = calculateChange();
-    alert(
-      `Processing ${paymentMethod} payment for session ${selectedSession?.session_id}\n` +
-        (paymentMethod === 'Cash' ? `Change: $${change.toFixed(2)}` : '')
-    );
-    setShowPaymentDialog(false);
+    if (paymentMethod === 'CASH') {
+      const total = selectedOrder.bill?.total || 0;
+      const received = parseFloat(cashReceived) || 0;
+      if (received < total) {
+        toast({
+          title: 'Validation Error',
+          description: 'Cash received is less than the total amount',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    setIsProcessing(true);
+    try {
+      const bill = selectedOrder.bill!;
+
+      // Create payment
+      const paymentData: CreatePaymentData = {
+        sessionId: selectedOrder.sessionId, // Will be undefined for takeaway
+        orderId: selectedOrder.id,
+        totalAmount: bill.total,
+        subTotal: bill.subTotal,
+        tax: bill.tax,
+        discount: bill.discount,
+        paymentMethod: paymentMethod,
+        notes: tipAmount ? `Tip: $${tipAmount}` : undefined,
+      };
+
+      const paymentResponse = await paymentsService.createPayment(paymentData);
+
+      // Process payment (mark as paid)
+      if (paymentResponse.data.id && !paymentResponse.data.id.startsWith('mock-')) {
+        await paymentsService.processPayment(paymentResponse.data.id);
+      }
+
+      const change = calculateChange();
+      toast({
+        title: 'Payment Processed',
+        description:
+          paymentMethod === 'CASH'
+            ? `Payment completed. Change: $${change.toFixed(2)}`
+            : 'Payment completed successfully',
+      });
+
+      setShowPaymentDialog(false);
+      loadOrders(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to process payment:', error);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast({
+        title: 'Error',
+        description: message || 'Failed to process payment',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePrintBill = async (order: Order) => {
+    setIsPrinting(true);
+    try {
+      // Validate order ID
+      if (!order.id || order.id.length === 0) {
+        throw new Error('Invalid order ID');
+      }
+
+      // Load bill details
+      const billData = await ordersService.getOrderBill(order.id);
+
+      // Create a printable bill
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        throw new Error('Unable to open print window');
+      }
+
+      const billHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Bill - Table ${billData.tableNumber}</title>
+          <style>
+            body {
+              font-family: 'Courier New', monospace;
+              max-width: 300px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            h1 {
+              text-align: center;
+              font-size: 20px;
+              margin-bottom: 10px;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px dashed #000;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
+            }
+            .info {
+              margin-bottom: 10px;
+              font-size: 12px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 10px;
+            }
+            th, td {
+              text-align: left;
+              padding: 5px 0;
+              font-size: 12px;
+            }
+            th {
+              border-bottom: 1px solid #000;
+            }
+            .item-row {
+              border-bottom: 1px dashed #ccc;
+            }
+            .totals {
+              border-top: 2px solid #000;
+              padding-top: 10px;
+              margin-top: 10px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 3px 0;
+              font-size: 12px;
+            }
+            .grand-total {
+              font-weight: bold;
+              font-size: 16px;
+              border-top: 2px solid #000;
+              padding-top: 5px;
+              margin-top: 5px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 20px;
+              padding-top: 10px;
+              border-top: 2px dashed #000;
+              font-size: 12px;
+            }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>RESTAURANT POS</h1>
+            <div>Tax Invoice</div>
+          </div>
+          
+          <div class="info">
+            <div>Date: ${new Date().toLocaleString()}</div>
+            <div>Order: ${billData.orderId.slice(0, 8).toUpperCase()}</div>
+            <div>Type: ${billData.orderType === 'DINE_IN' ? 'Dine-In' : 'Takeaway'}</div>
+            ${billData.tableNumber ? `<div>Table: ${billData.tableNumber}</div>` : ''}
+            ${billData.customerCount ? `<div>Guests: ${billData.customerCount}</div>` : ''}
+            ${billData.customerName ? `<div>Customer: ${billData.customerName}</div>` : ''}
+            ${billData.customerPhone ? `<div>Phone: ${billData.customerPhone}</div>` : ''}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th style="text-align: center">Qty</th>
+                <th style="text-align: right">Price</th>
+                <th style="text-align: right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${billData.items
+                .map(
+                  (item: OrderBillItem) => `
+                <tr class="item-row">
+                  <td>${item.name}</td>
+                  <td style="text-align: center">${item.quantity}</td>
+                  <td style="text-align: right">$${item.price.toFixed(2)}</td>
+                  <td style="text-align: right">$${item.total.toFixed(2)}</td>
+                </tr>
+              `
+                )
+                .join('')}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>$${billData.subTotal.toFixed(2)}</span>
+            </div>
+            <div class="total-row">
+              <span>Tax (10%):</span>
+              <span>$${billData.tax.toFixed(2)}</span>
+            </div>
+            ${
+              billData.discount > 0
+                ? `
+            <div class="total-row">
+              <span>Discount:</span>
+              <span>-$${billData.discount.toFixed(2)}</span>
+            </div>
+            `
+                : ''
+            }
+            <div class="total-row grand-total">
+              <span>TOTAL:</span>
+              <span>$${billData.total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            <div>Thank you for dining with us!</div>
+            <div>Please come again</div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(billHtml);
+      printWindow.document.close();
+      printWindow.focus();
+
+      // Wait for content to load then print
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+
+      toast({
+        title: 'Bill Printed',
+        description: 'Bill sent to printer successfully',
+      });
+    } catch (error) {
+      console.error('Failed to print bill:', error);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast({
+        title: 'Error',
+        description: message || 'Failed to print bill',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   const getSessionDuration = (startTime: string) => {
@@ -180,11 +453,17 @@ export default function CashierPaymentQueuePage() {
   return (
     <div className="space-y-4 p-4 sm:space-y-6 sm:p-6 md:p-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Cashier - Payment Queue</h1>
-        <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-          Process payments and manage transactions
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Cashier - Payment Queue</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+            Process payments and manage transactions
+          </p>
+        </div>
+        <Button onClick={loadOrders} disabled={isLoading} size="sm" variant="outline">
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Stats */}
@@ -218,83 +497,96 @@ export default function CashierPaymentQueuePage() {
         </CardContent>
       </Card>
 
-      {/* Sessions List */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {filteredSessions.map((session) => (
-          <Card key={session.session_id} className="hover:shadow-md">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg">Table {session.table?.table_number}</CardTitle>
-                  {session.guest_name && (
-                    <p className="text-muted-foreground text-sm">{session.guest_name}</p>
-                  )}
-                </div>
-                <StatusBadge status={session.status} />
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {/* Session Info */}
-              <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{getSessionDuration(session.start_time)}</span>
-                </div>
-                {session.party_size && (
-                  <div>
-                    <Badge variant="outline">{session.party_size} guests</Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* Bill Summary */}
-              {session.bill && (
-                <div className="space-y-2 rounded-lg border bg-slate-50 p-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal:</span>
-                    <span>${session.bill.sub_total.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">VAT (10%):</span>
-                    <span>${session.bill.vat.toFixed(2)}</span>
-                  </div>
-                  {session.bill.discount > 0 && (
-                    <div className="text-success flex justify-between text-sm">
-                      <span>Discount:</span>
-                      <span>-${session.bill.discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t pt-2 font-bold">
-                    <span>Total:</span>
-                    <span className="text-lg">${session.bill.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Button className="flex-1" onClick={() => handleOpenPayment(session)}>
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Process Payment
-                </Button>
-                <Button variant="outline" size="icon">
-                  <Printer className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredSessions.length === 0 && (
+      {/* Orders List */}
+      {isLoading ? (
+        <Card className="border-2 p-12">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="text-primary mb-4 h-12 w-12 animate-spin" />
+            <p className="text-muted-foreground text-lg font-semibold">Loading orders...</p>
+          </div>
+        </Card>
+      ) : filteredOrders.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Receipt className="text-muted-foreground mb-4 h-12 w-12" />
             <p className="text-lg font-medium">No pending payments</p>
-            <p className="text-muted-foreground text-sm">All sessions have been settled</p>
+            <p className="text-muted-foreground text-sm">
+              {searchQuery
+                ? 'No orders match your search criteria'
+                : 'All orders have been settled'}
+            </p>
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {filteredOrders.map((order) => (
+            <Card key={order.id} className="hover:shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">
+                      {order.orderType === 'DINE_IN' && order.session ? (
+                        <>🍽️ Table {order.session.table.number}</>
+                      ) : (
+                        <>📦 Takeaway - {order.customerName}</>
+                      )}
+                    </CardTitle>
+                    {order.notes && <p className="text-muted-foreground text-sm">{order.notes}</p>}
+                  </div>
+                  <StatusBadge status={order.status} />
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {/* Order Info */}
+                <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{getSessionDuration(order.createdAt)}</span>
+                  </div>
+                  {order.orderType === 'DINE_IN' && order.session?.customerCount && (
+                    <div>
+                      <Badge variant="outline">{order.session.customerCount} guests</Badge>
+                    </div>
+                  )}
+                  {order.orderType === 'TAKE_AWAY' && order.customerPhone && (
+                    <div className="text-muted-foreground flex items-center gap-1 text-xs">
+                      <Phone className="h-3 w-3" />
+                      <span>{order.customerPhone}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bill Preview */}
+                <div className="space-y-2 rounded-lg border bg-slate-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Ready for payment</span>
+                    <Receipt className="text-muted-foreground h-4 w-4" />
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    {order.orderItems.length} item(s) • Click to view bill
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={() => handleOpenPayment(order)}>
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Process Payment
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handlePrintBill(order)}
+                    disabled={isPrinting}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* Payment Dialog */}
@@ -303,33 +595,56 @@ export default function CashierPaymentQueuePage() {
           <DialogHeader>
             <DialogTitle>Process Payment</DialogTitle>
             <DialogDescription>
-              Table {selectedSession?.table?.table_number}
-              {selectedSession?.guest_name && ` - ${selectedSession.guest_name}`}
+              {selectedOrder?.orderType === 'DINE_IN' && selectedOrder?.session ? (
+                <>
+                  Table {selectedOrder.session.table.number}
+                  {selectedOrder.session.customerCount &&
+                    ` - ${selectedOrder.session.customerCount} guests`}
+                </>
+              ) : (
+                <>
+                  Takeaway - {selectedOrder?.customerName}
+                  {selectedOrder?.customerPhone && ` (${selectedOrder.customerPhone})`}
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
 
-          {selectedSession && (
+          {selectedOrder && selectedOrder.bill && (
             <div className="space-y-4">
+              {/* Bill Items */}
+              <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border bg-slate-50 p-4">
+                <h4 className="mb-2 text-sm font-semibold">Order Items:</h4>
+                {selectedOrder.bill.items.map((item: OrderBillItem, index: number) => (
+                  <div key={index} className="flex justify-between text-xs">
+                    <span>
+                      {item.quantity}x {item.name}
+                    </span>
+                    <span>${item.total.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
               {/* Bill Summary */}
               <div className="rounded-lg border bg-slate-50 p-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal:</span>
-                    <span>${(selectedSession.bill?.sub_total || 0).toFixed(2)}</span>
+                    <span>${selectedOrder.bill.subTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">VAT:</span>
-                    <span>${(selectedSession.bill?.vat || 0).toFixed(2)}</span>
+                    <span className="text-muted-foreground">Tax (10%):</span>
+                    <span>${selectedOrder.bill.tax.toFixed(2)}</span>
                   </div>
-                  {(selectedSession.bill?.discount || 0) > 0 && (
+                  {selectedOrder.bill.discount > 0 && (
                     <div className="text-success flex justify-between text-sm">
                       <span>Discount:</span>
-                      <span>-${(selectedSession.bill?.discount || 0).toFixed(2)}</span>
+                      <span>-${selectedOrder.bill.discount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between border-t pt-2 text-lg font-bold">
                     <span>Total:</span>
-                    <span>${(selectedSession.bill?.total || 0).toFixed(2)}</span>
+                    <span>${selectedOrder.bill.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -337,28 +652,36 @@ export default function CashierPaymentQueuePage() {
               {/* Payment Method */}
               <div className="space-y-2">
                 <Label>Payment Method</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
-                    variant={paymentMethod === 'Cash' ? 'default' : 'outline'}
-                    onClick={() => setPaymentMethod('Cash')}
+                    variant={paymentMethod === 'CASH' ? 'default' : 'outline'}
+                    onClick={() => setPaymentMethod('CASH')}
                     className="w-full"
                   >
                     <Banknote className="mr-2 h-4 w-4" />
                     Cash
                   </Button>
                   <Button
-                    variant={paymentMethod === 'Online' ? 'default' : 'outline'}
-                    onClick={() => setPaymentMethod('Online')}
+                    variant={paymentMethod === 'BANKING' ? 'default' : 'outline'}
+                    onClick={() => setPaymentMethod('BANKING')}
                     className="w-full"
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Online
+                    Banking
+                  </Button>
+                  <Button
+                    variant={paymentMethod === 'CARD' ? 'default' : 'outline'}
+                    onClick={() => setPaymentMethod('CARD')}
+                    className="w-full"
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Card
                   </Button>
                 </div>
               </div>
 
               {/* Cash Payment Fields */}
-              {paymentMethod === 'Cash' && (
+              {paymentMethod === 'CASH' && (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="cash-received">Cash Received *</Label>
@@ -396,11 +719,14 @@ export default function CashierPaymentQueuePage() {
               )}
 
               {/* Online Payment */}
-              {paymentMethod === 'Online' && (
+              {(paymentMethod === 'BANKING' || paymentMethod === 'CARD') && (
                 <div className="rounded-lg border bg-blue-50 p-4 text-sm text-blue-900">
-                  <p className="font-medium">Online Payment</p>
+                  <p className="font-medium">
+                    {paymentMethod === 'BANKING' ? 'Banking' : 'Card'} Payment
+                  </p>
                   <p className="mt-1 text-xs">
-                    A payment link will be sent to the customer or you can scan the QR code
+                    Confirm that the payment has been received through{' '}
+                    {paymentMethod === 'BANKING' ? 'bank transfer' : 'card terminal'}
                   </p>
                 </div>
               )}
@@ -411,16 +737,36 @@ export default function CashierPaymentQueuePage() {
             <Button
               variant="outline"
               onClick={() => setShowPaymentDialog(false)}
+              disabled={isProcessing}
               className="w-full sm:w-auto"
             >
               Cancel
             </Button>
-            <Button onClick={handleProcessPayment} className="w-full sm:flex-1">
-              <Receipt className="mr-2 h-4 w-4" />
-              Complete Payment
+            <Button
+              onClick={() => selectedOrder && handlePrintBill(selectedOrder)}
+              variant="outline"
+              disabled={isProcessing || isPrinting}
+              className="w-full sm:w-auto"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              Print Bill
             </Button>
-            <Button variant="outline" size="icon">
-              <Mail className="h-4 w-4" />
+            <Button
+              onClick={handleProcessPayment}
+              disabled={isProcessing}
+              className="w-full sm:flex-1"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Complete Payment
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

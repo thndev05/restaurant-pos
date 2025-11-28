@@ -21,9 +21,19 @@ export class SessionsController {
     return this.sessionsService.createSession(createSessionDto);
   }
 
+  @Get()
+  async getAllSessions() {
+    return this.sessionsService.getAllSessions();
+  }
+
   @Get(':id')
   async getSessionById(@Param('id') id: string) {
     return this.sessionsService.getSessionById(id);
+  }
+
+  @Get(':id/bill')
+  async getSessionBill(@Param('id') id: string) {
+    return this.sessionsService.getSessionBill(id);
   }
 
   @Patch(':id')
