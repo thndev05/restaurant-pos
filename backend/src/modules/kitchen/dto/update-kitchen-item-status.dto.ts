@@ -1,7 +1,7 @@
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { OrderItemStatus } from 'src/generated/prisma';
 
-export class UpdateOrderItemStatusDto {
+export class UpdateKitchenItemStatusDto {
   @IsEnum(OrderItemStatus)
   status: OrderItemStatus;
 

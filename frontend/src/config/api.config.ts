@@ -88,4 +88,9 @@ export const API_ENDPOINTS = {
     BY_SESSION: (sessionId: string | number) => `actions/session/${sessionId}`,
     PENDING: 'actions/pending',
   },
+  // Kitchen endpoints
+  KITCHEN: {
+    ITEMS: 'kitchen/items',
+    ITEM_STATUS: (itemId: string | number) => `kitchen/items/${itemId}/status`,
+  },
 } as const;

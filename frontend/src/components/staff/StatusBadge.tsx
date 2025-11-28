@@ -7,6 +7,12 @@ interface StatusBadgeProps {
   className?: string;
 }
 
+const humanizeStatus = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 const STATUS_CONFIG: Record<
   string,
   {
@@ -82,11 +88,21 @@ const STATUS_CONFIG: Record<
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = STATUS_CONFIG[status] || { variant: 'default' as const };
+  const rawStatus = String(status);
+  const statusKey = STATUS_CONFIG[rawStatus]
+    ? rawStatus
+    : STATUS_CONFIG[humanizeStatus(rawStatus)]
+      ? humanizeStatus(rawStatus)
+      : rawStatus;
+
+  const config =
+    STATUS_CONFIG[statusKey] ||
+    ({ variant: 'default' } as (typeof STATUS_CONFIG)[keyof typeof STATUS_CONFIG]);
+  const label = humanizeStatus(rawStatus);
 
   return (
     <Badge variant={config.variant} className={cn('text-xs', config.className, className)}>
-      {status}
+      {label}
     </Badge>
   );
 }

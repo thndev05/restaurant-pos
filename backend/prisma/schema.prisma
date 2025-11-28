@@ -287,6 +287,11 @@ model OrderItem {
   itemNameAtOrder String          @map("item_name_at_order")
   status          OrderItemStatus @default(PENDING)
   notes           String?         @db.Text
+  allergies       String[]        @default([])
+  cookingStartedAt DateTime?      @map("cooking_started_at")
+  readyAt         DateTime?       @map("ready_at")
+  servedAt        DateTime?       @map("served_at")
+  rejectionReason String?         @map("rejection_reason")
   orderId         String          @map("order_id")
   menuItemId      String          @map("menu_item_id")
   createdAt       DateTime        @default(now()) @map("created_at")

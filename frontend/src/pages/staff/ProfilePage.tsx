@@ -264,8 +264,6 @@ export default function ProfilePage() {
                       <p className="text-muted-foreground text-xs">Username cannot be changed</p>
                     </div>
 
-
-
                     <div className="flex justify-end">
                       <Button type="submit" disabled={isSaving}>
                         <Save className="mr-2 h-4 w-4" />

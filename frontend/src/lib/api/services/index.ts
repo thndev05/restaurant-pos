@@ -14,6 +14,7 @@ export { customersService } from './customers.service';
 export { sessionsService } from './sessions.service';
 export { ordersService } from './orders.service';
 export { paymentsService } from './payments.service';
+export { kitchenService } from './kitchen.service';
 
 // Export types from auth service (User type is exported here explicitly)
 export type {
@@ -60,6 +61,15 @@ export type {
   ProcessPaymentData,
   Payment,
 } from './payments.service';
+
+// Export types from kitchen service
+export type {
+  KitchenItem,
+  KitchenStats,
+  KitchenQueueFilters,
+  KitchenQueueResponse,
+  UpdateKitchenItemStatusPayload,
+} from './kitchen.service';
 
 // Export actions service
 export { actionsService } from './actions.service';

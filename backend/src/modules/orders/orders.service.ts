@@ -409,11 +409,38 @@ export class OrdersService {
       throw new BadRequestException('Cannot update a cancelled item.');
     }
 
-    const { status } = updateOrderItemStatusDto;
+    const itemMeta = orderItem as typeof orderItem & {
+      cookingStartedAt?: Date | null;
+      readyAt?: Date | null;
+      servedAt?: Date | null;
+      rejectionReason?: string | null;
+    };
+
+    const { status, reason } = updateOrderItemStatusDto;
+    const now = new Date();
+    const data: Prisma.OrderItemUpdateInput & Record<string, unknown> = {
+      status,
+    };
+
+    if (status === OrderItemStatus.COOKING && !itemMeta.cookingStartedAt) {
+      data['cookingStartedAt'] = now;
+    }
+
+    if (status === OrderItemStatus.READY) {
+      data['readyAt'] = now;
+    }
+
+    if (status === OrderItemStatus.SERVED) {
+      data['servedAt'] = now;
+    }
+
+    if (status === OrderItemStatus.CANCELLED && reason) {
+      data['rejectionReason'] = reason;
+    }
 
     await this.orderItemDb.update({
       where: { id: itemId },
-      data: { status },
+      data,
     });
 
     return {

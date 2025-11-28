@@ -20,8 +20,6 @@ export interface MenuItem {
     name: string;
   };
   isAvailable: boolean;
-  preparationTime?: number; // in minutes
-  allergens?: string[];
   tags?: string[];
   createdAt: string;
   updatedAt: string;
@@ -33,8 +31,6 @@ export interface CreateMenuItemData {
   price: number;
   image?: string;
   categoryId: string;
-  preparationTime?: number;
-  allergens?: string[];
   tags?: string[];
 }
 
@@ -45,8 +41,6 @@ export interface UpdateMenuItemData {
   image?: string;
   categoryId?: string;
   isAvailable?: boolean;
-  preparationTime?: number;
-  allergens?: string[];
   tags?: string[];
 }
 

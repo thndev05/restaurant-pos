@@ -868,6 +868,7 @@ async function main() {
 
   console.log(`✅ Created ${menuItems.count} menu items successfully!`);
 
+  // Enrich menu items with kitchen metadata
   // Create tables with locations
   const tables = await prisma.table.createMany({
     data: [

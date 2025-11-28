@@ -22,6 +22,15 @@ export interface MenuItem {
   name: string;
   price: number;
   image?: string;
+  categoryId: string;
+  category?: {
+    id: string;
+    name: string;
+  };
+  isAvailable: boolean;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderItem {
@@ -31,6 +40,11 @@ export interface OrderItem {
   itemNameAtOrder: string;
   status: OrderItemStatus;
   notes?: string;
+  allergies?: string[];
+  cookingStartedAt?: string | null;
+  readyAt?: string | null;
+  servedAt?: string | null;
+  rejectionReason?: string | null;
   orderId: string;
   menuItemId: string;
   menuItem: MenuItem;
@@ -84,6 +98,7 @@ export interface UpdateOrderStatusData {
 
 export interface UpdateOrderItemStatusData {
   status: OrderItemStatus;
+  reason?: string;
 }
 
 export interface CreateOrderItemData {

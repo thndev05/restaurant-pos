@@ -74,7 +74,6 @@ export interface OrderItem {
   image_url?: string;
   modifiers?: string[]; // Food modifiers
   allergies?: string[]; // Allergy warnings
-  station?: string; // Kitchen station (grill, drink, dessert)
   cooking_started_at?: string;
   ready_at?: string;
   served_at?: string;
@@ -136,7 +135,6 @@ export interface MenuItem {
   image_url?: string;
   is_available: boolean;
   tags?: string[];
-  station?: string;
 }
 
 // Staff
