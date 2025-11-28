@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Calendar,
   Check,
@@ -17,11 +23,21 @@ import {
   MessageSquare,
   Sparkles,
   Gift,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { CustomerLayout } from '@/layouts/customer';
+import { reservationsService } from '@/lib/api/services';
+import type { Table } from '@/lib/api/services/reservations.service';
+import { useToast } from '@/hooks/use-toast';
+import type { AxiosError } from 'axios';
 
 export default function ReservationPage() {
+  const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [availableTables, setAvailableTables] = useState<Table[]>([]);
+  const [loadingTables, setLoadingTables] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,21 +45,98 @@ export default function ReservationPage() {
     date: '',
     time: '',
     guests: '2',
+    tableId: '',
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle reservation submission
-    console.log('Reservation:', formData);
-    setSubmitted(true);
+    setLoading(true);
+
+    try {
+      // Combine date and time into ISO string
+      const reservationDateTime = new Date(`${formData.date}T${formData.time}`);
+
+      await reservationsService.createReservation({
+        reservationTime: reservationDateTime.toISOString(),
+        partySize: parseInt(formData.guests),
+        guestName: formData.name,
+        guestPhone: formData.phone,
+        guestEmail: formData.email || undefined,
+        notes: formData.message || undefined,
+        tableId: formData.tableId,
+      });
+
+      setSubmitted(true);
+      toast({
+        title: 'Reservation Confirmed!',
+        description: 'Your table has been successfully reserved.',
+      });
+    } catch (error: unknown) {
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const errorMessage =
+        axiosError.response?.data?.message || 'Failed to create reservation. Please try again.';
+
+      toast({
+        variant: 'destructive',
+        title: 'Reservation Failed',
+        description: errorMessage,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const handleGuestsChange = (value: string) => {
+    setFormData({ ...formData, guests: value });
+    // Reset table selection when party size changes
+    setFormData((prev) => ({ ...prev, guests: value, tableId: '' }));
+  };
+
+  const handleTableChange = (value: string) => {
+    setFormData({ ...formData, tableId: value });
+  };
+
+  // Fetch available tables when date, time, and guests are selected
+  const fetchAvailableTables = useCallback(async () => {
+    if (formData.date && formData.time && formData.guests) {
+      setLoadingTables(true);
+      try {
+        const reservationDateTime = new Date(`${formData.date}T${formData.time}`);
+        const tables = await reservationsService.getAvailableTables(
+          reservationDateTime.toISOString(),
+          parseInt(formData.guests)
+        );
+        setAvailableTables(tables);
+
+        // Auto-select first table if available and no table is selected
+        setFormData((prev) => {
+          if (tables.length > 0 && !prev.tableId) {
+            return { ...prev, tableId: tables[0].id };
+          }
+          return prev;
+        });
+      } catch (error) {
+        console.error('Failed to fetch available tables:', error);
+        setAvailableTables([]);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load available tables. Please try again.',
+        });
+      } finally {
+        setLoadingTables(false);
+      }
+    }
+  }, [formData.date, formData.time, formData.guests, toast]);
+
+  useEffect(() => {
+    fetchAvailableTables();
+  }, [fetchAvailableTables]);
 
   if (submitted) {
     return (
@@ -70,20 +163,35 @@ export default function ReservationPage() {
                     <span className="font-medium">Name:</span>
                     <span>{formData.name}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Mail className="h-5 w-5 text-emerald-600" />
-                    <span className="font-medium">Email:</span>
-                    <span>{formData.email}</span>
-                  </div>
+                  {formData.email && (
+                    <div className="flex items-center gap-3 text-gray-700">
+                      <Mail className="h-5 w-5 text-emerald-600" />
+                      <span className="font-medium">Email:</span>
+                      <span>{formData.email}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 text-gray-700">
                     <Calendar className="h-5 w-5 text-emerald-600" />
                     <span className="font-medium">Date:</span>
-                    <span>{formData.date}</span>
+                    <span>
+                      {new Date(`${formData.date}T${formData.time}`).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
                     <Clock className="h-5 w-5 text-emerald-600" />
                     <span className="font-medium">Time:</span>
-                    <span>{formData.time}</span>
+                    <span>
+                      {new Date(`${formData.date}T${formData.time}`).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      })}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
                     <Users className="h-5 w-5 text-emerald-600" />
@@ -102,19 +210,21 @@ export default function ReservationPage() {
                 </div>
               </div>
 
-              <div className="mb-6 rounded-lg border-2 border-emerald-200 bg-emerald-50 p-4">
-                <div className="flex items-start gap-3">
-                  <Gift className="mt-1 h-6 w-6 flex-shrink-0 text-emerald-600" />
-                  <div>
-                    <p className="font-semibold text-gray-900">Confirmation Email Sent!</p>
-                    <p className="text-sm text-gray-600">
-                      We've sent a confirmation to{' '}
-                      <span className="font-medium">{formData.email}</span>. Please check your
-                      inbox.
-                    </p>
+              {formData.email && (
+                <div className="mb-6 rounded-lg border-2 border-emerald-200 bg-emerald-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <Gift className="mt-1 h-6 w-6 flex-shrink-0 text-emerald-600" />
+                    <div>
+                      <p className="font-semibold text-gray-900">Confirmation Email Sent!</p>
+                      <p className="text-sm text-gray-600">
+                        We've sent a confirmation to{' '}
+                        <span className="font-medium">{formData.email}</span>. Please check your
+                        inbox.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="flex gap-3">
                 <Button
@@ -198,7 +308,7 @@ export default function ReservationPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address *</Label>
+                      <Label htmlFor="email">Email Address (Optional)</Label>
                       <Input
                         id="email"
                         name="email"
@@ -206,7 +316,6 @@ export default function ReservationPage() {
                         placeholder="john@example.com"
                         value={formData.email}
                         onChange={handleChange}
-                        required
                       />
                     </div>
 
@@ -245,27 +354,74 @@ export default function ReservationPage() {
                       <div className="space-y-2">
                         <Label htmlFor="guests">Guests *</Label>
                         <div className="relative">
-                          <Users className="pointer-events-none absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                          <Users className="pointer-events-none absolute top-1/2 left-3 z-10 h-5 w-5 -translate-y-1/2 text-gray-400" />
                           <Select
-                            id="guests"
-                            name="guests"
-                            className="pl-10"
                             value={formData.guests}
-                            onChange={handleChange}
+                            onValueChange={handleGuestsChange}
                             required
                           >
-                            <option value="1">1 Guest</option>
-                            <option value="2">2 Guests</option>
-                            <option value="3">3 Guests</option>
-                            <option value="4">4 Guests</option>
-                            <option value="5">5 Guests</option>
-                            <option value="6">6 Guests</option>
-                            <option value="7">7 Guests</option>
-                            <option value="8">8+ Guests</option>
+                            <SelectTrigger className="pl-10">
+                              <SelectValue placeholder="Select number of guests" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1 Guest</SelectItem>
+                              <SelectItem value="2">2 Guests</SelectItem>
+                              <SelectItem value="3">3 Guests</SelectItem>
+                              <SelectItem value="4">4 Guests</SelectItem>
+                              <SelectItem value="5">5 Guests</SelectItem>
+                              <SelectItem value="6">6 Guests</SelectItem>
+                              <SelectItem value="7">7 Guests</SelectItem>
+                              <SelectItem value="8">8+ Guests</SelectItem>
+                            </SelectContent>
                           </Select>
                         </div>
                       </div>
                     </div>
+
+                    {/* Table Selection */}
+                    {formData.date && formData.time && formData.guests && (
+                      <div className="space-y-2">
+                        <Label htmlFor="table">Select Table *</Label>
+                        {loadingTables ? (
+                          <div className="flex items-center justify-center rounded-md border border-gray-300 bg-gray-50 p-4">
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin text-emerald-600" />
+                            <span className="text-sm text-gray-600">
+                              Finding available tables...
+                            </span>
+                          </div>
+                        ) : availableTables.length > 0 ? (
+                          <Select
+                            value={formData.tableId}
+                            onValueChange={handleTableChange}
+                            required
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose your table" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableTables.map((table) => (
+                                <SelectItem key={table.id} value={table.id}>
+                                  Table {table.number} (Capacity: {table.capacity}
+                                  {table.location ? `, ${table.location}` : ''})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-4">
+                            <AlertCircle className="h-5 w-5 flex-shrink-0 text-amber-600" />
+                            <div>
+                              <p className="text-sm font-medium text-amber-900">
+                                No tables available
+                              </p>
+                              <p className="text-sm text-amber-700">
+                                Please select a different time or party size.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="message">Special Requests (Optional)</Label>
@@ -282,10 +438,24 @@ export default function ReservationPage() {
                     <Button
                       type="submit"
                       size="lg"
-                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-lg font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/40"
+                      disabled={
+                        loading ||
+                        !formData.tableId ||
+                        (loadingTables && availableTables.length === 0)
+                      }
+                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-lg font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/40 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <Calendar className="mr-2 h-5 w-5" />
-                      Confirm Reservation
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="mr-2 h-5 w-5" />
+                          Confirm Reservation
+                        </>
+                      )}
                     </Button>
                   </form>
                 </CardContent>

@@ -541,12 +541,12 @@ export class OrdersService {
     // Add session/table info for dine-in orders
     if (order.orderType === OrderType.DINE_IN && order.session) {
       billData.tableNumber = order.session.table.number;
-      billData.customerCount = order.session.customerCount;
+      billData.customerCount = order.session.customerCount ?? undefined;
       billData.sessionId = order.session.id;
     } else if (order.orderType === OrderType.TAKE_AWAY) {
       // Add customer info for takeaway orders
-      billData.customerName = order.customerName;
-      billData.customerPhone = order.customerPhone;
+      billData.customerName = order.customerName ?? undefined;
+      billData.customerPhone = order.customerPhone ?? undefined;
     }
 
     return billData;

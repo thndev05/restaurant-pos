@@ -95,4 +95,12 @@ export const API_ENDPOINTS = {
     ITEMS: 'kitchen/items',
     ITEM_STATUS: (itemId: string | number) => `kitchen/items/${itemId}/status`,
   },
+  // Reservations endpoints
+  RESERVATIONS: {
+    BASE: 'reservations',
+    BY_ID: (id: string | number) => `reservations/${id}`,
+    AVAILABLE_TABLES: 'reservations/available-tables',
+    CONFIRM: (id: string | number) => `reservations/${id}/confirm`,
+    CANCEL: (id: string | number) => `reservations/${id}/cancel`,
+  },
 } as const;

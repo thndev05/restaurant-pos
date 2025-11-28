@@ -88,3 +88,15 @@ export type {
   UpdateActionData,
   Action,
 } from './actions.service';
+
+// Export reservations service
+export { reservationsService } from './reservations.service';
+
+// Export types from reservations service
+export type {
+  ReservationStatus,
+  Reservation,
+  CreateReservationData,
+  UpdateReservationData,
+  GetReservationsParams,
+} from './reservations.service';

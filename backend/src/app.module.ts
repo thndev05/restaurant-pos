@@ -1,6 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, Reflector } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './config/prisma/prisma.module';
 import { MenuItemsModule } from './modules/menu-items/menu-items.module';
 import { CloudinaryModule } from './config/cloudinary/cloudinary.module';
@@ -15,6 +16,7 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { ActionsModule } from './modules/actions/actions.module';
 import { KitchenModule } from './modules/kitchen/kitchen.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
@@ -26,6 +28,12 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 10, // 10 requests per minute (default)
+      },
+    ]),
     PrismaModule,
     CloudinaryModule,
     AuthModule,
@@ -40,8 +48,14 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     RolesModule,
     ActionsModule,
     KitchenModule,
+    ReservationsModule,
   ],
   providers: [
+    // Global throttler guard for rate limiting
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     // Global guards for RBAC
     {
       provide: APP_GUARD,
