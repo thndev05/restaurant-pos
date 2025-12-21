@@ -139,7 +139,7 @@ export function TableCard({ table, onClick, className }: TableCardProps) {
         {/* Reserved Info with Upcoming Reservations */}
         {table.status === 'Reserved' && table.reservations && table.reservations.length > 0 && (
           <div className="border-t pt-3">
-            <div className="bg-blue-50 border-blue-200 rounded-md border p-2">
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-2">
               <div className="mb-1 flex items-center gap-2 text-xs font-medium text-blue-700">
                 <Calendar className="h-3 w-3" />
                 <span>Reserved</span>
@@ -148,7 +148,8 @@ export function TableCard({ table, onClick, className }: TableCardProps) {
                 <div key={reservation.id} className="mt-1 text-xs text-blue-600">
                   <div className="font-medium">{reservation.guestName}</div>
                   <div className="text-muted-foreground">
-                    {format(parseISO(reservation.reservationTime), 'p')} • {reservation.partySize} guests
+                    {format(parseISO(reservation.reservationTime), 'p')} • {reservation.partySize}{' '}
+                    guests
                   </div>
                 </div>
               ))}
@@ -165,7 +166,7 @@ export function TableCard({ table, onClick, className }: TableCardProps) {
         {table.status === 'Available' && (
           <div className="border-t pt-3">
             {table.reservations && table.reservations.length > 0 ? (
-              <div className="bg-amber-50 border-amber-200 rounded-md border p-2">
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-2">
                 <div className="mb-1 flex items-center gap-2 text-xs font-medium text-amber-700">
                   <Calendar className="h-3 w-3" />
                   <span>Upcoming Reservations</span>

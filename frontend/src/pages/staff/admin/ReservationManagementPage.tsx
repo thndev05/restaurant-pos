@@ -1,12 +1,32 @@
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Calendar, Clock, Users, Phone, MapPin, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
-import { reservationsService, type Reservation, type ReservationStatus } from '@/lib/api/services/reservations.service';
+import {
+  Calendar,
+  Clock,
+  Users,
+  Phone,
+  MapPin,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Eye,
+} from 'lucide-react';
+import {
+  reservationsService,
+  type Reservation,
+  type ReservationStatus,
+} from '@/lib/api/services/reservations.service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -40,7 +60,7 @@ export default function ReservationManagementPage() {
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [statistics, setStatistics] = useState<any>(null);
-  
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -191,19 +211,19 @@ export default function ReservationManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading reservations...</p>
+          <div className="border-primary mx-auto h-12 w-12 animate-spin rounded-full border-b-2"></div>
+          <p className="text-muted-foreground mt-4">Loading reservations...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Reservation Management</h1>
           <p className="text-muted-foreground">Manage and track restaurant reservations</p>
@@ -212,7 +232,7 @@ export default function ReservationManagementPage() {
 
       {/* Statistics Cards */}
       {statistics && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Total Today</CardTitle>
@@ -270,9 +290,9 @@ export default function ReservationManagementPage() {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <label className="text-sm font-medium mb-2 block">Search</label>
+              <label className="mb-2 block text-sm font-medium">Search</label>
               <Input
                 placeholder="Search by name, phone, or table..."
                 value={searchQuery}
@@ -280,7 +300,7 @@ export default function ReservationManagementPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Status</label>
+              <label className="mb-2 block text-sm font-medium">Status</label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="All statuses" />
@@ -296,7 +316,7 @@ export default function ReservationManagementPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Date</label>
+              <label className="mb-2 block text-sm font-medium">Date</label>
               <Input
                 type="date"
                 value={dateFilter}
@@ -312,14 +332,14 @@ export default function ReservationManagementPage() {
         {filteredReservations.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+              <AlertCircle className="text-muted-foreground mb-4 h-12 w-12" />
               <p className="text-lg font-medium">No reservations found</p>
-              <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
+              <p className="text-muted-foreground text-sm">Try adjusting your filters</p>
             </CardContent>
           </Card>
         ) : (
           filteredReservations.map((reservation) => (
-            <Card key={reservation.id} className="hover:shadow-md transition-shadow">
+            <Card key={reservation.id} className="transition-shadow hover:shadow-md">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-3">
@@ -328,26 +348,26 @@ export default function ReservationManagementPage() {
                         {STATUS_LABELS[reservation.status]}
                       </Badge>
                       <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <MapPin className="text-muted-foreground h-4 w-4" />
                         <span className="font-medium">Table {reservation.table?.number}</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <Calendar className="text-muted-foreground h-4 w-4" />
                         <span className="text-sm">
                           {format(parseISO(reservation.reservationTime), 'PPP')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <Clock className="text-muted-foreground h-4 w-4" />
                         <span className="text-sm">
                           {format(parseISO(reservation.reservationTime), 'p')}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <Users className="text-muted-foreground h-4 w-4" />
                         <span className="text-sm">{reservation.partySize} guests</span>
                       </div>
                     </div>
@@ -357,19 +377,19 @@ export default function ReservationManagementPage() {
                         <span className="font-medium">{reservation.guestName}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <Phone className="text-muted-foreground h-4 w-4" />
                         <span>{reservation.guestPhone}</span>
                       </div>
                     </div>
 
                     {reservation.notes && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         <span className="font-medium">Notes:</span> {reservation.notes}
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-2 ml-4">
+                  <div className="ml-4 flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => viewDetails(reservation)}>
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -379,7 +399,7 @@ export default function ReservationManagementPage() {
                         onClick={() => handleConfirm(reservation.id)}
                         className="bg-blue-500 hover:bg-blue-600"
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
+                        <CheckCircle className="mr-1 h-4 w-4" />
                         Confirm
                       </Button>
                     )}
@@ -407,7 +427,7 @@ export default function ReservationManagementPage() {
                         variant="outline"
                         onClick={() => handleCancel(reservation.id)}
                       >
-                        <XCircle className="h-4 w-4 mr-1" />
+                        <XCircle className="mr-1 h-4 w-4" />
                         Cancel
                       </Button>
                     )}
@@ -424,15 +444,13 @@ export default function ReservationManagementPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Reservation Details</DialogTitle>
-            <DialogDescription>
-              Complete information about this reservation
-            </DialogDescription>
+            <DialogDescription>Complete information about this reservation</DialogDescription>
           </DialogHeader>
           {selectedReservation && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <label className="text-muted-foreground text-sm font-medium">Status</label>
                   <div className="mt-1">
                     <Badge className={`${STATUS_COLORS[selectedReservation.status]} text-white`}>
                       {STATUS_LABELS[selectedReservation.status]}
@@ -440,48 +458,58 @@ export default function ReservationManagementPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Table</label>
+                  <label className="text-muted-foreground text-sm font-medium">Table</label>
                   <p className="mt-1 font-medium">Table {selectedReservation.table?.number}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Date</label>
-                  <p className="mt-1">{format(parseISO(selectedReservation.reservationTime), 'PPP')}</p>
+                  <label className="text-muted-foreground text-sm font-medium">Date</label>
+                  <p className="mt-1">
+                    {format(parseISO(selectedReservation.reservationTime), 'PPP')}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Time</label>
-                  <p className="mt-1">{format(parseISO(selectedReservation.reservationTime), 'p')}</p>
+                  <label className="text-muted-foreground text-sm font-medium">Time</label>
+                  <p className="mt-1">
+                    {format(parseISO(selectedReservation.reservationTime), 'p')}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Guest Name</label>
+                  <label className="text-muted-foreground text-sm font-medium">Guest Name</label>
                   <p className="mt-1">{selectedReservation.guestName}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                  <label className="text-muted-foreground text-sm font-medium">Phone</label>
                   <p className="mt-1">{selectedReservation.guestPhone}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Party Size</label>
+                  <label className="text-muted-foreground text-sm font-medium">Party Size</label>
                   <p className="mt-1">{selectedReservation.partySize} guests</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Table Capacity</label>
+                  <label className="text-muted-foreground text-sm font-medium">
+                    Table Capacity
+                  </label>
                   <p className="mt-1">{selectedReservation.table?.capacity} seats</p>
                 </div>
               </div>
               {selectedReservation.notes && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Notes</label>
-                  <p className="mt-1 p-3 bg-muted rounded-md">{selectedReservation.notes}</p>
+                  <label className="text-muted-foreground text-sm font-medium">Notes</label>
+                  <p className="bg-muted mt-1 rounded-md p-3">{selectedReservation.notes}</p>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+              <div className="grid grid-cols-2 gap-4 border-t pt-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Created At</label>
-                  <p className="mt-1 text-sm">{format(parseISO(selectedReservation.createdAt), 'PPp')}</p>
+                  <label className="text-muted-foreground text-sm font-medium">Created At</label>
+                  <p className="mt-1 text-sm">
+                    {format(parseISO(selectedReservation.createdAt), 'PPp')}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Updated At</label>
-                  <p className="mt-1 text-sm">{format(parseISO(selectedReservation.updatedAt), 'PPp')}</p>
+                  <label className="text-muted-foreground text-sm font-medium">Updated At</label>
+                  <p className="mt-1 text-sm">
+                    {format(parseISO(selectedReservation.updatedAt), 'PPp')}
+                  </p>
                 </div>
               </div>
             </div>

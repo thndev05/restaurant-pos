@@ -355,11 +355,15 @@ export class ReservationsService {
     const reservation = await this.getReservationById(id);
 
     if (reservation.status === ReservationStatus.NO_SHOW) {
-      throw new BadRequestException('Reservation is already marked as no-show.');
+      throw new BadRequestException(
+        'Reservation is already marked as no-show.',
+      );
     }
 
     if (reservation.status === ReservationStatus.COMPLETED) {
-      throw new BadRequestException('Cannot mark completed reservation as no-show.');
+      throw new BadRequestException(
+        'Cannot mark completed reservation as no-show.',
+      );
     }
 
     // Update reservation status
@@ -412,7 +416,11 @@ export class ReservationsService {
    */
   async getReservationStatistics() {
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const endOfDay = new Date(startOfDay);
     endOfDay.setDate(endOfDay.getDate() + 1);
 

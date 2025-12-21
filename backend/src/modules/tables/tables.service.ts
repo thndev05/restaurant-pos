@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { CreateTableDto, UpdateTableDto, GetTablesDto } from './dto';
 import { TableStatus, ReservationStatus } from 'src/generated/prisma';
@@ -228,11 +232,13 @@ export class TablesService {
     });
 
     if (!table) {
-      throw new BadRequestException(`Table with ID "${tableId}" does not exist.`);
+      throw new BadRequestException(
+        `Table with ID "${tableId}" does not exist.`,
+      );
     }
 
     const now = new Date();
-    
+
     return this.prismaService.reservation.findMany({
       where: {
         tableId,

@@ -24,19 +24,23 @@ export class ReservationsSchedulerService {
 
     try {
       // Find all confirmed reservations that have passed (outside 2-hour window)
-      const expiredReservations = await this.prismaService.reservation.findMany({
-        where: {
-          status: ReservationStatus.CONFIRMED,
-          reservationTime: {
-            lt: twoHoursAgo,
+      const expiredReservations = await this.prismaService.reservation.findMany(
+        {
+          where: {
+            status: ReservationStatus.CONFIRMED,
+            reservationTime: {
+              lt: twoHoursAgo,
+            },
+          },
+          include: {
+            table: true,
           },
         },
-        include: {
-          table: true,
-        },
-      });
+      );
 
-      this.logger.log(`Found ${expiredReservations.length} expired reservations`);
+      this.logger.log(
+        `Found ${expiredReservations.length} expired reservations`,
+      );
 
       // Release tables that are still marked as RESERVED
       for (const reservation of expiredReservations) {
