@@ -1,7 +1,8 @@
-import { PrismaClient, RoleName } from '../src/generated/prisma';
+import { PrismaClient, RoleName, Prisma } from '../src/generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
+import { faker } from '@faker-js/faker';
 import 'dotenv/config';
 
 const pool = new Pool({
@@ -9,6 +10,9 @@ const pool = new Pool({
 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
+
+// Set Faker seed for consistent data generation
+faker.seed(12345);
 
 async function main() {
   console.log('🌱 Starting database seeding...');
@@ -664,251 +668,297 @@ async function main() {
 
   console.log('✅ Created 5 categories successfully!');
 
-  // Create sample menu items
+  // Create sample menu items with real images
   const menuItems = await prisma.menuItem.createMany({
     data: [
-      // Combo
+      // Combo Meals - Premium Value Sets
       {
-        name: '1pc Chicken + Pepsi Combo',
-        description: '1 piece of fried chicken with Pepsi',
-        price: 4.99,
-        image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec',
-        categoryId: comboCategory.id,
-        tags: ['Combo', 'Popular'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: '2pc Chicken + Fries + Pepsi Combo',
-        description: '2 pieces of fried chicken with fries and Pepsi',
-        price: 8.99,
-        image: 'https://images.unsplash.com/photo-1562967914-608f82629710',
-        categoryId: comboCategory.id,
-        tags: ['Combo', 'Best Seller'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: '3pc Chicken + 2 Fries + 2 Pepsi Combo',
-        description: '3 pieces of fried chicken with 2 fries and 2 Pepsi',
-        price: 12.99,
-        image: 'https://images.unsplash.com/photo-1598511757337-fe2cafc31ba0',
-        categoryId: comboCategory.id,
-        tags: ['Combo', 'Value'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Family Combo (6pc + 3 Fries + 4 Drinks)',
-        description: 'Family combo: 6 chicken pieces, 3 fries, 4 drinks',
-        price: 24.99,
-        image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec',
-        categoryId: comboCategory.id,
-        tags: ['Combo', 'Family', 'Value'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Party Combo (9pc + 4 Fries + 6 Drinks)',
-        description: 'Party combo: 9 chicken pieces, 4 fries, 6 drinks',
-        price: 34.99,
-        image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec',
-        categoryId: comboCategory.id,
-        tags: ['Combo', 'Party', 'Value'],
-        isAvailable: true,
-        isActive: true,
-      },
-
-      // Fried Chicken
-      {
-        name: 'Crispy Spicy Chicken (1pc)',
-        description: 'Crispy spicy fried chicken - 1 piece',
-        price: 3.99,
-        image: 'https://images.unsplash.com/photo-1562967914-608f82629710',
-        categoryId: friedChickenCategory.id,
-        tags: ['Spicy', 'Popular'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Traditional Fried Chicken (1pc)',
-        description: 'Traditional fried chicken - 1 piece',
-        price: 3.49,
-        image: 'https://images.unsplash.com/photo-1598511757337-fe2cafc31ba0',
-        categoryId: friedChickenCategory.id,
-        tags: ['Classic'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Boneless Chicken Strips (3pc)',
-        description: 'Boneless fried chicken - 3 pieces',
-        price: 4.99,
-        image: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec',
-        categoryId: friedChickenCategory.id,
-        tags: ['Boneless', 'Kids Favorite'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Crispy Spicy Chicken (2pc)',
-        description: 'Crispy spicy fried chicken - 2 pieces',
-        price: 7.49,
-        image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec',
-        categoryId: friedChickenCategory.id,
-        tags: ['Spicy', 'Value'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Traditional Fried Chicken (3pc)',
-        description: 'Traditional fried chicken - 3 pieces',
-        price: 9.99,
-        categoryId: friedChickenCategory.id,
-        tags: ['Classic', 'Value'],
-        isAvailable: true,
-        isActive: true,
-      },
-
-      // Burgers
-      {
-        name: 'Crispy Chicken Burger',
-        description: 'Crispy chicken burger with fresh lettuce',
-        price: 4.49,
-        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd',
-        categoryId: burgerCategory.id,
-        tags: ['Burger', 'Popular'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Teriyaki Chicken Burger',
-        description: 'Teriyaki glazed chicken burger',
-        price: 4.99,
-        image: 'https://images.unsplash.com/photo-1550547660-d9450f859349',
-        categoryId: burgerCategory.id,
-        tags: ['Burger', 'Special'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Chicken Cheeseburger',
-        description: 'Chicken burger with melted cheese',
-        price: 5.49,
-        image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add',
-        categoryId: burgerCategory.id,
-        tags: ['Burger', 'Cheese', 'Best Seller'],
-        isAvailable: true,
-        isActive: true,
-      },
-      {
-        name: 'Special Spicy Chicken Burger',
-        description: 'Extra spicy chicken burger with special sauce',
+        name: 'Classic Chicken Combo',
+        description: 'Our signature fried chicken piece served with golden fries and refreshing Pepsi. Perfect for a quick, satisfying meal.',
         price: 5.99,
-        image: 'https://images.unsplash.com/photo-1572802419224-296b0aeee0d9',
-        categoryId: burgerCategory.id,
-        tags: ['Burger', 'Spicy', 'Premium'],
+        image: 'https://cdn.sanity.io/images/czqk28jt/prod_plk_us/3e04cf76b6993b2a4e8d276197831fc49f97c794-2000x1333.png?q=80&auto=format',
+        categoryId: comboCategory.id,
+        tags: ['Combo', 'Popular', 'Best Value'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Double Crunch Meal',
+        description: '2 pieces of our crispy fried chicken with regular fries and choice of drink. Great for moderate appetite.',
+        price: 9.99,
+        image: 'https://foodiefellas.co.uk/wp-content/uploads/2024/05/double-crunch-master-burger-with-box-min.png',
+        categoryId: comboCategory.id,
+        tags: ['Combo', 'Best Seller', 'Recommended'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Trio Power Box',
+        description: '3 succulent chicken pieces paired with 2 regular fries and 2 drinks. Ideal for sharing or solo indulgence.',
+        price: 14.99,
+        image: 'https://res.cloudinary.com/dbq5ulk6b/image/upload/v1766333336/1_wzadop.png',
+        categoryId: comboCategory.id,
+        tags: ['Combo', 'Value', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Family Feast',
+        description: 'Perfect family meal with 6 crispy chicken pieces, 3 large fries, and 4 drinks. Serves 3-4 people comfortably.',
+        price: 27.99,
+        image: 'https://res.cloudinary.com/dbq5ulk6b/image/upload/v1766333482/2_gyybu1.png',
+        categoryId: comboCategory.id,
+        tags: ['Combo', 'Family', 'Value', 'Best Seller'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Party Bucket',
+        description: 'Ultimate party package! 9 pieces of golden fried chicken, 4 large fries, and 6 beverages. Perfect for gatherings.',
+        price: 39.99,
+        image: 'https://res.cloudinary.com/dbq5ulk6b/image/upload/v1766333668/3_swaxzw.png',
+        categoryId: comboCategory.id,
+        tags: ['Combo', 'Party', 'Value', 'Sharing'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Mega Feast Box',
+        description: 'The ultimate value combo with 5 chicken pieces, 3 fries, 2 burgers, and 4 drinks. Feed the whole crew!',
+        price: 32.99,
+        image: 'https://res.cloudinary.com/dbq5ulk6b/image/upload/v1766334138/4_itqurq.png',
+        categoryId: comboCategory.id,
+        tags: ['Combo', 'Premium', 'Family', 'Best Value'],
         isAvailable: true,
         isActive: true,
       },
 
-      // Sides
+      // Fried Chicken - Fresh & Crispy
       {
-        name: 'French Fries (Medium)',
-        description: 'Crispy golden french fries',
-        price: 2.49,
-        image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877',
-        categoryId: sideCategory.id,
-        tags: ['Side', 'Popular'],
+        name: 'Original Crispy Chicken (1pc)',
+        description: 'Our legendary original recipe fried chicken. Crispy on the outside, juicy on the inside. A timeless classic.',
+        price: 3.99,
+        image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTkQO371YtMvaDRWJ3hrc79Q0CTe8oFZmBDGA&s',
+        categoryId: friedChickenCategory.id,
+        tags: ['Spicy', 'Popular', 'Signature'],
         isAvailable: true,
         isActive: true,
       },
       {
-        name: 'French Fries (Large)',
-        description: 'Extra large crispy fries',
+        name: 'Southern Fried Chicken (1pc)',
+        description: 'Traditional Southern-style fried chicken seasoned with our secret blend of 11 herbs and spices.',
         price: 3.49,
-        image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877',
-        categoryId: sideCategory.id,
-        tags: ['Side', 'Value'],
+        image: 'https://www.crimsoncoward.com/wp-content/uploads/2023/10/3Chicken-Tenders.png',
+        categoryId: friedChickenCategory.id,
+        tags: ['Classic', 'Traditional'],
         isAvailable: true,
         isActive: true,
       },
       {
-        name: 'Cheese Shaker Fries',
-        description: 'Fries tossed with savory cheese powder',
-        price: 2.99,
-        categoryId: sideCategory.id,
-        tags: ['Side', 'Cheese', 'Premium'],
+        name: 'Crispy Tenders (3pc)',
+        description: 'Premium boneless chicken strips breaded with our signature coating. Perfect for kids and tender lovers.',
+        price: 5.49,
+        image: 'https://i0.wp.com/carlsjr.com.sg/wp-content/uploads/2023/11/3-piece-hand-breaded-chicken-tenders.png?fit=1000%2C1000&ssl=1',
+        categoryId: friedChickenCategory.id,
+        tags: ['Boneless', 'Kids Favorite', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Hot & Spicy Chicken (2pc)',
+        description: '2 pieces of extra crispy chicken with a fiery kick. For those who love it hot! Contains chili peppers.',
+        price: 7.99,
+        image: 'https://jackinthebox-menuus.com/wp-content/uploads/2025/08/2PC-Hot-Honey-Spicy-Chicken-Strips-Snack-Box-768x499.webp',
+        categoryId: friedChickenCategory.id,
+        tags: ['Spicy', 'Hot', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Classic Fried Chicken (3pc)',
+        description: 'Triple the delight! 3 pieces of our golden-fried chicken prepared fresh daily. Great value for big appetites.',
+        price: 10.99,
+        image: 'https://cdn.sanity.io/images/czqk28jt/prod_plk_us/84bbcd43ce0d00ab85cc40e4c23f007e19501d21-2000x1333.png?q=80&auto=format',
+        categoryId: friedChickenCategory.id,
+        tags: ['Classic', 'Value', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Chicken Wings (6pc)',
+        description: 'Half dozen of our famous crispy chicken wings tossed in choice of sauce: BBQ, Buffalo, or Honey Garlic.',
+        price: 8.99,
+        image: 'https://www.buyfreshonline.co.uk/wp-content/uploads/2024/09/Tandoori-Chicken-Wings.webp',
+        categoryId: friedChickenCategory.id,
+        tags: ['Wings', 'Popular', 'Snack'],
         isAvailable: true,
         isActive: true,
       },
 
-      // Drinks
+      // Burgers - Gourmet Sandwiches
       {
-        name: 'Pepsi (Can)',
-        description: 'Pepsi cola - 330ml can',
-        price: 1.49,
-        image: 'https://images.unsplash.com/photo-1629203851122-3726ecdf080e',
-        categoryId: drinkCategory.id,
-        tags: ['Drink', 'Cold'],
+        name: 'Classic Crispy Burger',
+        description: 'Crispy fried chicken fillet with fresh lettuce, tomato, and our signature mayo on a toasted brioche bun.',
+        price: 5.49,
+        image: 'https://www.hungryjacks.com.au/Upload/HJ/Media/UNO/HJ00571_WEB_Jack%CE%93COs-Fried-Chicken-classic_800X600_1.png',
+        categoryId: burgerCategory.id,
+        tags: ['Burger', 'Popular', 'Classic'],
         isAvailable: true,
         isActive: true,
       },
       {
-        name: 'Pepsi (Cup)',
-        description: 'Pepsi cola - Medium cup',
-        price: 0.99,
-        categoryId: drinkCategory.id,
-        tags: ['Drink', 'Cold'],
+        name: 'Teriyaki Glazed Burger',
+        description: 'Juicy chicken breast glazed with sweet teriyaki sauce, topped with grilled pineapple and crisp lettuce.',
+        price: 6.49,
+        image: 'https://static.vecteezy.com/system/resources/thumbnails/069/662/328/small_2x/closeup-of-gourmet-burger-with-ramen-noodle-layer-beef-patty-and-glazed-teriyaki-sauce-isolated-on-transparent-background-png.png',
+        categoryId: burgerCategory.id,
+        tags: ['Burger', 'Special', 'Sweet'],
         isAvailable: true,
         isActive: true,
       },
       {
-        name: '7Up (Can)',
-        description: '7Up lemon lime - 330ml can',
-        price: 1.49,
-        categoryId: drinkCategory.id,
-        tags: ['Drink', 'Cold'],
+        name: 'Double Cheese Delight',
+        description: 'Premium burger with double melted cheddar cheese, crispy chicken, pickles, and special cheese sauce.',
+        price: 6.99,
+        image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0u5UCBVMOZAgXCAXJ68TddkSyHy_6wr4XOQ&s',
+        categoryId: burgerCategory.id,
+        tags: ['Burger', 'Cheese', 'Best Seller', 'Premium'],
         isAvailable: true,
         isActive: true,
       },
       {
-        name: 'Mirinda (Can)',
-        description: 'Mirinda orange - 330ml can',
-        price: 1.49,
+        name: 'Spicy Firecracker Burger',
+        description: 'Spicy chicken fillet with jalapeños, pepper jack cheese, and chipotle mayo. Warning: Seriously hot!',
+        price: 6.99,
+        image: 'https://www.burgerandsauce.com/wp-content/uploads/2021/11/burger-and-sauce-firecracker-burger-thumb-1024x1024.png',
+        categoryId: burgerCategory.id,
+        tags: ['Burger', 'Spicy', 'Premium', 'Hot'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'BBQ Bacon Burger',
+        description: 'Smoky BBQ chicken with crispy bacon strips, onion rings, and tangy BBQ sauce on a premium bun.',
+        price: 7.49,
+        image: 'https://res.cloudinary.com/dbq5ulk6b/image/upload/v1766332332/bbq-burger_yge0cr.png',
+        categoryId: burgerCategory.id,
+        tags: ['Burger', 'Premium', 'BBQ', 'Bacon'],
+        isAvailable: true,
+        isActive: true,
+      },
+
+      // Sides - Perfect Companions
+      {
+        name: 'Regular Fries',
+        description: 'Golden, crispy French fries seasoned with sea salt. The perfect companion to any meal.',
+        price: 2.99,
+        image: 'https://static.tossdown.com/images/b7dae03c-a1aa-4f44-8309-87b106db623c.webp',
+        categoryId: sideCategory.id,
+        tags: ['Side', 'Popular', 'Classic'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Large Fries',
+        description: 'Extra large portion of our famous crispy fries. Great for sharing or solo snacking.',
+        price: 3.99,
+        image: 'https://www.cheezybites.ae/wp-content/uploads/2024/08/large-fries.png',
+        categoryId: sideCategory.id,
+        tags: ['Side', 'Value', 'Sharing'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Loaded Cheese Fries',
+        description: 'Crispy fries smothered in melted cheddar cheese sauce, topped with crispy bacon bits and chives.',
+        price: 4.49,
+        image: 'https://static.vecteezy.com/system/resources/previews/055/930/252/non_2x/loaded-fries-with-chili-and-melted-cheese-on-a-free-png.png',
+        categoryId: sideCategory.id,
+        tags: ['Side', 'Cheese', 'Premium', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Onion Rings',
+        description: 'Thick-cut onion rings with crispy golden batter. Served with ranch dipping sauce.',
+        price: 3.49,
+        image: 'https://www.pickers.com/media/sqgleshs/onion-rings-bowl.png?width=800&quality=90&v=1db3f5ede1845d0&format=webp',
+        categoryId: sideCategory.id,
+        tags: ['Side', 'Crispy', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Coleslaw',
+        description: 'Fresh, creamy coleslaw made daily with crisp cabbage, carrots, and our secret dressing.',
+        price: 2.49,
+        image: 'https://www.elpolloloco.com/contentAsset/image/96355606e233ee0237b069158dda1f6d/fileAsset/$fileName',
+        categoryId: sideCategory.id,
+        tags: ['Side', 'Fresh', 'Healthy'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Mashed Potatoes & Gravy',
+        description: 'Creamy mashed potatoes topped with rich, savory brown gravy. Pure comfort food.',
+        price: 3.49,
+        image: 'https://www.mypizzaheaven.com/wp-content/uploads/2024/08/Mashed-Potatoes-And-Gravy-Small.png',
+        categoryId: sideCategory.id,
+        tags: ['Side', 'Comfort', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+
+      // Drinks - Refreshing Beverages
+      {
+        name: 'Pepsi',
+        description: 'Ice-cold Pepsi cola served in a medium cup with ice. The perfect thirst quencher.',
+        price: 1.99,
+        image: 'https://benbymart.com/cdn/shop/products/PEP15A_1024x1024.png?v=1670859281',
         categoryId: drinkCategory.id,
-        tags: ['Drink', 'Cold'],
+        tags: ['Drink', 'Cold', 'Popular'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: '7Up',
+        description: 'Crisp, refreshing 7Up lemon-lime soda. Light and bubbly refreshment.',
+        price: 1.99,
+        image: 'https://product.hstatic.net/1000301274/product/_10100996__7up_320ml_sleek_lon_0366766c074a4b538595ed8d91dc6b0d_1024x1024.png',
+        categoryId: drinkCategory.id,
+        tags: ['Drink', 'Cold', 'Citrus'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Mountain Dew',
+        description: 'Bold citrus flavor with an energizing boost. Perfect for adventure seekers.',
+        price: 1.99,
+        image: 'https://www.bbassets.com/media/uploads/p/l/40195155_3-mountain-dew-soft-drink.jpg',
+        categoryId: drinkCategory.id,
+        tags: ['Drink', 'Cold', 'Energy'],
+        isAvailable: true,
+        isActive: true,
+      },
+      {
+        name: 'Iced Tea (Sweet)',
+        description: 'Freshly brewed sweet tea served over ice. A Southern classic.',
+        price: 1.99,
+        image: 'https://www.peets.com/cdn/shop/files/iced-tea-lemonade-1266x1492.png?v=1686108258',
+        categoryId: drinkCategory.id,
+        tags: ['Drink', 'Cold', 'Tea'],
         isAvailable: true,
         isActive: true,
       },
       {
         name: 'Bottled Water',
-        description: 'Pure drinking water - 500ml',
-        price: 0.99,
+        description: 'Pure spring water. Stay hydrated the healthy way.',
+        price: 1.49,
+        image: 'https://product.hstatic.net/1000301274/product/_10100995__nuoc_suoi_aquafina_500ml_chai_23249e397601447daa01bfa350fa66c1.png',
         categoryId: drinkCategory.id,
-        tags: ['Drink', 'Healthy'],
+        tags: ['Drink', 'Healthy', 'Natural'],
         isAvailable: true,
         isActive: true,
-      },
-
-      // Inactive Items
-      {
-        name: 'Cheese Sauce Chicken (Discontinued)',
-        description: 'Cheese sauce chicken - No longer available',
-        price: 5.99,
-        categoryId: friedChickenCategory.id,
-        tags: ['Discontinued'],
-        isAvailable: false,
-        isActive: false,
-      },
-      {
-        name: 'Garlic Butter Burger (Discontinued)',
-        description: 'Garlic butter chicken burger - No longer available',
-        price: 5.99,
-        categoryId: burgerCategory.id,
-        tags: ['Discontinued'],
-        isAvailable: false,
-        isActive: false,
       },
     ],
   });
@@ -934,48 +984,292 @@ async function main() {
 
   console.log(`✅ Created ${tables.count} tables successfully!`);
 
-  // Create customers
+  // Create customers using Faker
+  const customersData = Array.from({ length: 20 }, () => ({
+    name: faker.person.fullName(),
+    phone: faker.helpers.fromRegExp('09[0-9]{8}'),
+    email: faker.internet.email().toLowerCase(),
+    isActive: true,
+  }));
+
   const customers = await prisma.customer.createMany({
-    data: [
-      {
-        name: 'John Smith',
-        phone: '0901234567',
-        email: 'john.smith@example.com',
-        isActive: true,
-      },
-      {
-        name: 'Sarah Johnson',
-        phone: '0912345678',
-        email: 'sarah.j@example.com',
-        isActive: true,
-      },
-      {
-        name: 'Michael Brown',
-        phone: '0923456789',
-        email: 'michael.b@example.com',
-        isActive: true,
-      },
-      {
-        name: 'Emily Davis',
-        phone: '0934567890',
-        email: 'emily.d@example.com',
-        isActive: true,
-      },
-      {
-        name: 'David Wilson',
-        phone: '0945678901',
-        email: 'david.w@example.com',
-        isActive: true,
-      },
-      { name: 'Jessica Garcia', phone: '0956789012', isActive: true },
-      { name: 'James Martinez', phone: '0967890123', isActive: true },
-      { name: 'Lisa Anderson', phone: '0978901234', isActive: true },
-      { name: 'Robert Taylor', phone: '0989012345', isActive: true },
-      { name: 'Jennifer Lee', phone: '0990123456', isActive: true },
-    ],
+    data: customersData,
   });
 
   console.log(`✅ Created ${customers.count} customers successfully!`);
+
+  // ========== CREATE REALISTIC TRANSACTIONAL DATA ==========
+  console.log('\n💰 Creating orders, payments, and sessions...');
+
+  // Get all menu items for order creation
+  const allMenuItems = await prisma.menuItem.findMany({
+    where: { isActive: true, isAvailable: true },
+  });
+  const allTables = await prisma.table.findMany();
+  const allCustomers = await prisma.customer.findMany();
+
+  // Helper function to get random items from array using Faker
+  function randomItems<T>(array: T[], count: number): T[] {
+    return faker.helpers.arrayElements(array, count);
+  }
+
+  // Helper function to set specific hour for date
+  function setHour(date: Date, hour: number): Date {
+    const newDate = new Date(date);
+    newDate.setHours(hour, faker.number.int({ min: 0, max: 59 }), 0, 0);
+    return newDate;
+  }
+
+  // Generate data from last 2 months to today
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - 2);
+
+  let totalOrders = 0;
+  let totalRevenue = 0;
+
+  console.log(`Generating orders from ${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]}...`);
+
+  // Batch arrays for bulk inserts
+  const allSessions: any[] = [];
+  const allOrders: any[] = [];
+  const allOrderItems: any[] = [];
+  const allPayments: any[] = [];
+
+  // Generate 5-15 orders per day
+  for (
+    let date = new Date(startDate);
+    date <= endDate;
+    date.setDate(date.getDate() + 1)
+  ) {
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const ordersPerDay = isWeekend
+      ? faker.number.int({ min: 8, max: 12 }) // 8-12 orders on weekends
+      : faker.number.int({ min: 5, max: 8 }); // 5-8 orders on weekdays
+
+    for (let i = 0; i < ordersPerDay; i++) {
+      // Distribute orders throughout operating hours
+      const hour = faker.datatype.boolean(0.7)
+        ? faker.datatype.boolean(0.5)
+          ? faker.number.int({ min: 12, max: 14 }) // Lunch peak
+          : faker.number.int({ min: 18, max: 21 }) // Dinner peak
+        : faker.number.int({ min: 10, max: 21 }); // Other hours
+
+      const orderTime = setHour(new Date(date), hour);
+      const orderType = faker.datatype.boolean(0.6) ? 'DINE_IN' : 'TAKE_AWAY';
+
+      // Prepare session for dine-in orders
+      let sessionId: string | undefined;
+      if (orderType === 'DINE_IN') {
+        const table = faker.helpers.arrayElement(allTables);
+        const sessionDuration = faker.number.int({ min: 30, max: 120 });
+        sessionId = faker.string.uuid();
+
+        allSessions.push({
+          id: sessionId,
+          tableId: table.id,
+          startTime: orderTime,
+          endTime: new Date(orderTime.getTime() + sessionDuration * 60000),
+          status: 'CLOSED' as const,
+          customerCount: faker.number.int({ min: 1, max: table.capacity }),
+          createdAt: orderTime,
+          updatedAt: orderTime,
+        });
+      }
+
+      // Random customer
+      const hasCustomer = faker.datatype.boolean(0.7);
+      const customer = hasCustomer
+        ? faker.helpers.arrayElement(allCustomers)
+        : null;
+
+      // Prepare order
+      const orderId = faker.string.uuid();
+      allOrders.push({
+        id: orderId,
+        orderType: orderType as 'DINE_IN' | 'TAKE_AWAY',
+        status: 'PAID' as const,
+        sessionId,
+        customerName: customer?.name,
+        customerPhone: customer?.phone,
+        createdAt: orderTime,
+        updatedAt: orderTime,
+      });
+
+      // Add items to order
+      const itemCount = faker.number.int({ min: 1, max: 5 });
+      const selectedItems = randomItems(allMenuItems, itemCount);
+
+      let orderTotal = 0;
+      for (const item of selectedItems) {
+        const quantity = faker.number.int({ min: 1, max: 3 });
+        const itemTotal = Number(item.price) * quantity;
+        orderTotal += itemTotal;
+
+        const cookingTime = faker.number.int({ min: 5, max: 20 });
+        const servingTime = cookingTime + faker.number.int({ min: 0, max: 5 });
+
+        allOrderItems.push({
+          orderId,
+          menuItemId: item.id,
+          quantity,
+          priceAtOrder: item.price,
+          itemNameAtOrder: item.name,
+          status: 'SERVED' as const,
+          cookingStartedAt: new Date(orderTime.getTime() + 2 * 60000),
+          readyAt: new Date(orderTime.getTime() + cookingTime * 60000),
+          servedAt: new Date(orderTime.getTime() + servingTime * 60000),
+          createdAt: orderTime,
+        });
+      }
+
+      // Calculate payment
+      const subTotal = orderTotal;
+      const tax = subTotal * 0.1;
+      const discount = faker.datatype.boolean(0.15) ? subTotal * 0.1 : 0;
+      const totalAmount = subTotal + tax - discount;
+
+      const paymentMethod = faker.helpers.weightedArrayElement([
+        { weight: 40, value: 'CASH' },
+        { weight: 35, value: 'BANKING' },
+        { weight: 25, value: 'CARD' },
+      ]);
+
+      const paymentTime = new Date(
+        orderTime.getTime() + (sessionId ? 45 : 5) * 60000,
+      );
+
+      allPayments.push({
+        orderId,
+        sessionId,
+        totalAmount,
+        subTotal,
+        tax,
+        discount,
+        paymentMethod: paymentMethod as 'CASH' | 'BANKING' | 'CARD',
+        status: 'SUCCESS' as const,
+        transactionId: `TXN${faker.string.alphanumeric({ length: 12, casing: 'upper' })}`,
+        paymentTime,
+        createdAt: orderTime,
+      });
+
+      totalOrders++;
+      totalRevenue += totalAmount;
+    }
+  }
+
+  // Batch insert all data
+  console.log(`\nInserting ${allSessions.length} sessions...`);
+  if (allSessions.length > 0) {
+    await prisma.tableSession.createMany({ data: allSessions });
+  }
+
+  console.log(`Inserting ${allOrders.length} orders...`);
+  await prisma.order.createMany({ data: allOrders });
+
+  console.log(`Inserting ${allOrderItems.length} order items...`);
+  await prisma.orderItem.createMany({ data: allOrderItems });
+
+  console.log(`Inserting ${allPayments.length} payments...`);
+  await prisma.payment.createMany({ data: allPayments });
+
+  console.log(
+    `✅ Created ${totalOrders} orders with $${totalRevenue.toFixed(2)} total revenue!`,
+  );
+
+  // ========== CREATE RESERVATIONS ==========
+  console.log('\n📅 Creating reservations...');
+
+  const allReservations: any[] = [];
+  
+  // Create reservations for the next 30 days
+  const reservationStartDate = new Date();
+  const reservationEndDate = new Date();
+  reservationEndDate.setDate(reservationEndDate.getDate() + 30);
+
+  for (
+    let date = new Date(reservationStartDate);
+    date <= reservationEndDate;
+    date.setDate(date.getDate() + 1)
+  ) {
+    // Skip past dates
+    if (date < new Date()) {
+      continue;
+    }
+
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const reservationsPerDay = isWeekend
+      ? faker.number.int({ min: 2, max: 4 }) // 2-4 reservations on weekends
+      : faker.number.int({ min: 1, max: 2 }); // 1-2 reservations on weekdays
+
+    for (let i = 0; i < reservationsPerDay; i++) {
+      // Reservation times: lunch (11-13) or dinner (17-20)
+      const isLunch = faker.datatype.boolean(0.4);
+      const hour = isLunch
+        ? faker.number.int({ min: 11, max: 13 })
+        : faker.number.int({ min: 17, max: 20 });
+
+      const reservationTime = new Date(date);
+      reservationTime.setHours(hour, faker.number.int({ min: 0, max: 59 }), 0, 0);
+
+      // Only create future reservations
+      if (reservationTime <= new Date()) {
+        continue;
+      }
+
+      const table = faker.helpers.arrayElement(allTables);
+      const partySize = faker.number.int({ min: 2, max: table.capacity }); // 2 to table capacity
+
+      // 70% chance of having customer info
+      const hasCustomer = faker.datatype.boolean(0.7);
+      const customer = hasCustomer
+        ? faker.helpers.arrayElement(allCustomers)
+        : null;
+
+      // Determine status based on time - weighted selection
+      const status = faker.helpers.weightedArrayElement([
+        { weight: 70, value: 'CONFIRMED' as const },
+        { weight: 20, value: 'PENDING' as const },
+        { weight: 10, value: 'CANCELLED' as const },
+      ]);
+
+      const notes = faker.datatype.boolean(0.3)
+        ? faker.helpers.arrayElement([
+            'Window seat preferred',
+            'Birthday celebration',
+            'Anniversary dinner',
+            'Business meeting',
+            'Allergic to peanuts',
+            'Vegetarian menu required',
+            'High chair needed',
+            'Wheelchair accessible needed',
+            'Quiet area preferred',
+            'Special occasion',
+          ])
+        : null;
+
+      allReservations.push({
+        id: faker.string.uuid(),
+        reservationTime,
+        partySize,
+        status,
+        notes,
+        guestName: customer?.name || faker.person.fullName(),
+        guestPhone: customer?.phone || faker.helpers.fromRegExp('09[0-9]{8}'),
+        customerId: customer?.id,
+        tableId: table.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  console.log(`Inserting ${allReservations.length} reservations...`);
+  if (allReservations.length > 0) {
+    await prisma.reservation.createMany({ data: allReservations });
+  }
+
+  console.log(`✅ Created ${allReservations.length} reservations for the next 30 days!`);
 
   console.log('\n✨ Database seeding completed successfully!');
 }
