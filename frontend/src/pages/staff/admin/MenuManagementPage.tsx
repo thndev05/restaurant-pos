@@ -232,15 +232,15 @@ export default function MenuManagementPage() {
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredItems.map((item) => (
                 <Card key={item.id} className="overflow-hidden">
-                  <div className="relative">
+                  <div className="relative aspect-square w-full overflow-hidden">
                     {item.image ? (
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="h-40 w-full object-cover sm:h-48"
+                        className="h-full w-full bg-white object-contain"
                       />
                     ) : (
-                      <div className="bg-muted flex h-40 w-full items-center justify-center sm:h-48">
+                      <div className="bg-muted flex h-full w-full items-center justify-center">
                         <span className="text-muted-foreground text-sm">No image</span>
                       </div>
                     )}
