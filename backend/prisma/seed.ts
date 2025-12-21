@@ -264,6 +264,44 @@ async function main() {
       action: 'refund',
     },
 
+    // Reservations permissions
+    {
+      name: 'reservations.create',
+      description: 'Create reservations',
+      resource: 'reservations',
+      action: 'create',
+    },
+    {
+      name: 'reservations.read',
+      description: 'View reservations',
+      resource: 'reservations',
+      action: 'read',
+    },
+    {
+      name: 'reservations.update',
+      description: 'Update reservations',
+      resource: 'reservations',
+      action: 'update',
+    },
+    {
+      name: 'reservations.delete',
+      description: 'Delete reservations',
+      resource: 'reservations',
+      action: 'delete',
+    },
+    {
+      name: 'reservations.confirm',
+      description: 'Confirm reservations',
+      resource: 'reservations',
+      action: 'confirm',
+    },
+    {
+      name: 'reservations.cancel',
+      description: 'Cancel reservations',
+      resource: 'reservations',
+      action: 'cancel',
+    },
+
     // Module Access permissions (for frontend navigation)
     {
       name: 'module.admin.access',
@@ -378,6 +416,12 @@ async function main() {
     'orders.update',
     'orders.delete',
     'orders.cancel',
+    'reservations.create',
+    'reservations.read',
+    'reservations.update',
+    'reservations.delete',
+    'reservations.confirm',
+    'reservations.cancel',
     'users.read',
     'reports.view',
     'reports.export',
@@ -412,6 +456,7 @@ async function main() {
     'orders.create',
     'orders.read',
     'orders.update',
+    'reservations.read',
     'payments.process',
     'payments.refund',
     'module.cashier.access',
@@ -438,6 +483,8 @@ async function main() {
     'orders.create',
     'orders.read',
     'orders.update',
+    'reservations.read',
+    'reservations.confirm',
     'module.waiter.access',
   ];
   const waiterPermissions = createdPermissions.filter((p) =>

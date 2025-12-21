@@ -2,8 +2,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from './StatusBadge';
 import type { Table } from '@/types/staff';
-import { Clock, Users, MapPin, Utensils, Receipt } from 'lucide-react';
+import { Clock, Users, MapPin, Utensils, Receipt, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { format, parseISO } from 'date-fns';
 
 interface TableCardProps {
   table: Table;
@@ -135,10 +136,57 @@ export function TableCard({ table, onClick, className }: TableCardProps) {
           </div>
         )}
 
-        {/* Reserved Info */}
-        {table.status === 'Reserved' && (
+        {/* Reserved Info with Upcoming Reservations */}
+        {table.status === 'Reserved' && table.reservations && table.reservations.length > 0 && (
           <div className="border-t pt-3">
-            <p className="text-muted-foreground text-center text-xs font-medium">Reserved</p>
+            <div className="bg-blue-50 border-blue-200 rounded-md border p-2">
+              <div className="mb-1 flex items-center gap-2 text-xs font-medium text-blue-700">
+                <Calendar className="h-3 w-3" />
+                <span>Reserved</span>
+              </div>
+              {table.reservations.slice(0, 2).map((reservation) => (
+                <div key={reservation.id} className="mt-1 text-xs text-blue-600">
+                  <div className="font-medium">{reservation.guestName}</div>
+                  <div className="text-muted-foreground">
+                    {format(parseISO(reservation.reservationTime), 'p')} • {reservation.partySize} guests
+                  </div>
+                </div>
+              ))}
+              {table.reservations.length > 2 && (
+                <div className="mt-1 text-xs text-blue-600">
+                  +{table.reservations.length - 2} more
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Available State with Upcoming Reservations */}
+        {table.status === 'Available' && (
+          <div className="border-t pt-3">
+            {table.reservations && table.reservations.length > 0 ? (
+              <div className="bg-amber-50 border-amber-200 rounded-md border p-2">
+                <div className="mb-1 flex items-center gap-2 text-xs font-medium text-amber-700">
+                  <Calendar className="h-3 w-3" />
+                  <span>Upcoming Reservations</span>
+                </div>
+                {table.reservations.slice(0, 1).map((reservation) => (
+                  <div key={reservation.id} className="mt-1 text-xs text-amber-600">
+                    <div className="font-medium">{reservation.guestName}</div>
+                    <div className="text-muted-foreground">
+                      {format(parseISO(reservation.reservationTime), 'PPp')}
+                    </div>
+                  </div>
+                ))}
+                {table.reservations.length > 1 && (
+                  <div className="mt-1 text-xs text-amber-600">
+                    +{table.reservations.length - 1} more
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center text-xs">Ready for new guests</p>
+            )}
           </div>
         )}
       </CardContent>

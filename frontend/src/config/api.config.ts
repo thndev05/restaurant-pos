@@ -100,7 +100,11 @@ export const API_ENDPOINTS = {
     BASE: 'reservations',
     BY_ID: (id: string | number) => `reservations/${id}`,
     AVAILABLE_TABLES: 'reservations/available-tables',
+    UPCOMING: 'reservations/upcoming',
+    STATISTICS: 'reservations/statistics',
     CONFIRM: (id: string | number) => `reservations/${id}/confirm`,
+    COMPLETE: (id: string | number) => `reservations/${id}/complete`,
+    NO_SHOW: (id: string | number) => `reservations/${id}/no-show`,
     CANCEL: (id: string | number) => `reservations/${id}/cancel`,
   },
 } as const;

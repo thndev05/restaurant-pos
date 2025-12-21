@@ -92,7 +92,7 @@ enum ActionStatus {
 
 // ===== MODELS =====
 model MenuItem {
-  id          String    @id @default(uuid())
+  id          String    @id @default(uuid()) @db.Uuid
   name        String
   description String?
   price       Decimal   @db.Decimal(10, 2)
@@ -103,7 +103,7 @@ model MenuItem {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  categoryId  String?   @map("category_id")
+  categoryId  String?   @map("category_id") @db.Uuid
   category    Category? @relation("CategoryToMenuItems", fields: [categoryId], references: [id])
 
   orderItems OrderItem[]
@@ -112,7 +112,7 @@ model MenuItem {
 }
 
 model Category {
-  id           String     @id @default(uuid())
+  id           String     @id @default(uuid()) @db.Uuid
   name         String     @unique
   description  String?
   displayOrder Int        @default(0) @map("display_order")
@@ -126,11 +126,11 @@ model Category {
 }
 
 model Table {
-  id           String         @id @default(uuid())
+  id           String         @id @default(uuid()) @db.Uuid
   number       Int            @unique
   capacity     Int            @default(2)
   status       TableStatus    @default(AVAILABLE)
-  qrCodeKey    String         @unique @default(uuid()) @map("qr_code_key")
+  qrCodeKey    String         @unique @default(uuid()) @map("qr_code_key") @db.Uuid
   location     String?
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
@@ -142,7 +142,7 @@ model Table {
 }
 
 model Customer {
-  id           String        @id @default(uuid())
+  id           String        @id @default(uuid()) @db.Uuid
   name         String
   phone        String        @unique
   email        String?       @unique
@@ -156,7 +156,7 @@ model Customer {
 }
 
 model Permission {
-  id          String           @id @default(uuid())
+  id          String           @id @default(uuid()) @db.Uuid
   name        String           @unique
   description String?
   resource    String
@@ -171,7 +171,7 @@ model Permission {
 }
 
 model Role {
-  id          String         @id @default(uuid())
+  id          String         @id @default(uuid()) @db.Uuid
   name        RoleName       @unique
   displayName String         @map("display_name")
   description String?
@@ -185,9 +185,9 @@ model Role {
 }
 
 model RolePermission {
-  id           String     @id @default(uuid())
-  roleId       String     @map("role_id")
-  permissionId String     @map("permission_id")
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
   createdAt    DateTime   @default(now()) @map("created_at")
 
   role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -198,12 +198,12 @@ model RolePermission {
 }
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @db.Uuid
   name      String
   username  String   @unique
-  password  String
+  password  String   @map("password_hash")
   isActive  Boolean  @default(true) @map("is_active")
-  roleId    String   @map("role_id")
+  roleId    String   @map("role_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -216,15 +216,15 @@ model User {
 
 // ===== RESERVATION SYSTEM =====
 model Reservation {
-  id              String            @id @default(uuid())
+  id              String            @id @default(uuid()) @db.Uuid
   reservationTime DateTime          @map("reservation_time")
   partySize       Int               @map("party_size")
   status          ReservationStatus @default(PENDING)
   notes           String?           @db.Text
   guestName       String?           @map("guest_name")
   guestPhone      String?           @map("guest_phone")
-  customerId      String?           @map("customer_id")
-  tableId         String            @map("table_id")
+  customerId      String?           @map("customer_id") @db.Uuid
+  tableId         String            @map("table_id") @db.Uuid
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
@@ -238,13 +238,13 @@ model Reservation {
 
 // ===== QR ORDERING SYSTEM =====
 model TableSession {
-  id            String        @id @default(uuid())
+  id            String        @id @default(uuid()) @db.Uuid
   startTime     DateTime      @default(now()) @map("start_time")
   endTime       DateTime?     @map("end_time")
   status        SessionStatus @default(ACTIVE)
   customerCount Int?          @map("customer_count")
   notes         String?       @db.Text
-  tableId       String        @map("table_id")
+  tableId       String        @map("table_id") @db.Uuid
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
@@ -259,14 +259,14 @@ model TableSession {
 }
 
 model Order {
-  id            String       @id @default(uuid())
+  id            String       @id @default(uuid()) @db.Uuid
   status        OrderStatus  @default(PENDING)
   orderType     OrderType    @default(DINE_IN) @map("order_type")
   customerName  String?      @map("customer_name")
   customerPhone String?      @map("customer_phone")
   notes         String?      @db.Text
-  sessionId     String?      @map("session_id")
-  confirmedById String?      @map("confirmed_by_id")
+  sessionId     String?      @map("session_id") @db.Uuid
+  confirmedById String?      @map("confirmed_by_id") @db.Uuid
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
 
@@ -282,7 +282,7 @@ model Order {
 }
 
 model OrderItem {
-  id              String          @id @default(uuid())
+  id              String          @id @default(uuid()) @db.Uuid
   quantity        Int
   priceAtOrder    Decimal         @db.Decimal(10, 2) @map("price_at_order")
   itemNameAtOrder String          @map("item_name_at_order")
@@ -293,8 +293,8 @@ model OrderItem {
   readyAt         DateTime?       @map("ready_at")
   servedAt        DateTime?       @map("served_at")
   rejectionReason String?         @map("rejection_reason")
-  orderId         String          @map("order_id")
-  menuItemId      String          @map("menu_item_id")
+  orderId         String          @map("order_id") @db.Uuid
+  menuItemId      String          @map("menu_item_id") @db.Uuid
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
@@ -308,7 +308,7 @@ model OrderItem {
 
 // ===== PAYMENT SYSTEM =====
 model Payment {
-  id            String        @id @default(uuid())
+  id            String        @id @default(uuid()) @db.Uuid
   totalAmount   Decimal       @db.Decimal(10, 2) @map("total_amount")
   subTotal      Decimal       @db.Decimal(10, 2) @map("sub_total")
   tax           Decimal       @default(0) @db.Decimal(10, 2)
@@ -318,8 +318,8 @@ model Payment {
   transactionId String?       @map("transaction_id")
   paymentTime   DateTime?     @map("payment_time")
   notes         String?       @db.Text
-  sessionId     String?       @unique @map("session_id")
-  orderId       String?       @unique @map("order_id")
+  sessionId     String?       @unique @map("session_id") @db.Uuid
+  orderId       String?       @unique @map("order_id") @db.Uuid
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
@@ -333,12 +333,12 @@ model Payment {
 
 // ===== STAFF ACTION SYSTEM =====
 model StaffAction {
-  id          String       @id @default(uuid())
+  id          String       @id @default(uuid()) @db.Uuid
   actionType  ActionType   @map("action_type")
   status      ActionStatus @default(PENDING)
   description String?      @db.Text
-  sessionId   String       @map("session_id")
-  handledById String?      @map("handled_by_id")
+  sessionId   String       @map("session_id") @db.Uuid
+  handledById String?      @map("handled_by_id") @db.Uuid
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 

@@ -164,11 +164,72 @@ class ReservationsService extends BaseApiService<Reservation> {
   }
 
   /**
+   * Complete a reservation
+   */
+  async completeReservation(id: string): Promise<Reservation> {
+    try {
+      const response = await apiClient.patch<Reservation>(API_ENDPOINTS.RESERVATIONS.COMPLETE(id));
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark reservation as no-show
+   */
+  async markAsNoShow(id: string): Promise<Reservation> {
+    try {
+      const response = await apiClient.patch<Reservation>(API_ENDPOINTS.RESERVATIONS.NO_SHOW(id));
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
+  }
+
+  /**
    * Cancel a reservation
    */
   async cancelReservation(id: string): Promise<Reservation> {
     try {
       const response = await apiClient.patch<Reservation>(API_ENDPOINTS.RESERVATIONS.CANCEL(id));
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
+  }
+
+  /**
+   * Get upcoming reservations (next 24 hours)
+   */
+  async getUpcomingReservations(): Promise<Reservation[]> {
+    try {
+      const response = await apiClient.get<Reservation[]>(API_ENDPOINTS.RESERVATIONS.UPCOMING);
+      return response.data;
+    } catch (error) {
+      this.handleError(error as AxiosError);
+      throw error;
+    }
+  }
+
+  /**
+   * Get reservation statistics
+   */
+  async getReservationStatistics(): Promise<{
+    today: {
+      total: number;
+      pending: number;
+      confirmed: number;
+      completed: number;
+      cancelled: number;
+      noShow: number;
+    };
+  }> {
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.RESERVATIONS.STATISTICS);
       return response.data;
     } catch (error) {
       this.handleError(error as AxiosError);

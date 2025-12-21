@@ -2,6 +2,7 @@ import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './config/prisma/prisma.module';
 import { MenuItemsModule } from './modules/menu-items/menu-items.module';
 import { CloudinaryModule } from './config/cloudinary/cloudinary.module';
@@ -34,6 +35,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
         limit: 10, // 10 requests per minute (default)
       },
     ]),
+    ScheduleModule.forRoot(),
     PrismaModule,
     CloudinaryModule,
     AuthModule,

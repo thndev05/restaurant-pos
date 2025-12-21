@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { CreateTableDto, UpdateTableDto, GetTablesDto } from './dto';
-import { TableStatus } from 'src/generated/prisma';
+import { TableStatus, ReservationStatus } from 'src/generated/prisma';
 
 @Injectable()
 export class TablesService {
@@ -18,7 +18,7 @@ export class TablesService {
       throw new BadRequestException(`Invalid table status: ${status}`);
     }
 
-    return this.db.findMany({
+    const tables = await this.db.findMany({
       where: {
         ...(status && { status }),
       },
@@ -46,9 +46,24 @@ export class TablesService {
           },
           take: 1,
         },
+        reservations: {
+          where: {
+            status: {
+              in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+            },
+            reservationTime: {
+              gte: new Date(),
+            },
+          },
+          orderBy: {
+            reservationTime: 'asc',
+          },
+        },
       },
       orderBy: { number: 'asc' },
     });
+
+    return tables;
   }
 
   async getTableById(id: string) {
@@ -163,6 +178,36 @@ export class TablesService {
       );
     }
 
+    // Check for active confirmed reservations in current time window
+    const now = new Date();
+    const twoHoursBefore = new Date(now);
+    twoHoursBefore.setHours(twoHoursBefore.getHours() - 2);
+    const twoHoursAfter = new Date(now);
+    twoHoursAfter.setHours(twoHoursAfter.getHours() + 2);
+
+    const activeReservation = await this.prismaService.reservation.findFirst({
+      where: {
+        tableId: id,
+        status: ReservationStatus.CONFIRMED,
+        reservationTime: {
+          gte: twoHoursBefore,
+          lte: twoHoursAfter,
+        },
+      },
+    });
+
+    // Prevent changing from RESERVED status if there's an active confirmed reservation
+    if (
+      table.status === TableStatus.RESERVED &&
+      activeReservation &&
+      status !== TableStatus.RESERVED &&
+      status !== TableStatus.OUT_OF_SERVICE
+    ) {
+      throw new ConflictException(
+        `Cannot change table status. Table has an active confirmed reservation at ${activeReservation.reservationTime.toLocaleString()}. Please cancel or complete the reservation first.`,
+      );
+    }
+
     await this.db.update({
       where: { id },
       data: { status },
@@ -172,6 +217,39 @@ export class TablesService {
       code: 200,
       message: `Table with ID "${id}" status has been updated to "${status}".`,
     };
+  }
+
+  /**
+   * Get upcoming reservations for a specific table
+   */
+  async getUpcomingReservations(tableId: string) {
+    const table = await this.db.findUnique({
+      where: { id: tableId },
+    });
+
+    if (!table) {
+      throw new BadRequestException(`Table with ID "${tableId}" does not exist.`);
+    }
+
+    const now = new Date();
+    
+    return this.prismaService.reservation.findMany({
+      where: {
+        tableId,
+        status: {
+          in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
+        reservationTime: {
+          gte: now,
+        },
+      },
+      include: {
+        customer: true,
+      },
+      orderBy: {
+        reservationTime: 'asc',
+      },
+    });
   }
 
   async deleteTable(id: string) {

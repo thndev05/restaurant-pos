@@ -16,18 +16,22 @@ import {
   GetReservationsDto,
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { RequirePermissions } from '../auth/decorators/permissions.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 
+@SkipThrottle()
 @Controller('reservations')
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
   /**
    * Get all reservations with optional filters
-   * Protected endpoint - requires authentication
+   * Protected endpoint - requires authentication and read permission
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.read')
   @Get()
   getReservations(@Query() query: GetReservationsDto) {
     return this.reservationsService.getReservations(
@@ -56,10 +60,33 @@ export class ReservationsController {
   }
 
   /**
-   * Get a single reservation by ID
-   * Protected endpoint - requires authentication
+   * Get upcoming reservations (next 24 hours)
+   * Protected endpoint - requires authentication and read permission
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.read')
+  @Get('upcoming')
+  getUpcomingReservations() {
+    return this.reservationsService.getUpcomingReservations();
+  }
+
+  /**
+   * Get reservation statistics
+   * Protected endpoint - requires authentication and read permission
+   */
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.read')
+  @Get('statistics')
+  getReservationStatistics() {
+    return this.reservationsService.getReservationStatistics();
+  }
+
+  /**
+   * Get a single reservation by ID
+   * Protected endpoint - requires authentication and read permission
+   */
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.read')
   @Get(':id')
   getReservationById(@Param('id') id: string) {
     return this.reservationsService.getReservationById(id);
@@ -69,6 +96,7 @@ export class ReservationsController {
    * Create a new reservation
    * Public endpoint with rate limiting (3 requests per minute)
    */
+  @SkipThrottle({ default: false })
   @Public()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @Post()
@@ -78,9 +106,10 @@ export class ReservationsController {
 
   /**
    * Update an existing reservation
-   * Protected endpoint - requires authentication
+   * Protected endpoint - requires authentication and update permission
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.update')
   @Patch(':id')
   updateReservation(
     @Param('id') id: string,
@@ -91,18 +120,42 @@ export class ReservationsController {
 
   /**
    * Confirm a reservation
-   * Protected endpoint - requires authentication
+   * Protected endpoint - requires authentication and confirm permission
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.confirm')
   @Patch(':id/confirm')
   confirmReservation(@Param('id') id: string) {
     return this.reservationsService.confirmReservation(id);
   }
 
   /**
+   * Complete a reservation
+   * Protected endpoint - requires authentication and update permission
+   */
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.update')
+  @Patch(':id/complete')
+  completeReservation(@Param('id') id: string) {
+    return this.reservationsService.completeReservation(id);
+  }
+
+  /**
+   * Mark reservation as no-show
+   * Protected endpoint - requires authentication and update permission
+   */
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.update')
+  @Patch(':id/no-show')
+  markAsNoShow(@Param('id') id: string) {
+    return this.reservationsService.markAsNoShow(id);
+  }
+
+  /**
    * Cancel a reservation
    * Public endpoint with rate limiting (5 requests per minute)
    */
+  @SkipThrottle({ default: false })
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Patch(':id/cancel')
@@ -112,9 +165,10 @@ export class ReservationsController {
 
   /**
    * Delete a reservation (hard delete)
-   * Protected endpoint - requires authentication
+   * Protected endpoint - requires authentication and delete permission
    */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('reservations.delete')
   @Delete(':id')
   deleteReservation(@Param('id') id: string) {
     return this.reservationsService.deleteReservation(id);

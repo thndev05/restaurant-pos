@@ -12,6 +12,7 @@ import MenuManagementPage from './pages/staff/admin/MenuManagementPage';
 import TableManagementPage from './pages/staff/admin/TableManagementPage';
 import OrderManagementPage from './pages/staff/admin/OrderManagementPage';
 import StaffManagementPage from './pages/staff/admin/StaffManagementPage';
+import ReservationManagementPage from './pages/staff/admin/ReservationManagementPage';
 // Waiter Pages
 import WaiterDashboardPage from './pages/staff/waiter/WaiterDashboardPage';
 import WaiterOrdersQueuePage from './pages/staff/waiter/WaiterOrdersQueuePage';
@@ -108,6 +109,16 @@ function App() {
               <ProtectedRoute requiredPermission="module.admin.access">
                 <StaffLayout>
                   <StaffManagementPage />
+                </StaffLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/staff/admin/reservations"
+            element={
+              <ProtectedRoute requiredPermission="module.admin.access">
+                <StaffLayout>
+                  <ReservationManagementPage />
                 </StaffLayout>
               </ProtectedRoute>
             }

@@ -29,6 +29,11 @@ export class TablesController {
     return this.tablesService.getTableById(id);
   }
 
+  @Get(':id/reservations')
+  async getUpcomingReservations(@Param('id') id: string) {
+    return this.tablesService.getUpcomingReservations(id);
+  }
+
   @Post('')
   async createTable(@Body() createTableDto: CreateTableDto) {
     return this.tablesService.createTable(createTableDto);

@@ -13,6 +13,7 @@ import {
   Bell,
   DollarSign,
   Flame,
+  Calendar,
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -33,6 +34,7 @@ const adminNavigationItems = [
   { path: '/staff/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/staff/admin/menu', icon: UtensilsCrossed, label: 'Menu Management' },
   { path: '/staff/admin/tables', icon: TableIcon, label: 'Table Management' },
+  { path: '/staff/admin/reservations', icon: Calendar, label: 'Reservations' },
   { path: '/staff/admin/orders', icon: ClipboardList, label: 'Order Management' },
   { path: '/staff/admin/staff-management', icon: Users, label: 'Staff Management' },
 ];

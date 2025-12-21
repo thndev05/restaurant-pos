@@ -19,6 +19,21 @@ export type TakeawayStatus =
   | 'Delivered'
   | 'Cancelled';
 
+// Reservation
+export interface Reservation {
+  id: string;
+  reservationTime: string;
+  partySize: number;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW';
+  notes?: string;
+  guestName?: string;
+  guestPhone?: string;
+  customerId?: string;
+  tableId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Table
 export interface Table {
   table_id: string;
@@ -28,6 +43,7 @@ export interface Table {
   qr_code_key: string;
   area?: string; // Optional zone/area
   session?: TableSession; // Current active session
+  reservations?: Reservation[]; // Upcoming reservations
 }
 
 // Table Session
