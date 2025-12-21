@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 import {
   Calendar,
@@ -17,7 +17,7 @@ import {
   type ReservationStatus,
 } from '@/lib/api/services/reservations.service';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -59,7 +59,16 @@ export default function ReservationManagementPage() {
   const [loading, setLoading] = useState(true);
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [statistics, setStatistics] = useState<any>(null);
+  const [statistics, setStatistics] = useState<{
+    today: {
+      total: number;
+      pending: number;
+      confirmed: number;
+      completed: number;
+      cancelled: number;
+      noShow: number;
+    };
+  } | null>(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -68,41 +77,33 @@ export default function ReservationManagementPage() {
 
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadReservations();
-    loadStatistics();
-  }, []);
-
-  useEffect(() => {
-    filterReservations();
-  }, [reservations, statusFilter, searchQuery, dateFilter]);
-
-  const loadReservations = async () => {
+  const loadReservations = useCallback(async () => {
     try {
       setLoading(true);
       const data = await reservationsService.getReservations();
       setReservations(data);
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load reservations';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to load reservations',
+        description: message,
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     try {
       const stats = await reservationsService.getReservationStatistics();
       setStatistics(stats);
     } catch (error) {
       console.error('Failed to load statistics:', error);
     }
-  };
+  }, []);
 
-  const filterReservations = () => {
+  const filterReservations = useCallback(() => {
     let filtered = [...reservations];
 
     // Status filter
@@ -130,7 +131,16 @@ export default function ReservationManagementPage() {
     }
 
     setFilteredReservations(filtered);
-  };
+  }, [reservations, statusFilter, searchQuery, dateFilter]);
+
+  useEffect(() => {
+    loadReservations();
+    loadStatistics();
+  }, [loadReservations, loadStatistics]);
+
+  useEffect(() => {
+    filterReservations();
+  }, [filterReservations]);
 
   const handleConfirm = async (id: string) => {
     try {
@@ -141,10 +151,11 @@ export default function ReservationManagementPage() {
       });
       loadReservations();
       loadStatistics();
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to confirm reservation';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to confirm reservation',
+        description: message,
         variant: 'destructive',
       });
     }
@@ -159,10 +170,11 @@ export default function ReservationManagementPage() {
       });
       loadReservations();
       loadStatistics();
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to complete reservation';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to complete reservation',
+        description: message,
         variant: 'destructive',
       });
     }
@@ -177,10 +189,11 @@ export default function ReservationManagementPage() {
       });
       loadReservations();
       loadStatistics();
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to mark as no-show';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to mark as no-show',
+        description: message,
         variant: 'destructive',
       });
     }
@@ -195,10 +208,11 @@ export default function ReservationManagementPage() {
       });
       loadReservations();
       loadStatistics();
-    } catch (error: any) {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to cancel reservation';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to cancel reservation',
+        description: message,
         variant: 'destructive',
       });
     }

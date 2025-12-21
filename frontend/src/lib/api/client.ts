@@ -35,7 +35,7 @@ apiClient.interceptors.request.use(
 
     // Log request in development
     if (import.meta.env.DEV) {
-      console.log('🚀 API Request:', {
+      console.log('API Request:', {
         method: config.method?.toUpperCase(),
         url: config.url,
         data: config.data,
@@ -46,7 +46,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error: AxiosError) => {
-    console.error('❌ Request Error:', error);
+    console.error('Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -61,7 +61,7 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     // Log response in development
     if (import.meta.env.DEV) {
-      console.log('✅ API Response:', {
+      console.log('API Response:', {
         status: response.status,
         url: response.config.url,
         data: response.data,
