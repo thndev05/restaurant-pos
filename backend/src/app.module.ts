@@ -32,7 +32,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
-        limit: 10, // 10 requests per minute (default)
+        limit: 50, // 50 requests per minute (for staff only endpoints)
       },
     ]),
     ScheduleModule.forRoot(),
