@@ -713,6 +713,8 @@ export function TableSessionDialog({
         sessionId={activeSession.id}
         orderTotal={totalAmount}
         onPaymentCreated={handlePaymentSuccess}
+        sessionOrders={activeSession.orders}
+        tableNumber={table.number}
       />
 
       {/* Close Session Confirmation Dialog */}

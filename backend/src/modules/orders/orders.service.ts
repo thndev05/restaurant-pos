@@ -459,29 +459,43 @@ export class OrdersService {
   }
 
   async cancelOrder(id: string) {
-    const order = await this.getOrderById(id);
+    await this.prismaService.$transaction(async (tx) => {
+      // Use FOR UPDATE lock to prevent race conditions
+      const order = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status FROM orders WHERE id = ${id}::uuid FOR UPDATE
+      `;
 
-    if (order.status === OrderStatus.CANCELLED) {
-      throw new BadRequestException('Order is already cancelled.');
-    }
+      if (!order || order.length === 0) {
+        throw new BadRequestException(`Order with ID "${id}" does not exist.`);
+      }
 
-    if (order.status === OrderStatus.SERVED) {
-      throw new BadRequestException('Cannot cancel a served order.');
-    }
+      const orderStatus = order[0].status as OrderStatus;
 
-    await this.prismaService.$transaction([
-      this.db.update({
+      if (orderStatus === OrderStatus.CANCELLED) {
+        throw new BadRequestException('Order is already cancelled.');
+      }
+
+      if (orderStatus === OrderStatus.SERVED) {
+        throw new BadRequestException('Cannot cancel a served order.');
+      }
+
+      if (orderStatus === OrderStatus.PAID) {
+        throw new BadRequestException('Cannot cancel a paid order.');
+      }
+
+      await tx.order.update({
         where: { id },
         data: { status: OrderStatus.CANCELLED },
-      }),
-      this.orderItemDb.updateMany({
+      });
+
+      await tx.orderItem.updateMany({
         where: {
           orderId: id,
           status: { not: OrderItemStatus.SERVED },
         },
         data: { status: OrderItemStatus.CANCELLED },
-      }),
-    ]);
+      });
+    });
 
     return {
       code: 200,

@@ -24,8 +24,24 @@ import {
   type PaymentMethod,
   type CreatePaymentData,
 } from '@/lib/api/services/payments.service';
-import { ordersService, type OrderBill } from '@/lib/api/services/orders.service';
+import {
+  ordersService,
+  type OrderBill,
+  type OrderBillItem,
+} from '@/lib/api/services/orders.service';
 import { useToast } from '@/hooks/use-toast';
+
+interface SessionOrder {
+  id: string;
+  status: string;
+  orderItems: Array<{
+    id: string;
+    itemNameAtOrder: string;
+    quantity: number;
+    priceAtOrder: number;
+    status: string;
+  }>;
+}
 
 interface CreatePaymentDialogProps {
   open: boolean;
@@ -34,6 +50,8 @@ interface CreatePaymentDialogProps {
   orderId?: string;
   orderTotal?: number;
   onPaymentCreated?: () => void;
+  sessionOrders?: SessionOrder[];
+  tableNumber?: number;
 }
 
 const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: typeof Banknote }> = {
@@ -65,6 +83,8 @@ export function CreatePaymentDialog({
   orderId,
   orderTotal,
   onPaymentCreated,
+  sessionOrders,
+  tableNumber,
 }: CreatePaymentDialogProps) {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -80,32 +100,90 @@ export function CreatePaymentDialog({
   const [isLoadingBill, setIsLoadingBill] = useState(false);
 
   const loadBillDetails = useCallback(async () => {
-    if (!orderId) return;
+    if (orderId) {
+      // Load bill from single order
+      setIsLoadingBill(true);
+      try {
+        const bill = await ordersService.getOrderBill(orderId);
+        setBillData(bill);
+        // Set tax from bill if available
+        if (bill.tax > 0) {
+          setTax((bill.tax / bill.subTotal) * 100);
+        }
+        if (bill.discount > 0) {
+          setDiscount((bill.discount / bill.subTotal) * 100);
+        }
+      } catch (error) {
+        console.error('Failed to load bill:', error);
+      } finally {
+        setIsLoadingBill(false);
+      }
+    } else if (sessionOrders && sessionOrders.length > 0) {
+      // Generate bill from session orders
+      setIsLoadingBill(true);
+      try {
+        const items: OrderBillItem[] = [];
+        let subTotal = 0;
 
-    setIsLoadingBill(true);
-    try {
-      const bill = await ordersService.getOrderBill(orderId);
-      setBillData(bill);
-      // Set tax from bill if available
-      if (bill.tax > 0) {
-        setTax((bill.tax / bill.subTotal) * 100);
+        sessionOrders.forEach((order) => {
+          if (order.status !== 'CANCELLED') {
+            order.orderItems.forEach((item) => {
+              if (item.status !== 'CANCELLED') {
+                const itemTotal = item.priceAtOrder * item.quantity;
+                subTotal += itemTotal;
+
+                // Merge same items
+                const existingItem = items.find(
+                  (i) => i.name === item.itemNameAtOrder && i.price === item.priceAtOrder
+                );
+                if (existingItem) {
+                  existingItem.quantity += item.quantity;
+                  existingItem.total += itemTotal;
+                } else {
+                  items.push({
+                    name: item.itemNameAtOrder,
+                    quantity: item.quantity,
+                    price: item.priceAtOrder,
+                    total: itemTotal,
+                  });
+                }
+              }
+            });
+          }
+        });
+
+        const taxRate = 0.1;
+        const taxAmt = subTotal * taxRate;
+        const discountAmt = 0;
+        const total = subTotal + taxAmt - discountAmt;
+
+        setBillData({
+          orderId: sessionId || '',
+          orderNumber: sessionId?.substring(0, 8).toUpperCase() || 'SESSION',
+          orderType: 'DINE_IN',
+          createdAt: new Date().toISOString(),
+          confirmedBy: null,
+          items,
+          subTotal,
+          tax: taxAmt,
+          discount: discountAmt,
+          total,
+          tableNumber: tableNumber,
+        });
+      } catch (error) {
+        console.error('Failed to generate bill from session:', error);
+      } finally {
+        setIsLoadingBill(false);
       }
-      if (bill.discount > 0) {
-        setDiscount((bill.discount / bill.subTotal) * 100);
-      }
-    } catch (error) {
-      console.error('Failed to load bill:', error);
-    } finally {
-      setIsLoadingBill(false);
     }
-  }, [orderId]);
+  }, [orderId, sessionOrders, sessionId, tableNumber]);
 
   // Load bill details when dialog opens
   useEffect(() => {
-    if (open && orderId) {
+    if (open) {
       loadBillDetails();
     }
-  }, [open, orderId, loadBillDetails]);
+  }, [open, loadBillDetails]);
 
   const subTotal = billData?.subTotal || orderTotal || 0;
   const taxAmount = (subTotal * tax) / 100;

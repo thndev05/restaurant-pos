@@ -168,99 +168,178 @@ export class PaymentsService {
   }
 
   async processPayment(id: string, processPaymentDto: ProcessPaymentDto) {
-    const payment = await this.getPaymentById(id);
+    const startTime = Date.now();
+    console.log(
+      `[Payment:${id}] Starting payment processing with transaction ID: ${processPaymentDto.transactionId}`,
+    );
 
-    if (payment.status === PaymentStatus.SUCCESS) {
-      throw new BadRequestException('Payment has already been processed.');
-    }
+    try {
+      const result = await this.prismaService.$transaction(async (tx) => {
+        // Lock payment row to prevent race conditions
+        const paymentLock = await tx.$queryRaw<
+          Array<{ id: string; status: string; session_id: string | null }>
+        >`
+          SELECT id, status, session_id FROM payments WHERE id = ${id}::uuid FOR UPDATE
+        `;
 
-    if (payment.status === PaymentStatus.REFUNDED) {
-      throw new BadRequestException(
-        'Payment has been refunded and cannot be processed.',
-      );
-    }
+        if (!paymentLock || paymentLock.length === 0) {
+          throw new BadRequestException(
+            `Payment with ID "${id}" does not exist.`,
+          );
+        }
 
-    // Process payment within a transaction
-    const result = await this.prismaService.$transaction(async (tx) => {
-      // Update payment status
-      const updatedPayment = await tx.payment.update({
-        where: { id },
-        data: {
-          status: PaymentStatus.SUCCESS,
-          paymentTime: new Date(),
-          transactionId: processPaymentDto.transactionId,
-          notes: processPaymentDto.notes || payment.notes,
-        },
-        include: {
-          session: payment.sessionId
-            ? {
-                include: {
-                  table: true,
-                },
-              }
-            : undefined,
-        },
-      });
+        const paymentStatus = paymentLock[0].status as PaymentStatus;
+        const sessionId = paymentLock[0].session_id;
 
-      if (payment.sessionId) {
-        // Process payment for session-based orders (DINE_IN)
-        // Update all orders in this session to PAID status
-        await tx.order.updateMany({
-          where: {
-            sessionId: payment.sessionId,
-            status: {
-              not: OrderStatus.CANCELLED,
-            },
-          },
+        console.log(
+          `[Payment:${id}] Acquired lock. Current status: ${paymentStatus}`,
+        );
+
+        if (paymentStatus === PaymentStatus.SUCCESS) {
+          throw new BadRequestException('Payment has already been processed.');
+        }
+
+        if (paymentStatus === PaymentStatus.REFUNDED) {
+          throw new BadRequestException(
+            'Payment has been refunded and cannot be processed.',
+          );
+        }
+
+        const now = new Date();
+
+        // Update payment status
+        const updatedPayment = await tx.payment.update({
+          where: { id },
           data: {
-            status: OrderStatus.PAID,
-          },
-        });
-
-        // Update all order items in this session to SERVED status
-        await tx.orderItem.updateMany({
-          where: {
-            order: {
-              sessionId: payment.sessionId,
-            },
-            status: {
-              not: OrderItemStatus.CANCELLED,
-            },
-          },
-          data: {
-            status: OrderItemStatus.SERVED,
-          },
-        });
-
-        // Update session status to CLOSED
-        const updatedSession = await tx.tableSession.update({
-          where: { id: payment.sessionId },
-          data: {
-            status: SessionStatus.CLOSED,
-            endTime: new Date(),
+            status: PaymentStatus.SUCCESS,
+            paymentTime: now,
+            transactionId: processPaymentDto.transactionId,
+            notes: processPaymentDto.notes,
           },
           include: {
-            table: true,
+            session: sessionId
+              ? {
+                  include: {
+                    table: true,
+                  },
+                }
+              : undefined,
           },
         });
 
-        // Update table status to AVAILABLE
-        await tx.table.update({
-          where: { id: updatedSession.tableId },
-          data: {
-            status: TableStatus.AVAILABLE,
-          },
-        });
-      }
+        console.log(
+          `[Payment:${id}] Updated payment status to SUCCESS at ${now.toISOString()}`,
+        );
 
-      return updatedPayment;
-    });
+        if (sessionId) {
+          console.log(`[Payment:${id}] Processing session: ${sessionId}`);
 
-    return {
-      code: 200,
-      message: 'Payment processed successfully.',
-      data: result,
-    };
+          // Lock session to prevent concurrent modifications
+          const sessionLock = await tx.$queryRaw<
+            Array<{ id: string; status: string; table_id: string }>
+          >`
+            SELECT id, status, table_id FROM table_sessions WHERE id = ${sessionId}::uuid FOR UPDATE
+          `;
+
+          if (!sessionLock || sessionLock.length === 0) {
+            throw new BadRequestException(
+              `Session ${sessionId} not found during payment processing.`,
+            );
+          }
+
+          const sessionStatus = sessionLock[0].status as SessionStatus;
+          const tableId = sessionLock[0].table_id;
+
+          if (sessionStatus === SessionStatus.CLOSED) {
+            throw new BadRequestException(
+              'Cannot process payment for already closed session.',
+            );
+          }
+
+          console.log(
+            `[Payment:${id}] Session ${sessionId} locked. Current status: ${sessionStatus}, Table: ${tableId}`,
+          );
+
+          // Batch update orders and items in parallel
+          const [updatedOrders, updatedItems] = await Promise.all([
+            tx.order.updateMany({
+              where: {
+                sessionId,
+                status: {
+                  not: OrderStatus.CANCELLED,
+                },
+              },
+              data: {
+                status: OrderStatus.PAID,
+              },
+            }),
+            tx.orderItem.updateMany({
+              where: {
+                order: {
+                  sessionId,
+                },
+                status: {
+                  not: OrderItemStatus.CANCELLED,
+                },
+              },
+              data: {
+                status: OrderItemStatus.SERVED,
+              },
+            }),
+          ]);
+
+          console.log(
+            `[Payment:${id}] Batch updated ${updatedOrders.count} orders and ${updatedItems.count} items`,
+          );
+
+          // Close session and release table in parallel
+          await Promise.all([
+            tx.tableSession.update({
+              where: { id: sessionId },
+              data: {
+                status: SessionStatus.CLOSED,
+                endTime: now,
+              },
+            }),
+            tx.table.update({
+              where: { id: tableId },
+              data: {
+                status: TableStatus.AVAILABLE,
+              },
+            }),
+          ]);
+
+          console.log(
+            `[Payment:${id}] Closed session ${sessionId} and released table ${tableId}`,
+          );
+        }
+
+        const duration = Date.now() - startTime;
+        console.log(
+          `[Payment:${id}] Transaction completed successfully in ${duration}ms`,
+        );
+
+        return updatedPayment;
+      });
+
+      const totalDuration = Date.now() - startTime;
+      console.log(
+        `[Payment:${id}] Payment processed successfully in ${totalDuration}ms`,
+      );
+
+      return {
+        code: 200,
+        message: 'Payment processed successfully.',
+        data: result,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(
+        `[Payment:${id}] Payment processing failed after ${duration}ms:`,
+        error instanceof BadRequestException ? error.message : error,
+      );
+      throw error;
+    }
   }
 
   async getAllPayments(page: number = 1, limit: number = 10) {
