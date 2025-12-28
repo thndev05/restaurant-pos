@@ -48,7 +48,10 @@ class CustomerApiClient {
         if (error.response?.status === 401) {
           // Session expired or invalid
           localStorage.removeItem('table_session');
-          window.location.href = '/customer/session-expired';
+          // Redirect to home page
+          if (window.location.pathname !== '/customer/home') {
+            window.location.href = '/customer/home';
+          }
         }
         return Promise.reject(error);
       }

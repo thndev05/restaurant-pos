@@ -98,10 +98,8 @@ export default function TableQRPage() {
 
         } catch (createError: any) {
           // Handle session creation errors
-          console.error('Failed to create session:', createError);
           
           initializingTokens.delete(token);
-          setStatus('error');
           
           // Check if table is occupied
           if (createError.response?.status === 400) {
@@ -125,22 +123,33 @@ export default function TableQRPage() {
                     setTimeout(() => {
                       navigate('/customer/order', { replace: true });
                     }, 500);
-                    return;
+                    return; // Return early - no error to show
                   }
                 } catch (e) {
                   console.error('Failed to parse stored session:', e);
                 }
               }
               
+              // If we reach here, we don't have a valid session
+              console.error('Failed to create session:', createError);
+              setStatus('error');
               setErrorMessage(errorMsg);
             } else {
+              console.error('Failed to create session:', createError);
+              setStatus('error');
               setErrorMessage(errorMsg);
             }
           } else if (createError.response?.status === 401) {
+            console.error('Failed to create session:', createError);
+            setStatus('error');
             setErrorMessage('Invalid or expired QR code');
           } else if (createError.response?.data?.message) {
+            console.error('Failed to create session:', createError);
+            setStatus('error');
             setErrorMessage(createError.response.data.message);
           } else {
+            console.error('Failed to create session:', createError);
+            setStatus('error');
             setErrorMessage('Failed to initialize session. Please try again.');
           }
         }

@@ -49,7 +49,7 @@ interface CartItem extends MenuItem {
 
 export default function TableOrderPage() {
   const navigate = useNavigate();
-  const { session, getTimeRemaining } = useSession();
+  const { session, getTimeRemaining, isLoading: isSessionLoading } = useSession();
   const { toast } = useToast();
   
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -64,9 +64,9 @@ export default function TableOrderPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-  // Redirect if no session
+  // Redirect if no session after loading
   useEffect(() => {
-    if (!session) {
+    if (!isSessionLoading && !session) {
       toast({
         title: 'Session Required',
         description: 'Please scan the QR code at your table to start ordering.',
@@ -74,9 +74,9 @@ export default function TableOrderPage() {
       });
       navigate('/customer/home');
     }
-  }, [session, navigate, toast]);
+  }, [session, isSessionLoading, navigate, toast]);
 
-  // Load menu items
+  // Load menu items only when session is ready
   useEffect(() => {
     const loadMenu = async () => {
       try {
@@ -103,10 +103,11 @@ export default function TableOrderPage() {
       }
     };
 
-    if (session) {
+    // Only load menu if session is loaded and exists
+    if (!isSessionLoading && session) {
       loadMenu();
     }
-  }, [session, toast]);
+  }, [session, isSessionLoading, toast]);
 
   const addToCart = (item: MenuItem) => {
     setSelectedItem(item);
