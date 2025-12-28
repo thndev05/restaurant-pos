@@ -32,10 +32,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load session from sessionStorage on mount
+  // Load session from localStorage on mount
   useEffect(() => {
     try {
-      const storedSession = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      const storedSession = localStorage.getItem(SESSION_STORAGE_KEY);
       if (storedSession) {
         const parsed = JSON.parse(storedSession);
         // Convert expiresAt string back to Date
@@ -46,23 +46,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setSession(parsed);
         } else {
           // Clear expired session
-          sessionStorage.removeItem(SESSION_STORAGE_KEY);
+          localStorage.removeItem(SESSION_STORAGE_KEY);
         }
       }
     } catch (err) {
       console.error('Failed to load session:', err);
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      localStorage.removeItem(SESSION_STORAGE_KEY);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Save session to sessionStorage whenever it changes
+  // Save session to localStorage whenever it changes
   useEffect(() => {
     if (session) {
-      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
     } else {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      localStorage.removeItem(SESSION_STORAGE_KEY);
     }
   }, [session]);
 
@@ -73,7 +73,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const clearSession = () => {
     setSession(null);
-    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
   };
 
   const getTimeRemaining = (): number | null => {

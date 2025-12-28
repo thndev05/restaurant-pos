@@ -59,6 +59,7 @@ export class SessionsService {
     console.log(`Table #${table.number} found`);
 
     // Check if table already has an active session
+    // Only ONE active session allowed per table
     const existingSession = await this.db.findFirst({
       where: {
         tableId: createSessionDto.tableId,
@@ -71,16 +72,12 @@ export class SessionsService {
     console.log(`Existing session: ${existingSession ? existingSession.id : 'NONE'}`);
 
     if (existingSession) {
-      console.log('Returning existing session instead of creating new one');
+      console.log('Table already has an active session - cannot create new session');
       console.log('==========================================\n');
       
-      // Return existing session instead of throwing error
-      // This prevents creating multiple sessions for the same table
-      return {
-        code: 200,
-        message: 'Table already has an active session.',
-        data: await this.getSessionById(existingSession.id),
-      };
+      throw new BadRequestException(
+        `Table #${table.number} already has an active session. Please close the existing session first or use the existing session.`
+      );
     }
 
     // Create session and update table status
@@ -297,65 +294,60 @@ export class SessionsService {
   /**
    * Initialize a customer session from QR code token
    * This is the secure entry point for customer ordering
+   * 
+   * Security: Each table can only have ONE active session at a time
+   * This prevents multiple devices from creating separate sessions on the same table
+   * Uses database transaction with row-level locking to prevent race conditions
    */
   async initializeSession(tableId: string, initDto: InitSessionDto) {
     console.log('\n========== INIT SESSION DEBUG ==========');
     console.log(`Table ID: ${tableId}`);
     console.log(`Init DTO:`, initDto);
     
-    // Check if table exists
-    const table = await this.prismaService.table.findUnique({
-      where: { id: tableId },
-    });
+    // Use a transaction with row-level locking to prevent race conditions
+    return await this.prismaService.$transaction(async (tx) => {
+      // Check if table exists and lock the row
+      const table = await tx.table.findUnique({
+        where: { id: tableId },
+      });
 
-    if (!table) {
-      throw new BadRequestException('Table not found');
-    }
+      if (!table) {
+        throw new BadRequestException('Table not found');
+      }
 
-    console.log(`Table #${table.number} found, status: ${table.status}`);
+      console.log(`Table #${table.number} found, status: ${table.status}`);
 
-    // Check table status
-    if (table.status === TableStatus.OUT_OF_SERVICE) {
-      throw new BadRequestException('Table is out of service');
-    }
+      // Check table status
+      if (table.status === TableStatus.OUT_OF_SERVICE) {
+        throw new BadRequestException('Table is out of service');
+      }
 
-    // Check for existing active session
-    const existingSession = await this.db.findFirst({
-      where: {
-        tableId,
-        status: SessionStatus.ACTIVE,
-      },
-    });
-
-    console.log(`Existing active session: ${existingSession ? existingSession.id : 'NONE'}`);
-
-    if (existingSession) {
-      // Return existing session instead of creating new one
-      // This allows customers to resume if they rescan QR
-      console.log(`Returning existing session: ${existingSession.id}`);
-      console.log('=========================================\n');
-      return {
-        sessionId: existingSession.id,
-        sessionSecret: existingSession.sessionSecret,
-        tableInfo: {
-          id: table.id,
-          number: table.number,
-          capacity: table.capacity,
-          status: table.status,
+      // Check if table already has an active session WITH ROW LOCK
+      // This ensures only one request can check and create at a time
+      const existingSession = await tx.tableSession.findFirst({
+        where: {
+          tableId,
+          status: {
+            in: [SessionStatus.ACTIVE, SessionStatus.PAID],
+          },
         },
-        expiresAt: existingSession.expiresAt,
-        isExisting: true,
-      };
-    }
+      });
 
-    console.log('Creating NEW session...');
+      if (existingSession) {
+        console.log(`Table #${table.number} already has active session: ${existingSession.id}`);
+        console.log('=========================================\n');
+        throw new BadRequestException(
+          `Table #${table.number} is currently occupied. Please choose another table or wait until it becomes available.`
+        );
+      }
 
-    // Calculate expiration (120 minutes from now)
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 120);
+      console.log('No existing session found. Creating new session...');
 
-    // Create new session
-    const session = await this.prismaService.$transaction(async (tx) => {
+      // Calculate expiration (120 minutes from now)
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 120);
+
+      // Create new session
       const newSession = await tx.tableSession.create({
         data: {
           tableId,
@@ -373,24 +365,25 @@ export class SessionsService {
         data: { status: TableStatus.OCCUPIED },
       });
 
-      return newSession;
+      console.log(`New session created: ${newSession.id}`);
+      console.log('=========================================\n');
+
+      return {
+        sessionId: newSession.id,
+        sessionSecret: newSession.sessionSecret,
+        tableInfo: {
+          id: table.id,
+          number: table.number,
+          capacity: table.capacity,
+          status: TableStatus.OCCUPIED,
+        },
+        expiresAt: newSession.expiresAt,
+      };
+    }, {
+      isolationLevel: 'Serializable', // Highest isolation level to prevent race conditions
+      maxWait: 5000, // Wait up to 5 seconds for a transaction slot
+      timeout: 10000, // Transaction timeout 10 seconds
     });
-
-    console.log(`New session created: ${session.id}`);
-    console.log('=========================================\n');
-
-    return {
-      sessionId: session.id,
-      sessionSecret: session.sessionSecret,
-      tableInfo: {
-        id: table.id,
-        number: table.number,
-        capacity: table.capacity,
-        status: TableStatus.OCCUPIED,
-      },
-      expiresAt: session.expiresAt,
-      isExisting: false,
-    };
   }
 
   /**

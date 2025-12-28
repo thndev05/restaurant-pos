@@ -21,7 +21,12 @@ class CustomerApiClient {
     // Request interceptor: Add session credentials
     this.client.interceptors.request.use(
       (config) => {
-        const sessionData = sessionStorage.getItem('table_session');
+        // Skip adding session headers for /sessions/init endpoint
+        if (config.url?.includes('/sessions/init')) {
+          return config;
+        }
+
+        const sessionData = localStorage.getItem('table_session');
         if (sessionData) {
           try {
             const { sessionId, sessionSecret } = JSON.parse(sessionData);
@@ -42,7 +47,7 @@ class CustomerApiClient {
       (error: AxiosError) => {
         if (error.response?.status === 401) {
           // Session expired or invalid
-          sessionStorage.removeItem('table_session');
+          localStorage.removeItem('table_session');
           window.location.href = '/customer/session-expired';
         }
         return Promise.reject(error);
@@ -94,8 +99,8 @@ class CustomerApiClient {
     quantity: number;
     notes?: string;
   }>) {
-    // Get sessionId from session storage
-    const sessionData = sessionStorage.getItem('table_session');
+    // Get sessionId from localStorage
+    const sessionData = localStorage.getItem('table_session');
     let sessionId: string | undefined;
     
     if (sessionData) {

@@ -26,6 +26,8 @@ export class SessionsController {
   /**
    * PUBLIC: Initialize customer session from QR code token
    * This is the entry point for QR-based ordering
+   * 
+   * Handles race conditions when multiple requests arrive simultaneously
    */
   @Public()
   @Post('init')
@@ -39,11 +41,19 @@ export class SessionsController {
 
     const token = authHeader.substring(7);
     
-    // Verify QR token and extract table info
-    const { tableId } = await this.tablesService.verifyQrToken(token);
-    
-    // Initialize session
-    return this.sessionsService.initializeSession(tableId, initDto);
+    try {
+      // Verify QR token and extract table info
+      const { tableId } = await this.tablesService.verifyQrToken(token);
+      
+      // Initialize session (protected against race conditions)
+      return await this.sessionsService.initializeSession(tableId, initDto);
+    } catch (error) {
+      // If table is already occupied, provide helpful message
+      if (error.message?.includes('is currently occupied')) {
+        throw error;
+      }
+      throw error;
+    }
   }
 
   @Post()

@@ -6,10 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, XCircle, UtensilsCrossed } from 'lucide-react';
 
+// Global flag to prevent duplicate requests across StrictMode unmount/remount
+const initializingTokens = new Set<string>();
+
 export default function TableQRPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { initializeSession } = useSession();
+  const { initializeSession, session, clearSession } = useSession();
   
   const [status, setStatus] = useState<'validating' | 'success' | 'error'>('validating');
   const [errorMessage, setErrorMessage] = useState('');
@@ -23,45 +26,136 @@ export default function TableQRPage() {
         return;
       }
 
+      // Check if this token is already being initialized
+      if (initializingTokens.has(token)) {
+        console.log('Session initialization already in progress for this token, skipping...');
+        return;
+      }
+
+      // Mark token as being initialized
+      initializingTokens.add(token);
+
       try {
+        // Step 1: Decode token to get table info
+        let tableIdFromToken: string | null = null;
+        try {
+          const tokenParts = token.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            tableIdFromToken = payload.tableId;
+          }
+        } catch (err) {
+          console.log('Could not decode token:', err);
+        }
+
+        // Step 2: Check if user has existing session in localStorage
+        if (session && tableIdFromToken && session.tableInfo.id === tableIdFromToken) {
+          console.log('Found existing session for this table');
+          console.log('Session ID:', session.sessionId);
+          console.log('Table ID from session:', session.tableInfo.id);
+          console.log('Table ID from token:', tableIdFromToken);
+          
+          // Simply redirect to menu - the guard will validate
+          setTableInfo(session.tableInfo);
+          setStatus('success');
+          
+          setTimeout(() => {
+            navigate('/customer/order', { replace: true });
+            initializingTokens.delete(token);
+          }, 500);
+          return;
+        }
+
+        // Step 3: Create new session
         setStatus('validating');
 
-        // Initialize session with QR token
-        const response = await customerApi.initSession(token);
-        
-        // Store session data
-        const sessionData = {
-          sessionId: response.sessionId,
-          sessionSecret: response.sessionSecret,
-          tableInfo: response.tableInfo,
-          expiresAt: new Date(response.expiresAt),
-        };
+        try {
+          const data = await customerApi.initSession(token);
+          
+          console.log('Session created successfully:', data);
+          
+          if (!data.sessionId || !data.sessionSecret) {
+            throw new Error('Invalid response from server');
+          }
+          
+          // Store session data
+          const sessionData = {
+            sessionId: data.sessionId,
+            sessionSecret: data.sessionSecret,
+            tableInfo: data.tableInfo,
+            expiresAt: new Date(data.expiresAt),
+          };
 
-        initializeSession(sessionData);
-        setTableInfo(response.tableInfo);
-        setStatus('success');
+          initializeSession(sessionData);
+          setTableInfo(data.tableInfo);
+          setStatus('success');
 
-        // Redirect to ordering page after 1.5 seconds
-        setTimeout(() => {
-          navigate('/customer/order', { replace: true });
-        }, 1500);
+          // Redirect to ordering page after 1.5 seconds
+          setTimeout(() => {
+            navigate('/customer/order', { replace: true });
+            initializingTokens.delete(token);
+          }, 1500);
+
+        } catch (createError: any) {
+          // Handle session creation errors
+          console.error('Failed to create session:', createError);
+          
+          initializingTokens.delete(token);
+          setStatus('error');
+          
+          // Check if table is occupied
+          if (createError.response?.status === 400) {
+            const errorMsg = createError.response?.data?.message || '';
+            
+            if (errorMsg.includes('occupied')) {
+              // Table has active session
+              // Check if we might have the session in localStorage
+              const storedSession = localStorage.getItem('table_session');
+              if (storedSession) {
+                try {
+                  const { sessionId, tableInfo: storedTableInfo } = JSON.parse(storedSession);
+                  
+                  // If we have a session for this table, just redirect to menu
+                  if (storedTableInfo.id === tableIdFromToken) {
+                    console.log('Table occupied but we have a session. Redirecting to menu...');
+                    
+                    setStatus('success');
+                    setTableInfo(storedTableInfo);
+                    
+                    setTimeout(() => {
+                      navigate('/customer/order', { replace: true });
+                    }, 500);
+                    return;
+                  }
+                } catch (e) {
+                  console.error('Failed to parse stored session:', e);
+                }
+              }
+              
+              setErrorMessage(errorMsg);
+            } else {
+              setErrorMessage(errorMsg);
+            }
+          } else if (createError.response?.status === 401) {
+            setErrorMessage('Invalid or expired QR code');
+          } else if (createError.response?.data?.message) {
+            setErrorMessage(createError.response.data.message);
+          } else {
+            setErrorMessage('Failed to initialize session. Please try again.');
+          }
+        }
 
       } catch (error: any) {
-        console.error('Session initialization failed:', error);
+        console.error('Unexpected error:', error);
         setStatus('error');
-        
-        if (error.response?.status === 401) {
-          setErrorMessage('Invalid or expired QR code');
-        } else if (error.response?.data?.message) {
-          setErrorMessage(error.response.data.message);
-        } else {
-          setErrorMessage('Failed to initialize session. Please try again.');
-        }
+        initializingTokens.delete(token);
+        setErrorMessage('An unexpected error occurred. Please try again.');
       }
     };
 
     validateAndInitSession();
-  }, [token, navigate, initializeSession]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // Only depend on token
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50/30 flex items-center justify-center p-4">
