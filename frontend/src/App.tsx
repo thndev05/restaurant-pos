@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from '@/contexts';
+import { AuthProvider, SessionProvider } from '@/contexts';
 import { ProtectedRoute } from '@/components/auth';
 import { Toaster } from '@/components/ui/toaster';
 import StaffLoginPage from './pages/staff/LoginPage';
@@ -25,15 +25,20 @@ import CashierPaymentQueuePage from './pages/staff/cashier/CashierPaymentQueuePa
 import CustomerHomePage from './pages/customer/HomePage';
 import ReservationPage from './pages/customer/ReservationPage';
 import MenuPage from './pages/customer/MenuPage';
+import TableQRPage from './pages/customer/TableQRPage';
 import TableOrderPage from './pages/customer/TableOrderPage';
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          {/* Redirect root to customer home */}
-          <Route path="/" element={<Navigate to="/customer/home" replace />} />
+        <SessionProvider>
+          <Routes>
+            {/* Redirect root to customer home */}
+            <Route path="/" element={<Navigate to="/customer/home" replace />} />
+
+            {/* QR Code Entry Point - NEW */}
+            <Route path="/t/:token" element={<TableQRPage />} />
 
           {/* Staff Routes */}
           <Route path="/staff/login" element={<StaffLoginPage />} />
@@ -197,9 +202,12 @@ function App() {
           <Route path="/customer/home" element={<CustomerHomePage />} />
           <Route path="/customer/reservation" element={<ReservationPage />} />
           <Route path="/customer/menu" element={<MenuPage />} />
-          <Route path="/customer/table/:tableId" element={<TableOrderPage />} />
+          <Route path="/customer/order" element={<TableOrderPage />} />
+          {/* Legacy route for backward compatibility */}
+          <Route path="/customer/table/:tableId" element={<Navigate to="/customer/order" replace />} />
         </Routes>
         <Toaster />
+      </SessionProvider>
       </AuthProvider>
     </BrowserRouter>
   );

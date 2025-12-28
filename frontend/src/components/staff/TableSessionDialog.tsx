@@ -136,6 +136,28 @@ export function TableSessionDialog({
 
   const activeSession = table.sessions?.[0];
 
+  // DEBUG LOG
+  console.log('\n========== FRONTEND: TABLE SESSION DIALOG DEBUG ==========');
+  console.log(`Table #${table.number}:`);
+  console.log(`  ID: ${table.id}`);
+  console.log(`  Sessions array: ${table.sessions?.length || 0}`);
+  console.log(`  Active session exists: ${!!activeSession}`);
+  if (activeSession) {
+    console.log(`  Session ID: ${activeSession.id}`);
+    console.log(`  Session Status: ${activeSession.status}`);
+    console.log(`  Orders array: ${activeSession.orders?.length || 0}`);
+    if (activeSession.orders) {
+      activeSession.orders.forEach((order, idx) => {
+        console.log(`    Order ${idx + 1}:`);
+        console.log(`      ID: ${order.id}`);
+        console.log(`      Status: ${order.status}`);
+        console.log(`      Items: ${order.orderItems?.length || 0}`);
+      });
+    }
+    console.log(`  Filtered orders (non-cancelled): ${activeSession.orders?.filter((o) => o.status !== 'CANCELLED').length || 0}`);
+  }
+  console.log('==========================================================\n');
+
   const handleCreateSession = async () => {
     setIsCreatingSession(true);
     try {

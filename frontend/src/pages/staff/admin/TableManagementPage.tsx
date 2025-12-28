@@ -29,6 +29,7 @@ import {
   Clock,
   RefreshCw,
   Settings,
+  Copy,
 } from 'lucide-react';
 import { tablesService, type Table } from '@/lib/api/services/tables.service';
 import { TableFormDialog, type TableFormData } from '@/components/staff/TableFormDialog';
@@ -61,6 +62,8 @@ const TABLE_STATUS_CONFIG = {
 export default function TableManagementPage() {
   const { toast } = useToast();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [qrToken, setQrToken] = useState<string>('');
+  const [qrUrl, setQrUrl] = useState<string>('');
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
   const [tables, setTables] = useState<Table[]>([]);
@@ -82,6 +85,33 @@ export default function TableManagementPage() {
     setIsLoading(true);
     try {
       const data = await tablesService.getTables();
+      
+      // DEBUG LOG
+      console.log('\n========== FRONTEND: LOAD TABLES DEBUG ==========');
+      console.log('Total tables:', data.length);
+      data.forEach(table => {
+        console.log(`Table #${table.number}:`);
+        console.log(`  ID: ${table.id}`);
+        console.log(`  Status: ${table.status}`);
+        console.log(`  Sessions: ${table.sessions?.length || 0}`);
+        if (table.sessions && table.sessions.length > 0) {
+          table.sessions.forEach((session, idx) => {
+            console.log(`  Session ${idx + 1}:`);
+            console.log(`    ID: ${session.id}`);
+            console.log(`    Status: ${session.status}`);
+            console.log(`    Orders: ${session.orders?.length || 0}`);
+            if (session.orders) {
+              session.orders.forEach((order, orderIdx) => {
+                console.log(`      Order ${orderIdx + 1}: ${order.id}`);
+                console.log(`        Status: ${order.status}`);
+                console.log(`        Items: ${order.orderItems?.length || 0}`);
+              });
+            }
+          });
+        }
+      });
+      console.log('=================================================\n');
+      
       setTables(data);
 
       // Update selectedTable if it exists to reflect new data
@@ -155,12 +185,44 @@ export default function TableManagementPage() {
     }
   };
 
-  const handleShowQR = (table: Table) => {
+  const handleShowQR = async (table: Table) => {
     setSelectedTable(table);
-    setShowQRDialog(true);
+    try {
+      const response = await tablesService.generateQrToken(table.id);
+      setQrToken(response.token);
+      setQrUrl(`${window.location.origin}/t/${response.token}`);
+      setShowQRDialog(true);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to generate QR code',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleViewSession = (table: Table) => {
+    console.log('\n========== FRONTEND: VIEW SESSION DEBUG ==========');
+    console.log(`Table #${table.number}:`);
+    console.log(`  ID: ${table.id}`);
+    console.log(`  Sessions: ${table.sessions?.length || 0}`);
+    if (table.sessions && table.sessions.length > 0) {
+      const session = table.sessions[0];
+      console.log(`  Active Session:`);
+      console.log(`    ID: ${session.id}`);
+      console.log(`    Status: ${session.status}`);
+      console.log(`    Orders: ${session.orders?.length || 0}`);
+      if (session.orders) {
+        session.orders.forEach((order, idx) => {
+          console.log(`      Order ${idx + 1}:`);
+          console.log(`        ID: ${order.id}`);
+          console.log(`        Status: ${order.status}`);
+          console.log(`        Items: ${order.orderItems?.length || 0}`);
+        });
+      }
+    }
+    console.log('==================================================\n');
+    
     setSelectedTable(table);
     setShowSessionDialog(true);
   };
@@ -553,11 +615,11 @@ export default function TableManagementPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-3 py-4 sm:space-y-4">
-            {selectedTable && (
+            {selectedTable && qrUrl && (
               <>
                 <QRCodeSVG
                   id="qr-code-svg"
-                  value={`${window.location.origin}/customer/table/${selectedTable.qrCodeKey}`}
+                  value={qrUrl}
                   size={window.innerWidth < 640 ? 200 : 256}
                   level="H"
                   includeMargin
@@ -565,6 +627,32 @@ export default function TableManagementPage() {
                 <p className="text-muted-foreground text-center text-xs sm:text-sm">
                   Scan this QR code to access the menu for Table {selectedTable.number}
                 </p>
+                
+                {/* Link Display with Copy Button */}
+                <div className="w-full space-y-2">
+                  <label className="text-sm font-medium">Table Link:</label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={qrUrl}
+                      readOnly
+                      className="text-xs sm:text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(qrUrl);
+                        toast({
+                          title: 'Link Copied',
+                          description: 'Table link has been copied to clipboard',
+                        });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
                 <Button className="w-full" onClick={handleDownloadQR}>
                   <Download className="mr-2 h-4 w-4" />
                   Download QR Code

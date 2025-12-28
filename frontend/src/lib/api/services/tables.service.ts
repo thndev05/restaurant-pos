@@ -79,6 +79,13 @@ export interface UpdateTableData {
   location?: string;
 }
 
+export interface QrTokenResponse {
+  token: string;
+  qrCodeUrl: string;
+  tableNumber: number;
+  tableId: string;
+}
+
 class TablesService extends BaseApiService<Table> {
   constructor() {
     super(API_ENDPOINTS.TABLES.BASE);
@@ -132,6 +139,16 @@ class TablesService extends BaseApiService<Table> {
   async updateTableStatus(id: string | number, status: TableStatus): Promise<{ message: string }> {
     const response = await apiClient.patch<{ message: string }>(`${this.endpoint}/${id}/status`, {
       status,
+    });
+    return response.data;
+  }
+
+  /**
+   * Generate QR token for a table
+   */
+  async generateQrToken(id: string | number, branchId?: string): Promise<QrTokenResponse> {
+    const response = await apiClient.post<QrTokenResponse>(`${this.endpoint}/${id}/generate-qr`, {
+      branchId,
     });
     return response.data;
   }

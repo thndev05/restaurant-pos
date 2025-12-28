@@ -2,19 +2,49 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
-import { CreateSessionDto, UpdateSessionDto, CloseSessionDto } from './dto';
+import { CreateSessionDto, UpdateSessionDto, CloseSessionDto, InitSessionDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../auth/decorators/public.decorator';
+import { TablesService } from '../tables/tables.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('sessions')
 export class SessionsController {
-  constructor(private readonly sessionsService: SessionsService) {}
+  constructor(
+    private readonly sessionsService: SessionsService,
+    private readonly tablesService: TablesService,
+  ) {}
+
+  /**
+   * PUBLIC: Initialize customer session from QR code token
+   * This is the entry point for QR-based ordering
+   */
+  @Public()
+  @Post('init')
+  async initSession(
+    @Headers('authorization') authHeader: string,
+    @Body() initDto: InitSessionDto,
+  ) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException('QR token required');
+    }
+
+    const token = authHeader.substring(7);
+    
+    // Verify QR token and extract table info
+    const { tableId } = await this.tablesService.verifyQrToken(token);
+    
+    // Initialize session
+    return this.sessionsService.initializeSession(tableId, initDto);
+  }
 
   @Post()
   async createSession(@Body() createSessionDto: CreateSessionDto) {

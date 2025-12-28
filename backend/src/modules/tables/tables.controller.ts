@@ -55,6 +55,14 @@ export class TablesController {
     return this.tablesService.updateTable(id, updateTableDto);
   }
 
+  @Post(':id/generate-qr')
+  async generateQrToken(
+    @Param('id') id: string,
+    @Body('branchId') branchId?: string,
+  ) {
+    return this.tablesService.generateQrToken(id, branchId);
+  }
+
   @Delete(':id')
   async deleteTable(@Param('id') id: string) {
     return this.tablesService.deleteTable(id);

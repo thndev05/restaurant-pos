@@ -1,5 +1,8 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useSession } from '@/contexts';
+import { customerApi } from '@/lib/api/customerApiClient';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,109 +24,91 @@ import {
   Check,
   UtensilsCrossed,
   ArrowLeft,
+  Loader2,
 } from 'lucide-react';
-import type { CartItem } from '@/types/customer';
 
-interface LocalMenuItem {
-  id: number;
+interface MenuItem {
+  id: string;
   name: string;
-  category: string;
+  description?: string;
   price: number;
-  rating: number;
-  image: string;
+  image?: string;
+  isAvailable: boolean;
   isActive: boolean;
-  prepTime: string;
-  isSpicy: boolean;
-  isNew: boolean;
+  tags: string[];
+  category?: {
+    id: string;
+    name: string;
+  };
+}
+
+interface CartItem extends MenuItem {
+  quantity: number;
+  notes?: string;
 }
 
 export default function TableOrderPage() {
-  const { tableId } = useParams();
+  const navigate = useNavigate();
+  const { session, getTimeRemaining } = useSession();
+  const { toast } = useToast();
+  
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+  
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedItem, setSelectedItem] = useState<LocalMenuItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [itemNotes, setItemNotes] = useState('');
   const [activeTab, setActiveTab] = useState('menu');
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-  const menuItems = [
-    {
-      id: 1,
-      name: 'Classic Burger',
-      category: 'Burgers',
-      price: 12.99,
-      rating: 5,
-      image: '/assets/images/food-menu-1.png',
-      isActive: true,
-      prepTime: '15 min',
-      isSpicy: false,
-      isNew: true,
-    },
-    {
-      id: 2,
-      name: 'Cheese Pizza',
-      category: 'Pizza',
-      price: 15.99,
-      rating: 5,
-      image: '/assets/images/food-menu-2.png',
-      isActive: true,
-      prepTime: '20 min',
-      isSpicy: false,
-      isNew: false,
-    },
-    {
-      id: 3,
-      name: 'Caesar Salad',
-      category: 'Salads',
-      price: 8.99,
-      rating: 4,
-      image: '/assets/images/food-menu-3.png',
-      isActive: true,
-      prepTime: '10 min',
-      isSpicy: false,
-      isNew: false,
-    },
-    {
-      id: 4,
-      name: 'Spaghetti Carbonara',
-      category: 'Pasta',
-      price: 14.99,
-      rating: 5,
-      image: '/assets/images/food-menu-4.png',
-      isActive: true,
-      prepTime: '25 min',
-      isSpicy: false,
-      isNew: false,
-    },
-    {
-      id: 5,
-      name: 'BBQ Burger',
-      category: 'Burgers',
-      price: 13.99,
-      rating: 5,
-      image: '/assets/images/food-menu-5.png',
-      isActive: true,
-      prepTime: '18 min',
-      isSpicy: true,
-      isNew: true,
-    },
-    {
-      id: 6,
-      name: 'Margherita Pizza',
-      category: 'Pizza',
-      price: 13.99,
-      rating: 4,
-      image: '/assets/images/food-menu-6.png',
-      isActive: true,
-      prepTime: '22 min',
-      isSpicy: false,
-      isNew: false,
-    },
-  ];
+  // Redirect if no session
+  useEffect(() => {
+    if (!session) {
+      toast({
+        title: 'Session Required',
+        description: 'Please scan the QR code at your table to start ordering.',
+        variant: 'destructive',
+      });
+      navigate('/customer/home');
+    }
+  }, [session, navigate, toast]);
 
-  const categories = ['All', 'Burgers', 'Pizza', 'Pasta', 'Salads'];
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  // Load menu items
+  useEffect(() => {
+    const loadMenu = async () => {
+      try {
+        setIsLoadingMenu(true);
+        const data = await customerApi.getMenu();
+        setMenuItems(data);
+        
+        // Extract unique categories
+        const uniqueCategories = ['All', ...new Set(
+          data
+            .filter((item: MenuItem) => item.category)
+            .map((item: MenuItem) => item.category!.name)
+        )];
+        setCategories(uniqueCategories);
+      } catch (error) {
+        console.error('Failed to load menu:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load menu items. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingMenu(false);
+      }
+    };
 
-  const addToCart = (item: LocalMenuItem) => {
+    if (session) {
+      loadMenu();
+    }
+  }, [session, toast]);
+
+  const addToCart = (item: MenuItem) => {
     setSelectedItem(item);
   };
 
@@ -142,6 +127,11 @@ export default function TableOrderPage() {
 
     setSelectedItem(null);
     setItemNotes('');
+    
+    toast({
+      title: 'Added to cart',
+      description: `${selectedItem.name} has been added to your cart.`,
+    });
   };
 
   const updateQuantity = (index: number, delta: number) => {
@@ -159,34 +149,99 @@ export default function TableOrderPage() {
     setCart(newCart);
   };
 
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
   const tax = subtotal * 0.1;
   const total = subtotal + tax;
 
   const filteredItems = menuItems.filter(
-    (item) => selectedCategory === 'All' || item.category === selectedCategory
+    (item) => selectedCategory === 'All' || item.category?.name === selectedCategory
   );
 
-  const handleCallWaiter = () => {
-    alert('Waiter has been notified! They will be with you shortly.');
+  const handleCallWaiter = async () => {
+    try {
+      await customerApi.createAction('CALL_STAFF', 'Customer requested assistance');
+      toast({
+        title: 'Waiter Called',
+        description: 'A waiter has been notified and will be with you shortly.',
+      });
+    } catch (error) {
+      console.error('Failed to call waiter:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to notify waiter. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleRequestBill = () => {
-    setActiveTab('cart');
+  const handleRequestBill = async () => {
+    try {
+      await customerApi.createAction('REQUEST_BILL', 'Customer requested bill');
+      setActiveTab('cart');
+      toast({
+        title: 'Bill Requested',
+        description: 'Your bill has been requested. A staff member will bring it shortly.',
+      });
+    } catch (error) {
+      console.error('Failed to request bill:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to request bill. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cart.length === 0) {
-      alert('Please add items to your cart first.');
+      toast({
+        title: 'Cart Empty',
+        description: 'Please add items to your cart first.',
+        variant: 'destructive',
+      });
       return;
     }
-    setOrderPlaced(true);
-    setTimeout(() => {
-      setCart([]);
-      setOrderPlaced(false);
-      setActiveTab('menu');
-    }, 3000);
+
+    try {
+      setIsPlacingOrder(true);
+      
+      const items = cart.map(item => ({
+        menuItemId: item.id,
+        quantity: item.quantity,
+        ...(item.notes && { notes: item.notes }),
+      }));
+
+      await customerApi.createOrder(items);
+      
+      setOrderPlaced(true);
+      setTimeout(() => {
+        setCart([]);
+        setOrderPlaced(false);
+        setActiveTab('menu');
+      }, 3000);
+      
+      toast({
+        title: 'Order Placed',
+        description: 'Your order has been sent to the kitchen!',
+      });
+    } catch (error: any) {
+      console.error('Failed to place order:', error);
+      console.error('Error response:', error.response?.data);
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to place order. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
+
+  if (!session) {
+    return null;
+  }
+
+  const timeRemaining = getTimeRemaining();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50/30 pb-20">
@@ -215,14 +270,18 @@ export default function TableOrderPage() {
               </div>
               <div>
                 <p className="text-sm font-bold tracking-tight text-gray-900 sm:text-xl">
-                  Table {tableId || 'Demo'}
+                  Table {session.tableInfo.number}
                 </p>
                 <p className="hidden items-center gap-1 text-xs font-medium text-emerald-600 sm:flex">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
                   </span>
-                  Ready to Order
+                  {timeRemaining !== null && timeRemaining < 10 ? (
+                    <span className="text-orange-600 font-bold">Session expires in {timeRemaining} min</span>
+                  ) : (
+                    'Ready to Order'
+                  )}
                 </p>
               </div>
             </div>
@@ -347,95 +406,101 @@ export default function TableOrderPage() {
             </div>
 
             {/* Menu Items - Fully Responsive */}
-            <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-6">
-              {filteredItems.map((item, index) => (
-                <Card
-                  key={item.id}
-                  className="group relative overflow-hidden border-2 border-emerald-200/40 bg-gradient-to-br from-white to-emerald-50/20 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-600/30 active:scale-95"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animation: 'fadeInUp 0.6s ease-out forwards',
-                    opacity: 0,
-                  }}
-                >
-                  {/* Hover Glow Effect */}
-                  <div className="absolute -inset-1 -z-10 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 opacity-0 blur transition-opacity duration-500 group-hover:opacity-20"></div>
+            {isLoadingMenu ? (
+              <div className="col-span-full py-16 text-center">
+                <Loader2 className="mx-auto h-12 w-12 animate-spin text-emerald-600" />
+                <p className="mt-4 text-gray-600">Loading menu...</p>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="col-span-full py-16 text-center">
+                <p className="text-gray-600">No items available in this category.</p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-6">
+                {filteredItems.map((item, index) => (
+                  <Card
+                    key={item.id}
+                    className="group relative overflow-hidden border-2 border-emerald-200/40 bg-gradient-to-br from-white to-emerald-50/20 backdrop-blur-sm transition-all duration-500 hover:-translate-y-2 hover:border-emerald-500 hover:shadow-2xl hover:shadow-emerald-600/30 active:scale-95"
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                      animation: 'fadeInUp 0.6s ease-out forwards',
+                      opacity: 0,
+                    }}
+                  >
+                    {/* Hover Glow Effect */}
+                    <div className="absolute -inset-1 -z-10 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 opacity-0 blur transition-opacity duration-500 group-hover:opacity-20"></div>
 
-                  <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-emerald-100 to-green-100">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-full w-full object-cover transition-all duration-700 group-hover:scale-125 group-hover:rotate-2"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
+                    <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-emerald-100 to-green-100">
+                      <img
+                        src={item.image || '/assets/images/food-placeholder.png'}
+                        alt={item.name}
+                        className="h-full w-full object-cover transition-all duration-700 group-hover:scale-125 group-hover:rotate-2"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100"></div>
 
-                    {/* Badges - Responsive */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1 sm:top-3 sm:left-3 sm:gap-2">
-                      {item.isNew && (
-                        <Badge className="animate-in zoom-in animate-pulse bg-gradient-to-r from-green-500 to-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-xl ring-1 ring-white/50 duration-500 sm:px-3 sm:py-1 sm:text-xs sm:ring-2">
-                          <Sparkles className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />
-                          NEW
-                        </Badge>
-                      )}
-                      {item.isSpicy && (
-                        <Badge className="animate-in zoom-in bg-gradient-to-r from-red-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-xl ring-1 ring-white/50 delay-100 duration-500 sm:px-3 sm:py-1 sm:text-xs sm:ring-2">
-                          <Flame className="mr-0.5 h-2.5 w-2.5 animate-pulse sm:mr-1 sm:h-3 sm:w-3" />
-                          Spicy
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Prep Time Overlay - Responsive */}
-                    <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[10px] font-semibold text-gray-700 shadow-lg backdrop-blur-sm transition-all group-hover:scale-110 sm:right-3 sm:bottom-3 sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs">
-                      <Clock className="h-3 w-3 text-emerald-600 sm:h-3.5 sm:w-3.5" />
-                      <span>{item.prepTime}</span>
-                    </div>
-                  </div>
-
-                  <CardContent className="p-3 sm:p-4 lg:p-5">
-                    <div className="mb-2 flex items-center justify-between sm:mb-3">
-                      <Badge
-                        variant="secondary"
-                        className="bg-gradient-to-r from-emerald-100 to-green-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 shadow-sm sm:px-3 sm:py-1 sm:text-xs"
-                      >
-                        {item.category}
-                      </Badge>
-                      <div className="flex items-center gap-0.5">
-                        {Array.from({ length: item.rating }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className="h-3 w-3 fill-amber-400 text-amber-400 transition-all duration-300 group-hover:scale-125 sm:h-4 sm:w-4"
-                            style={{ transitionDelay: `${i * 50}ms` }}
-                          />
-                        ))}
+                      {/* Badges - Responsive */}
+                      <div className="absolute top-2 left-2 flex flex-col gap-1 sm:top-3 sm:left-3 sm:gap-2">
+                        {item.tags.includes('new') && (
+                          <Badge className="animate-in zoom-in animate-pulse bg-gradient-to-r from-green-500 to-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-xl ring-1 ring-white/50 duration-500 sm:px-3 sm:py-1 sm:text-xs sm:ring-2">
+                            <Sparkles className="mr-0.5 h-2.5 w-2.5 sm:mr-1 sm:h-3 sm:w-3" />
+                            NEW
+                          </Badge>
+                        )}
+                        {item.tags.includes('spicy') && (
+                          <Badge className="animate-in zoom-in bg-gradient-to-r from-red-500 to-orange-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-xl ring-1 ring-white/50 delay-100 duration-500 sm:px-3 sm:py-1 sm:text-xs sm:ring-2">
+                            <Flame className="mr-0.5 h-2.5 w-2.5 animate-pulse sm:mr-1 sm:h-3 sm:w-3" />
+                            Spicy
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                    <h3 className="mb-1 text-sm font-bold text-gray-900 transition-colors group-hover:text-emerald-700 sm:text-base lg:text-lg">
-                      {item.name}
-                    </h3>
-                    <p className="mb-3 hidden text-xs text-gray-500 sm:mb-4 sm:block">
-                      Freshly prepared with premium ingredients
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] text-gray-500 sm:text-xs">Price</p>
-                        <span className="text-lg font-bold text-emerald-600 transition-colors group-hover:text-emerald-700 sm:text-xl lg:text-2xl">
-                          ${item.price}
-                        </span>
+
+                    <CardContent className="p-3 sm:p-4 lg:p-5">
+                      <div className="mb-2 flex items-center justify-between sm:mb-3">
+                        <Badge
+                          variant="secondary"
+                          className="bg-gradient-to-r from-emerald-100 to-green-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 shadow-sm sm:px-3 sm:py-1 sm:text-xs"
+                        >
+                          {item.category?.name || 'Other'}
+                        </Badge>
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className="h-3 w-3 fill-amber-400 text-amber-400 transition-all duration-300 group-hover:scale-125 sm:h-4 sm:w-4"
+                              style={{ transitionDelay: `${i * 50}ms` }}
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => addToCart(item)}
-                        className="group/btn relative h-9 w-9 overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-700 p-0 shadow-lg transition-all hover:scale-110 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-xl hover:shadow-emerald-600/50 active:scale-95 sm:h-10 sm:w-10 lg:h-12 lg:w-12"
-                      >
-                        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/0 via-white/30 to-white/0 transition-transform duration-500 group-hover/btn:translate-x-full"></div>
-                        <Plus className="h-4 w-4 transition-transform group-hover/btn:rotate-90 sm:h-5 sm:w-5" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <h3 className="mb-1 text-sm font-bold text-gray-900 transition-colors group-hover:text-emerald-700 sm:text-base lg:text-lg">
+                        {item.name}
+                      </h3>
+                      <p className="mb-3 hidden text-xs text-gray-500 sm:mb-4 sm:block">
+                        {item.description || 'Freshly prepared with premium ingredients'}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] text-gray-500 sm:text-xs">Price</p>
+                          <span className="text-lg font-bold text-emerald-600 transition-colors group-hover:text-emerald-700 sm:text-xl lg:text-2xl">
+                            ${Number(item.price).toFixed(2)}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => addToCart(item)}
+                          disabled={!item.isAvailable}
+                          className="group/btn relative h-9 w-9 overflow-hidden bg-gradient-to-r from-emerald-600 to-emerald-700 p-0 shadow-lg transition-all hover:scale-110 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-xl hover:shadow-emerald-600/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed sm:h-10 sm:w-10 lg:h-12 lg:w-12"
+                        >
+                          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/0 via-white/30 to-white/0 transition-transform duration-500 group-hover/btn:translate-x-full"></div>
+                          <Plus className="h-4 w-4 transition-transform group-hover/btn:rotate-90 sm:h-5 sm:w-5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
 
             <style>{`
               @keyframes fadeInUp {
@@ -588,16 +653,26 @@ export default function TableOrderPage() {
                 {/* Place Order Button - Responsive */}
                 <Button
                   size="lg"
-                  className="animate-in zoom-in group relative h-16 w-full overflow-hidden bg-gradient-to-r from-emerald-600 via-emerald-700 to-green-600 text-lg font-bold shadow-2xl shadow-emerald-600/40 transition-all delay-400 duration-700 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-600/60 active:scale-95 sm:h-20 sm:text-xl"
+                  disabled={isPlacingOrder}
+                  className="animate-in zoom-in group relative h-16 w-full overflow-hidden bg-gradient-to-r from-emerald-600 via-emerald-700 to-green-600 text-lg font-bold shadow-2xl shadow-emerald-600/40 transition-all delay-400 duration-700 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-600/60 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed sm:h-20 sm:text-xl"
                   onClick={handlePlaceOrder}
                 >
                   <div className="absolute inset-0 -z-10 bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full"></div>
                   <div className="absolute inset-0 -z-20 animate-pulse bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-600 opacity-0 transition-opacity group-hover:opacity-20"></div>
-                  <ShoppingCart className="mr-2 h-6 w-6 transition-transform group-hover:scale-110 sm:mr-3 sm:h-7 sm:w-7" />
-                  <span>Place Order</span>
-                  <div className="ml-2 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold backdrop-blur-sm sm:ml-3 sm:px-3 sm:text-sm">
-                    ${total.toFixed(2)}
-                  </div>
+                  {isPlacingOrder ? (
+                    <>
+                      <Loader2 className="mr-2 h-6 w-6 animate-spin sm:mr-3 sm:h-7 sm:w-7" />
+                      <span>Placing Order...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="mr-2 h-6 w-6 transition-transform group-hover:scale-110 sm:mr-3 sm:h-7 sm:w-7" />
+                      <span>Place Order</span>
+                      <div className="ml-2 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold backdrop-blur-sm sm:ml-3 sm:px-3 sm:text-sm">
+                        ${total.toFixed(2)}
+                      </div>
+                    </>
+                  )}
                 </Button>
               </div>
             )}
@@ -623,7 +698,7 @@ export default function TableOrderPage() {
               <div>
                 <h3 className="mb-1 text-xl font-bold text-gray-900">{selectedItem.name}</h3>
                 <div className="mb-2 flex items-center gap-2">
-                  <Badge variant="secondary">{selectedItem.category}</Badge>
+                  <Badge variant="secondary">{selectedItem.category?.name || 'Other'}</Badge>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: selectedItem.rating }).map((_, i) => (
                       <Star key={i} className="h-3 w-3 fill-emerald-500 text-emerald-500" />

@@ -239,8 +239,10 @@ model Reservation {
 // ===== QR ORDERING SYSTEM =====
 model TableSession {
   id            String        @id @default(uuid()) @db.Uuid
+  sessionSecret String        @unique @default(uuid()) @map("session_secret") @db.Uuid
   startTime     DateTime      @default(now()) @map("start_time")
   endTime       DateTime?     @map("end_time")
+  expiresAt     DateTime      @map("expires_at")
   status        SessionStatus @default(ACTIVE)
   customerCount Int?          @map("customer_count")
   notes         String?       @db.Text
@@ -255,6 +257,7 @@ model TableSession {
 
   @@index([tableId, status])
   @@index([startTime])
+  @@index([sessionSecret])
   @@map("table_sessions")
 }
 

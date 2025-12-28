@@ -8,5 +8,6 @@ import { CloudinaryModule } from 'src/config/cloudinary/cloudinary.module';
   imports: [PrismaModule, CloudinaryModule],
   controllers: [MenuItemsController],
   providers: [MenuItemsService],
+  exports: [MenuItemsService],
 })
 export class MenuItemsModule {}

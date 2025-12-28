@@ -140,6 +140,14 @@ export class OrdersService {
       : OrderItemStatus.PENDING;
 
     // Create order with items
+    console.log('\n========== CREATING ORDER IN DB ==========');
+    console.log(`  Order Type: ${orderType}`);
+    console.log(`  Session ID: ${sessionId}`);
+    console.log(`  Initial Status: ${initialStatus}`);
+    console.log(`  Initial Item Status: ${initialItemStatus}`);
+    console.log(`  Items Count: ${items.length}`);
+    console.log('==========================================\n');
+
     const order = await this.db.create({
       data: {
         orderType,
@@ -170,8 +178,21 @@ export class OrdersService {
             menuItem: true,
           },
         },
+        session: true,
       },
     });
+
+    console.log('\n========== ORDER CREATED SUCCESSFULLY ==========');
+    console.log(`  Order ID: ${order.id}`);
+    console.log(`  Order Status: ${order.status}`);
+    console.log(`  Session ID: ${order.sessionId}`);
+    console.log(`  Session exists: ${!!order.session}`);
+    if (order.session) {
+      console.log(`  Session Table ID: ${order.session.tableId}`);
+      console.log(`  Session Status: ${order.session.status}`);
+    }
+    console.log(`  Order Items: ${order.orderItems.length}`);
+    console.log('===============================================\n');
 
     return {
       code: 201,
