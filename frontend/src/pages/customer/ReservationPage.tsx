@@ -141,37 +141,37 @@ export default function ReservationPage() {
   if (submitted) {
     return (
       <CustomerLayout showFooter={false}>
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-green-50 p-4">
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#FAF7F5] via-white to-red-50/20 p-4">
           <Card className="animate-in fade-in zoom-in w-full max-w-2xl overflow-hidden border-2 shadow-2xl duration-500">
-            <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 p-8 text-center">
+            <div className="bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] p-8 text-center">
               <div className="mx-auto mb-4 flex h-20 w-20 animate-bounce items-center justify-center rounded-full bg-white shadow-lg">
                 <Check className="h-10 w-10 text-green-600" />
               </div>
               <h2 className="mb-2 text-3xl font-bold text-white">Reservation Confirmed!</h2>
-              <p className="text-emerald-100">Your table is waiting for you</p>
+              <p className="text-gray-100">Your table is waiting for you</p>
             </div>
 
             <CardContent className="p-8">
-              <div className="mb-6 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 p-6">
-                <div className="mb-4 flex items-center gap-2 text-emerald-700">
+              <div className="mb-6 rounded-xl bg-gradient-to-br from-red-50/50 to-orange-50/30 p-6">
+                <div className="mb-4 flex items-center gap-2 text-[#7a1f1f]">
                   <Sparkles className="h-5 w-5" />
                   <span className="font-semibold">Reservation Details</span>
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-gray-700">
-                    <User className="h-5 w-5 text-emerald-600" />
+                    <User className="h-5 w-5 text-[#7a1f1f]" />
                     <span className="font-medium">Name:</span>
                     <span>{formData.name}</span>
                   </div>
                   {formData.email && (
                     <div className="flex items-center gap-3 text-gray-700">
-                      <Mail className="h-5 w-5 text-emerald-600" />
+                      <Mail className="h-5 w-5 text-[#7a1f1f]" />
                       <span className="font-medium">Email:</span>
                       <span>{formData.email}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-3 text-gray-700">
-                    <Calendar className="h-5 w-5 text-emerald-600" />
+                    <Calendar className="h-5 w-5 text-[#7a1f1f]" />
                     <span className="font-medium">Date:</span>
                     <span>
                       {new Date(`${formData.date}T${formData.time}`).toLocaleDateString('en-US', {
@@ -183,7 +183,7 @@ export default function ReservationPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
-                    <Clock className="h-5 w-5 text-emerald-600" />
+                    <Clock className="h-5 w-5 text-[#7a1f1f]" />
                     <span className="font-medium">Time:</span>
                     <span>
                       {new Date(`${formData.date}T${formData.time}`).toLocaleTimeString('en-US', {
@@ -194,13 +194,13 @@ export default function ReservationPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
-                    <Users className="h-5 w-5 text-emerald-600" />
+                    <Users className="h-5 w-5 text-[#7a1f1f]" />
                     <span className="font-medium">Guests:</span>
                     <span>{formData.guests}</span>
                   </div>
                   {formData.message && (
                     <div className="flex items-start gap-3 text-gray-700">
-                      <MessageSquare className="mt-1 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                      <MessageSquare className="mt-1 h-5 w-5 flex-shrink-0 text-[#7a1f1f]" />
                       <div>
                         <span className="font-medium">Special Request:</span>
                         <p className="mt-1 text-sm">{formData.message}</p>
@@ -211,9 +211,9 @@ export default function ReservationPage() {
               </div>
 
               {formData.email && (
-                <div className="mb-6 rounded-lg border-2 border-emerald-200 bg-emerald-50 p-4">
+                <div className="mb-6 rounded-lg border-2 border-[#7a1f1f] bg-red-50/50 p-4">
                   <div className="flex items-start gap-3">
-                    <Gift className="mt-1 h-6 w-6 flex-shrink-0 text-emerald-600" />
+                    <Gift className="mt-1 h-6 w-6 flex-shrink-0 text-[#7a1f1f]" />
                     <div>
                       <p className="font-semibold text-gray-900">Confirmation Email Sent!</p>
                       <p className="text-sm text-gray-600">
@@ -230,12 +230,12 @@ export default function ReservationPage() {
                 <Button
                   onClick={() => setSubmitted(false)}
                   variant="outline"
-                  className="flex-1 border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+                  className="flex-1 border-2 border-[#7a1f1f] text-[#7a1f1f] hover:bg-red-50"
                 >
                   New Reservation
                 </Button>
                 <Link to="/customer/home" className="flex-1">
-                  <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
+                  <Button className="w-full bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] hover:from-[#5e1616] hover:to-[#4a1212]">
                     Back to Home
                   </Button>
                 </Link>
@@ -249,18 +249,18 @@ export default function ReservationPage() {
 
   return (
     <CustomerLayout>
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-emerald-50 py-16">
+      <div className="min-h-screen bg-gradient-to-b from-[#FAF7F5] via-white to-[#FAF7F5] py-16">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-5xl">
             {/* Hero Section */}
             <div className="mb-16 text-center">
               <div className="mb-8 inline-flex animate-bounce items-center justify-center">
-                <div className="rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 shadow-2xl shadow-emerald-600/30">
+                <div className="rounded-full bg-gradient-to-br from-[#7a1f1f] to-[#5e1616] p-6 shadow-2xl shadow-red-900/30">
                   <Calendar className="h-14 w-14 text-white" />
                 </div>
               </div>
               <h1 className="mb-6 text-5xl font-bold text-gray-900 md:text-6xl lg:text-7xl">
-                Reserve Your <span className="text-emerald-600">Table</span>
+                Reserve Your <span className="text-[#7a1f1f]">Table</span>
               </h1>
               <p className="mx-auto max-w-2xl text-xl text-gray-600">
                 Book your table in advance and enjoy a delightful dining experience with your loved
@@ -270,11 +270,11 @@ export default function ReservationPage() {
 
             <div className="grid gap-8 lg:grid-cols-3">
               {/* Reservation Form */}
-              <Card className="group overflow-hidden border-2 shadow-2xl transition-all duration-300 hover:shadow-emerald-600/20 lg:col-span-2">
-                <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-green-50">
+              <Card className="group overflow-hidden border-2 shadow-2xl transition-all duration-300 hover:shadow-red-900/20 lg:col-span-2">
+                <CardHeader className="border-b bg-gradient-to-r from-[#FAF7F5] to-red-50/30">
                   <CardTitle className="flex items-center gap-3 text-2xl">
-                    <div className="rounded-full bg-emerald-100 p-2">
-                      <Calendar className="h-5 w-5 text-emerald-700" />
+                    <div className="rounded-full bg-red-100 p-2">
+                      <Calendar className="h-5 w-5 text-[#7a1f1f]" />
                     </div>
                     Reservation Details
                   </CardTitle>
@@ -384,7 +384,7 @@ export default function ReservationPage() {
                         <Label htmlFor="table">Select Table *</Label>
                         {loadingTables ? (
                           <div className="flex items-center justify-center rounded-md border border-gray-300 bg-gray-50 p-4">
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin text-emerald-600" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin text-[#7a1f1f]" />
                             <span className="text-sm text-gray-600">
                               Finding available tables...
                             </span>
@@ -443,7 +443,7 @@ export default function ReservationPage() {
                         !formData.tableId ||
                         (loadingTables && availableTables.length === 0)
                       }
-                      className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 text-lg font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/40 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="w-full bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] text-lg font-semibold shadow-lg shadow-red-900/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-red-900/40 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {loading ? (
                         <>
@@ -464,44 +464,44 @@ export default function ReservationPage() {
               {/* Info Sidebar */}
               <div className="space-y-6">
                 <Card className="overflow-hidden border-2 shadow-lg transition-all hover:shadow-xl">
-                  <CardHeader className="bg-gradient-to-r from-emerald-50 to-green-50">
+                  <CardHeader className="bg-gradient-to-r from-[#FAF7F5] to-red-50/30">
                     <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-emerald-700" />
+                      <Clock className="h-5 w-5 text-[#7a1f1f]" />
                       Opening Hours
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 p-6">
                     <div className="flex justify-between rounded-lg bg-gray-50 p-3">
                       <span className="font-medium text-gray-700">Monday - Friday</span>
-                      <span className="font-bold text-emerald-600">10:00 - 22:00</span>
+                      <span className="font-bold text-[#7a1f1f]">10:00 - 22:00</span>
                     </div>
                     <div className="flex justify-between rounded-lg bg-gray-50 p-3">
                       <span className="font-medium text-gray-700">Saturday - Sunday</span>
-                      <span className="font-bold text-emerald-600">09:00 - 23:00</span>
+                      <span className="font-bold text-[#7a1f1f]">09:00 - 23:00</span>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="overflow-hidden border-2 shadow-lg transition-all hover:shadow-xl">
-                  <CardHeader className="bg-gradient-to-r from-emerald-50 to-green-50">
+                  <CardHeader className="bg-gradient-to-r from-[#FAF7F5] to-red-50/30">
                     <CardTitle className="flex items-center gap-2">
-                      <Phone className="h-5 w-5 text-emerald-700" />
+                      <Phone className="h-5 w-5 text-[#7a1f1f]" />
                       Contact Us
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4 p-6">
-                    <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4 transition-all hover:bg-emerald-50">
-                      <div className="rounded-full bg-emerald-100 p-3">
-                        <Phone className="h-5 w-5 text-emerald-700" />
+                    <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4 transition-all hover:bg-red-50">
+                      <div className="rounded-full bg-red-100 p-3">
+                        <Phone className="h-5 w-5 text-[#7a1f1f]" />
                       </div>
                       <div>
                         <p className="font-bold text-gray-900">+1 (555) 123-4567</p>
                         <p className="text-sm text-gray-600">Call for assistance</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4 transition-all hover:bg-emerald-50">
-                      <div className="rounded-full bg-emerald-100 p-3">
-                        <Users className="h-5 w-5 text-emerald-700" />
+                    <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4 transition-all hover:bg-red-50">
+                      <div className="rounded-full bg-red-100 p-3">
+                        <Users className="h-5 w-5 text-[#7a1f1f]" />
                       </div>
                       <div>
                         <p className="font-bold text-gray-900">Party of 8+?</p>
@@ -511,23 +511,23 @@ export default function ReservationPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="overflow-hidden border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50 shadow-lg">
+                <Card className="overflow-hidden border-2 border-[#7a1f1f] bg-gradient-to-br from-red-50/50 to-orange-50/30 shadow-lg">
                   <CardContent className="p-6">
                     <div className="mb-3 flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-emerald-700" />
+                      <Sparkles className="h-5 w-5 text-[#7a1f1f]" />
                       <h3 className="font-bold text-gray-900">Pro Tips</h3>
                     </div>
                     <ul className="space-y-2 text-sm text-gray-700">
                       <li className="flex items-start gap-2">
-                        <span className="text-emerald-600">•</span>
+                        <span className="text-[#7a1f1f]">•</span>
                         <span>Book 2-5 PM for quieter dining</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-emerald-600">•</span>
+                        <span className="text-[#7a1f1f]">•</span>
                         <span>Weekend reservations fill up fast</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-emerald-600">•</span>
+                        <span className="text-[#7a1f1f]">•</span>
                         <span>Special occasions? Let us know!</span>
                       </li>
                     </ul>

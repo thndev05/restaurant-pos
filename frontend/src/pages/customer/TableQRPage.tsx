@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSession } from '@/contexts';
 import { customerApi } from '@/lib/api/customerApiClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, UtensilsCrossed } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, UtensilsCrossed, QrCode, Camera, Menu as MenuIcon } from 'lucide-react';
 
 // Global flag to prevent duplicate requests across StrictMode unmount/remount
 const initializingTokens = new Set<string>();
@@ -13,7 +13,7 @@ export default function TableQRPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { initializeSession, session, clearSession } = useSession();
-  
+
   const [status, setStatus] = useState<'validating' | 'success' | 'error'>('validating');
   const [errorMessage, setErrorMessage] = useState('');
   const [tableInfo, setTableInfo] = useState<any>(null);
@@ -54,11 +54,11 @@ export default function TableQRPage() {
           console.log('Session ID:', session.sessionId);
           console.log('Table ID from session:', session.tableInfo.id);
           console.log('Table ID from token:', tableIdFromToken);
-          
+
           // Simply redirect to menu - the guard will validate
           setTableInfo(session.tableInfo);
           setStatus('success');
-          
+
           setTimeout(() => {
             navigate('/customer/order', { replace: true });
             initializingTokens.delete(token);
@@ -71,13 +71,13 @@ export default function TableQRPage() {
 
         try {
           const data = await customerApi.initSession(token);
-          
+
           console.log('Session created successfully:', data);
-          
+
           if (!data.sessionId || !data.sessionSecret) {
             throw new Error('Invalid response from server');
           }
-          
+
           // Store session data
           const sessionData = {
             sessionId: data.sessionId,
@@ -98,13 +98,13 @@ export default function TableQRPage() {
 
         } catch (createError: any) {
           // Handle session creation errors
-          
+
           initializingTokens.delete(token);
-          
+
           // Check if table is occupied
           if (createError.response?.status === 400) {
             const errorMsg = createError.response?.data?.message || '';
-            
+
             if (errorMsg.includes('occupied')) {
               // Table has active session
               // Check if we might have the session in localStorage
@@ -112,14 +112,14 @@ export default function TableQRPage() {
               if (storedSession) {
                 try {
                   const { sessionId, tableInfo: storedTableInfo } = JSON.parse(storedSession);
-                  
+
                   // If we have a session for this table, just redirect to menu
                   if (storedTableInfo.id === tableIdFromToken) {
                     console.log('Table occupied but we have a session. Redirecting to menu...');
-                    
+
                     setStatus('success');
                     setTableInfo(storedTableInfo);
-                    
+
                     setTimeout(() => {
                       navigate('/customer/order', { replace: true });
                     }, 500);
@@ -129,7 +129,7 @@ export default function TableQRPage() {
                   console.error('Failed to parse stored session:', e);
                 }
               }
-              
+
               // If we reach here, we don't have a valid session
               console.error('Failed to create session:', createError);
               setStatus('error');
@@ -167,87 +167,185 @@ export default function TableQRPage() {
   }, [token]); // Only depend on token
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50/30 flex items-center justify-center p-4">
-      {/* Animated Background Elements */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 animate-pulse rounded-full bg-emerald-400/10 blur-3xl"></div>
-        <div className="absolute top-1/2 -left-40 h-80 w-80 animate-pulse rounded-full bg-green-400/10 blur-3xl delay-1000"></div>
-      </div>
-
-      <Card className="relative w-full max-w-md overflow-hidden border-2 border-emerald-200/50 bg-white/80 backdrop-blur-sm shadow-2xl">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-emerald-50/50 to-green-50/50"></div>
-        
-        <CardContent className="p-8 sm:p-12">
-          {/* Logo */}
-          <div className="mb-8 flex justify-center">
-            <div className="rounded-full bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 p-4 shadow-xl shadow-emerald-600/40">
-              <UtensilsCrossed className="h-12 w-12 text-white" />
-            </div>
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-[#FAF7F5]">
+      {/* Header */}
+      <header className="flex items-center justify-between whitespace-nowrap border-b border-[#EBE5E0] bg-white px-6 py-4 lg:px-40">
+        <div className="flex items-center gap-4 text-[#1F1F1F]">
+          <div className="size-8 text-primary">
+            <UtensilsCrossed className="h-8 w-8" />
           </div>
+          <h2 className="text-xl font-bold leading-tight tracking-tight">Fine Dining BBQ</h2>
+        </div>
+        <div className="flex flex-1 justify-end gap-8">
+          <nav className="hidden items-center gap-9 text-sm font-medium md:flex">
+            <Link to="/customer/home" className="transition-colors hover:text-primary">
+              Menu
+            </Link>
+            <Link to="/customer/reservation" className="transition-colors hover:text-primary">
+              Reservations
+            </Link>
+            <a href="#" className="transition-colors hover:text-primary">
+              Locations
+            </a>
+          </nav>
+          <div className="flex items-center gap-4">
+            <button className="md:hidden">
+              <MenuIcon className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      </header>
 
-          {/* Validating State */}
-          {status === 'validating' && (
-            <div className="text-center">
-              <Loader2 className="mx-auto h-16 w-16 animate-spin text-emerald-600" />
-              <h2 className="mt-6 text-2xl font-bold text-gray-900">
-                Validating QR Code
-              </h2>
-              <p className="mt-2 text-gray-600">
-                Please wait while we set up your table...
-              </p>
-            </div>
-          )}
-
-          {/* Success State */}
-          {status === 'success' && (
-            <div className="animate-in fade-in zoom-in text-center duration-500">
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-2xl shadow-green-600/40">
-                <CheckCircle2 className="h-12 w-12 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">Welcome!</h2>
-              {tableInfo && (
-                <p className="mt-2 text-lg text-gray-700">
-                  Table {tableInfo.number}
+      {/* Main Content Area */}
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md overflow-hidden rounded-2xl border border-[#EBE5E0] bg-white shadow-sm">
+          <div className="flex flex-col items-center p-8 text-center sm:p-12">
+            {/* Default/No Session State */}
+            {status === 'validating' && (
+              <>
+                {/* Icon / Illustration */}
+                <div className="relative mb-8 flex size-24 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Loader2 className="h-12 w-12 animate-spin" />
+                  {/* Decorative element behind */}
+                  <div className="absolute inset-0 scale-125 rounded-full border border-primary/20"></div>
+                </div>
+                {/* Text Content */}
+                <h1 className="mb-4 text-2xl font-extrabold leading-tight tracking-tight text-[#1F1F1F] sm:text-3xl">
+                  Validating QR Code
+                </h1>
+                <p className="mx-auto mb-8 max-w-[320px] text-base leading-relaxed text-[#6B5A5A]">
+                  Please wait while we set up your table session...
                 </p>
-              )}
-              <p className="mt-4 text-gray-600">
-                Redirecting to menu...
-              </p>
-              <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-emerald-100">
-                <div className="h-full animate-[loading_1.5s_ease-in-out] bg-gradient-to-r from-emerald-600 to-green-600"></div>
-              </div>
-            </div>
-          )}
+              </>
+            )}
 
-          {/* Error State */}
-          {status === 'error' && (
-            <div className="animate-in fade-in zoom-in text-center duration-500">
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-rose-600 shadow-2xl shadow-red-600/40">
-                <XCircle className="h-12 w-12 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Oops! Something went wrong
-              </h2>
-              <p className="mt-4 text-gray-700">{errorMessage}</p>
-              <div className="mt-8 space-y-3">
-                <Button
-                  onClick={() => window.location.reload()}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
-                >
-                  Try Again
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/customer/home')}
-                  className="w-full border-2 border-emerald-300"
-                >
-                  Go to Home
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {/* Success State */}
+            {status === 'success' && (
+              <>
+                <div className="relative mb-8 flex size-24 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <CheckCircle2 className="h-12 w-12" />
+                  <div className="absolute inset-0 scale-125 rounded-full border border-primary/20"></div>
+                </div>
+                <h1 className="mb-4 text-2xl font-extrabold leading-tight tracking-tight text-[#1F1F1F] sm:text-3xl">
+                  Welcome!
+                </h1>
+                {tableInfo && (
+                  <p className="mb-4 text-lg text-gray-700">
+                    Table {tableInfo.number}
+                  </p>
+                )}
+                <p className="mx-auto mb-8 max-w-[320px] text-base leading-relaxed text-[#6B5A5A]">
+                  Redirecting to menu...
+                </p>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-red-100">
+                  <div className="h-full animate-[loading_1.5s_ease-in-out] bg-gradient-to-r from-primary to-[#9b0c0c]"></div>
+                </div>
+              </>
+            )}
+
+            {/* Error State */}
+            {status === 'error' && (
+              <>
+                <div className="relative mb-8 flex size-24 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                  <XCircle className="h-12 w-12" />
+                  <div className="absolute inset-0 scale-125 rounded-full border border-red-500/20"></div>
+                </div>
+                <h1 className="mb-4 text-2xl font-extrabold leading-tight tracking-tight text-[#1F1F1F] sm:text-3xl">
+                  Oops! Something went wrong
+                </h1>
+                <p className="mx-auto mb-8 max-w-[320px] text-base leading-relaxed text-[#6B5A5A]">
+                  {errorMessage}
+                </p>
+                {/* Actions */}
+                <div className="flex w-full flex-col gap-3">
+                  <Button
+                    onClick={() => window.location.reload()}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-bold text-white shadow-md transition-all duration-200 hover:scale-[1.02] hover:bg-red-700 hover:shadow-lg"
+                  >
+                    <span>Try Again</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/customer/home')}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#EBE5E0] bg-transparent px-6 py-3.5 font-semibold text-[#1F1F1F] transition-colors duration-200 hover:bg-[#FAF7F5]"
+                  >
+                    <span>Return to Home</span>
+                  </Button>
+                </div>
+                {/* Helper Link */}
+                <div className="mt-8 w-full border-t border-[#f4f0f0] pt-6">
+                  <p className="text-sm text-[#896161]">
+                    Having trouble scanning?{' '}
+                    <a href="#" className="font-semibold text-primary hover:underline">
+                      Ask a server for help
+                    </a>
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Show scan button only when not in any special state or when ready */}
+            {status !== 'validating' && status !== 'success' && status !== 'error' && (
+              <>
+                {/* Icon / Illustration */}
+                <div className="relative mb-8 flex size-24 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <QrCode className="h-12 w-12" />
+                  {/* Decorative element behind */}
+                  <div className="absolute inset-0 scale-125 rounded-full border border-primary/20"></div>
+                </div>
+                {/* Text Content */}
+                <h1 className="mb-4 text-2xl font-extrabold leading-tight tracking-tight text-[#1F1F1F] sm:text-3xl">
+                  Ready to Order?
+                </h1>
+                <p className="mx-auto mb-8 max-w-[320px] text-base leading-relaxed text-[#6B5A5A]">
+                  We need to know where you are seated. Please scan the QR code located on your table to start your dining session.
+                </p>
+                {/* Actions */}
+                <div className="flex w-full flex-col gap-3">
+                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-bold text-white shadow-md transition-all duration-200 hover:scale-[1.02] hover:bg-red-700 hover:shadow-lg">
+                    <Camera className="h-5 w-5" />
+                    <span>Scan QR Code</span>
+                  </button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/customer/home')}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#EBE5E0] bg-transparent px-6 py-3.5 font-semibold text-[#1F1F1F] transition-colors duration-200 hover:bg-[#FAF7F5]"
+                  >
+                    <span>Return to Home</span>
+                  </Button>
+                </div>
+                {/* Helper Link */}
+                <div className="mt-8 w-full border-t border-[#f4f0f0] pt-6">
+                  <p className="text-sm text-[#896161]">
+                    Having trouble scanning?{' '}
+                    <a href="#" className="font-semibold text-primary hover:underline">
+                      Ask a server for help
+                    </a>
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="flex flex-col gap-6 border-t border-[#f4f0f0] bg-white px-5 py-10 text-center">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
+          <a href="#" className="font-medium text-[#896161] transition-colors hover:text-primary">
+            Privacy Policy
+          </a>
+          <span className="hidden text-[#EBE5E0] sm:block">•</span>
+          <a href="#" className="font-medium text-[#896161] transition-colors hover:text-primary">
+            Terms of Service
+          </a>
+          <span className="hidden text-[#EBE5E0] sm:block">•</span>
+          <a href="#" className="font-medium text-[#896161] transition-colors hover:text-primary">
+            Contact Us
+          </a>
+        </div>
+        <p className="text-xs font-normal text-[#896161]">© 2024 Fine Dining BBQ. All rights reserved.</p>
+      </footer>
 
       <style>{`
         @keyframes loading {

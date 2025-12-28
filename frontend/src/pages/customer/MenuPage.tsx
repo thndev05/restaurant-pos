@@ -123,20 +123,20 @@ export default function MenuPage() {
 
   return (
     <CustomerLayout>
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-emerald-50">
+      <div className="min-h-screen bg-gradient-to-b from-[#FAF7F5] via-white to-[#FAF7F5]">
         <div className="container mx-auto px-4 py-16">
           {/* Hero Section */}
           <div className="mb-16 text-center">
             <div className="mb-6 inline-flex animate-bounce items-center justify-center">
-              <div className="rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 p-5 shadow-2xl shadow-emerald-600/30">
+              <div className="rounded-full bg-gradient-to-br from-[#7a1f1f] to-[#5e1616] p-5 shadow-2xl shadow-red-900/30">
                 <ChefHat className="h-12 w-12 text-white" />
               </div>
             </div>
-            <p className="mb-3 font-semibold tracking-wider text-emerald-600 uppercase">
+            <p className="mb-3 font-semibold tracking-wider text-[#7a1f1f] uppercase">
               Popular Dishes
             </p>
             <h1 className="mb-6 text-5xl font-bold text-gray-900 md:text-6xl lg:text-7xl">
-              Our Delicious <span className="text-emerald-600">Menu</span>
+              Our Delicious <span className="text-[#7a1f1f]">Menu</span>
             </h1>
             <p className="mx-auto max-w-2xl text-xl text-gray-600">
               Discover our delicious dishes crafted with love and the finest ingredients
@@ -146,13 +146,13 @@ export default function MenuPage() {
           {/* Search Bar with Enhanced Design */}
           <div className="mb-8">
             <div className="relative mx-auto max-w-2xl">
-              <Search className="absolute top-1/2 left-5 h-6 w-6 -translate-y-1/2 text-emerald-600" />
+              <Search className="absolute top-1/2 left-5 h-6 w-6 -translate-y-1/2 text-[#7a1f1f]" />
               <Input
                 type="text"
                 placeholder="Search for your favorite dishes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-16 border-2 border-emerald-200 pr-4 pl-14 text-lg shadow-lg transition-all focus:border-emerald-600 focus:shadow-xl focus:shadow-emerald-600/20"
+                className="h-16 border-2 border-gray-200 pr-4 pl-14 text-lg shadow-lg transition-all focus:border-[#7a1f1f] focus:shadow-xl focus:shadow-red-900/20"
               />
             </div>
           </div>
@@ -164,11 +164,10 @@ export default function MenuPage() {
                 key={category}
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory(category)}
-                className={`h-12 px-8 text-base font-semibold transition-all ${
-                  selectedCategory === category
-                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 shadow-lg shadow-emerald-600/30 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/40'
-                    : 'border-2 border-emerald-200 hover:-translate-y-0.5 hover:border-emerald-600 hover:bg-emerald-50'
-                }`}
+                className={`h-11 px-6 rounded-full font-semibold transition-all ${selectedCategory === category
+                    ? 'bg-primary text-white shadow-lg shadow-red-900/30 hover:shadow-xl'
+                    : 'bg-white border-2 border-[#E6E1DE] text-gray-700 hover:border-primary hover:bg-red-50'
+                  }`}
               >
                 {category}
               </Button>
@@ -180,34 +179,25 @@ export default function MenuPage() {
             {filteredItems.map((item, index) => (
               <Card
                 key={item.id}
-                className="group overflow-hidden border-2 border-gray-100 transition-all duration-300 hover:-translate-y-2 hover:border-emerald-600 hover:shadow-2xl hover:shadow-emerald-600/20"
+                className="group overflow-hidden rounded-xl border border-[#E6E1DE] bg-white shadow-sm hover:shadow-2xl transition-all duration-300"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-emerald-50 to-green-50">
+                <div className="relative aspect-video overflow-hidden">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110 group-hover:rotate-2"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-
-                  {/* Badges */}
-                  <div className="absolute top-3 left-3 flex flex-col gap-2">
-                    {item.isNew && (
-                      <Badge className="animate-pulse bg-green-500 text-white shadow-lg">NEW</Badge>
-                    )}
-                    {item.isSpicy && (
-                      <Badge className="bg-red-500 text-white shadow-lg">
-                        <Flame className="mr-1 h-3 w-3" />
-                        Spicy
-                      </Badge>
-                    )}
-                  </div>
+                  {!item.isAvailable && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                      <span className="text-lg font-bold text-white">Sold Out</span>
+                    </div>
+                  )}
 
                   {/* Discount Badge */}
                   {item.originalPrice && (
                     <div className="absolute top-3 right-3">
-                      <div className="rounded-full bg-emerald-600 px-3 py-1 text-sm font-bold text-white shadow-lg">
+                      <div className="rounded-full bg-[#7a1f1f] px-3 py-1 text-xs font-bold text-white shadow-lg">
                         -{discount(item.originalPrice, item.price)}%
                       </div>
                     </div>
@@ -215,52 +205,32 @@ export default function MenuPage() {
 
                   {/* Add to Cart Button */}
                   <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-300 group-hover:translate-y-0">
-                    <Button className="w-full rounded-none bg-gradient-to-r from-emerald-600 to-emerald-700 py-6 text-lg font-semibold shadow-lg hover:from-emerald-700 hover:to-emerald-800">
+                    <Button className="w-full rounded-none bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] py-6 text-base font-bold shadow-lg hover:from-[#5e1616] hover:to-[#4a1212]">
                       <ShoppingCart className="mr-2 h-5 w-5" />
                       Add to Cart
                     </Button>
                   </div>
                 </div>
-
-                <CardContent className="p-6">
-                  <div className="mb-3 flex items-center justify-between">
-                    <Badge
-                      variant="secondary"
-                      className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                    >
-                      {item.category}
-                    </Badge>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`h-4 w-4 transition-all ${
-                            i < item.rating
-                              ? 'fill-emerald-500 text-emerald-500'
-                              : 'fill-gray-200 text-gray-200'
-                          }`}
-                        />
-                      ))}
-                      <span className="ml-1 text-sm font-medium text-gray-600">
-                        ({item.rating}.0)
-                      </span>
+                <CardContent className="p-5">
+                  <div className="mb-3 flex items-start justify-between">
+                    <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors">
+                      {item.name}
+                    </h3>
+                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-lg flex-shrink-0">
+                      <span className="text-xs font-bold text-yellow-600">{item.rating}</span>
+                      <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
                     </div>
                   </div>
 
-                  <h3 className="mb-3 text-xl font-bold text-gray-900 transition-colors group-hover:text-emerald-600">
-                    {item.name}
-                  </h3>
-
-                  <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
-                    <Clock className="h-4 w-4" />
-                    <span>{item.prepTime}</span>
-                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 mb-4">
+                    {item.description}
+                  </p>
 
                   <div className="flex items-center justify-between">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-bold text-emerald-600">${item.price}</span>
+                    <div className="flex flex-col">
+                      <span className="text-2xl font-bold text-primary">${item.price}</span>
                       {item.originalPrice && (
-                        <span className="text-sm text-gray-400 line-through">
+                        <span className="text-xs text-gray-400 line-through">
                           ${item.originalPrice}
                         </span>
                       )}

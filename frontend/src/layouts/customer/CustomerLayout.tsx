@@ -28,42 +28,42 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="fixed top-0 z-50 w-full border-b border-emerald-200/20 bg-white/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <header className="fixed top-0 z-50 w-full border-b border-gray-200/20 bg-white/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/80">
         <div className="container mx-auto flex h-20 items-center justify-between px-4">
           <Link
             to="/customer/home"
             className="flex items-center gap-2 transition-transform hover:scale-105"
           >
-            <div className="rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 p-2">
+            <div className="rounded-full bg-gradient-to-br from-[#7a1f1f] to-[#5e1616] p-2">
               <UtensilsCrossed className="h-6 w-6 text-white" />
             </div>
             <span className="text-3xl font-bold tracking-tight text-gray-900">
-              Restaurant<span className="text-emerald-600">.</span>
+              Restaurant<span className="text-[#7a1f1f]">.</span>
             </span>
           </Link>
 
           <nav className="hidden items-center gap-8 md:flex">
             <Link
               to="/customer/home"
-              className={`font-medium transition-colors ${isActive('/customer/home') ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600'}`}
+              className={`font-medium transition-colors ${isActive('/customer/home') ? 'text-[#7a1f1f]' : 'text-gray-700 hover:text-[#7a1f1f]'}`}
             >
               Home
             </Link>
             <Link
               to="/customer/menu"
-              className={`font-medium transition-colors ${isActive('/customer/menu') ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600'}`}
+              className={`font-medium transition-colors ${isActive('/customer/menu') ? 'text-[#7a1f1f]' : 'text-gray-700 hover:text-[#7a1f1f]'}`}
             >
               Menu
             </Link>
             <Link
               to="/customer/reservation"
-              className={`font-medium transition-colors ${isActive('/customer/reservation') ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600'}`}
+              className={`font-medium transition-colors ${isActive('/customer/reservation') ? 'text-[#7a1f1f]' : 'text-gray-700 hover:text-[#7a1f1f]'}`}
             >
               Reservation
             </Link>
             <a
               href="#contact"
-              className="font-medium text-gray-700 transition-colors hover:text-emerald-600"
+              className="font-medium text-gray-700 transition-colors hover:text-[#7a1f1f]"
             >
               Contact
             </a>
@@ -71,7 +71,7 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
 
           <div className="flex items-center gap-3">
             <Link to="/customer/reservation" className="hidden md:block">
-              <Button className="h-11 bg-gradient-to-r from-emerald-600 to-emerald-700 px-8 font-medium shadow-lg shadow-emerald-600/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-600/40">
+              <Button className="h-11 bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] px-8 font-medium shadow-lg shadow-red-900/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-red-900/40">
                 Book Now
               </Button>
             </Link>
@@ -91,28 +91,28 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
             <nav className="container mx-auto flex flex-col px-4 py-4">
               <Link
                 to="/customer/home"
-                className={`py-3 font-medium transition-colors ${isActive('/customer/home') ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600'}`}
+                className={`py-3 font-medium transition-colors ${isActive('/customer/home') ? 'text-[#7a1f1f]' : 'text-gray-700 hover:text-[#7a1f1f]'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Home
               </Link>
               <Link
                 to="/customer/menu"
-                className={`py-3 font-medium transition-colors ${isActive('/customer/menu') ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600'}`}
+                className={`py-3 font-medium transition-colors ${isActive('/customer/menu') ? 'text-[#7a1f1f]' : 'text-gray-700 hover:text-[#7a1f1f]'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Menu
               </Link>
               <Link
                 to="/customer/reservation"
-                className={`py-3 font-medium transition-colors ${isActive('/customer/reservation') ? 'text-emerald-600' : 'text-gray-700 hover:text-emerald-600'}`}
+                className={`py-3 font-medium transition-colors ${isActive('/customer/reservation') ? 'text-[#7a1f1f]' : 'text-gray-700 hover:text-[#7a1f1f]'}`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Reservation
               </Link>
               <a
                 href="#contact"
-                className="py-3 font-medium text-gray-700 hover:text-emerald-600"
+                className="py-3 font-medium text-gray-700 hover:text-[#7a1f1f]"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contact
@@ -122,7 +122,7 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                 className="pt-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Button className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
+                <Button className="w-full bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] hover:from-[#5e1616] hover:to-[#4a1212]">
                   Book Now
                 </Button>
               </Link>
@@ -150,11 +150,11 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
               {/* Brand */}
               <div className="space-y-6">
                 <Link to="/customer/home" className="flex items-center gap-2">
-                  <div className="rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 p-2">
+                  <div className="rounded-full bg-gradient-to-br from-[#7a1f1f] to-[#5e1616] p-2">
                     <UtensilsCrossed className="h-6 w-6 text-white" />
                   </div>
                   <span className="text-3xl font-bold tracking-tight">
-                    Restaurant<span className="text-emerald-500">.</span>
+                    Restaurant<span className="text-[#7a1f1f]">.</span>
                   </span>
                 </Link>
                 <p className="text-gray-400">
@@ -162,22 +162,22 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                 </p>
                 <div className="flex gap-4">
                   <a href="#" className="group">
-                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600">
+                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#7a1f1f]">
                       <Facebook className="h-5 w-5" />
                     </div>
                   </a>
                   <a href="#" className="group">
-                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600">
+                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#7a1f1f]">
                       <Twitter className="h-5 w-5" />
                     </div>
                   </a>
                   <a href="#" className="group">
-                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600">
+                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#7a1f1f]">
                       <Instagram className="h-5 w-5" />
                     </div>
                   </a>
                   <a href="#" className="group">
-                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-emerald-600">
+                    <div className="rounded-full bg-gray-800 p-2 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#7a1f1f]">
                       <Youtube className="h-5 w-5" />
                     </div>
                   </a>
@@ -191,7 +191,7 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                   <li>
                     <Link
                       to="/customer/home"
-                      className="text-gray-400 transition-colors hover:text-emerald-500"
+                      className="text-gray-400 transition-colors hover:text-[#7a1f1f]"
                     >
                       Home
                     </Link>
@@ -199,7 +199,7 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                   <li>
                     <Link
                       to="/customer/menu"
-                      className="text-gray-400 transition-colors hover:text-emerald-500"
+                      className="text-gray-400 transition-colors hover:text-[#7a1f1f]"
                     >
                       Our Menu
                     </Link>
@@ -207,7 +207,7 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                   <li>
                     <Link
                       to="/customer/reservation"
-                      className="text-gray-400 transition-colors hover:text-emerald-500"
+                      className="text-gray-400 transition-colors hover:text-[#7a1f1f]"
                     >
                       Reservations
                     </Link>
@@ -215,7 +215,7 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                   <li>
                     <a
                       href="#contact"
-                      className="text-gray-400 transition-colors hover:text-emerald-500"
+                      className="text-gray-400 transition-colors hover:text-[#7a1f1f]"
                     >
                       Contact Us
                     </a>
@@ -228,7 +228,7 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                 <h3 className="mb-6 text-lg font-bold">Contact Us</h3>
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
-                    <MapPin className="mt-1 h-5 w-5 flex-shrink-0 text-emerald-600" />
+                    <MapPin className="mt-1 h-5 w-5 flex-shrink-0 text-[#7a1f1f]" />
                     <span className="text-gray-400">
                       VKU University, 470 Tran Dai Nghia
                       <br />
@@ -236,19 +236,19 @@ export default function CustomerLayout({ children, showFooter = true }: Customer
                     </span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 flex-shrink-0 text-emerald-600" />
+                    <Phone className="h-5 w-5 flex-shrink-0 text-[#7a1f1f]" />
                     <a
                       href="tel:+842363653561"
-                      className="text-gray-400 transition-colors hover:text-emerald-600"
+                      className="text-gray-400 transition-colors hover:text-[#7a1f1f]"
                     >
                       +84 236 3653 561
                     </a>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 flex-shrink-0 text-emerald-600" />
+                    <Mail className="h-5 w-5 flex-shrink-0 text-[#7a1f1f]" />
                     <a
                       href="mailto:contact@vku.udn.vn"
-                      className="text-gray-400 transition-colors hover:text-emerald-600"
+                      className="text-gray-400 transition-colors hover:text-[#7a1f1f]"
                     >
                       contact@vku.udn.vn
                     </a>

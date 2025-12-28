@@ -8,7 +8,7 @@
   --color-background: #ffffff;
   --color-foreground: #0f172a;
 
-  --color-primary: #4f46e5;
+  --color-primary: #7a1f1f;
   --color-primary-foreground: #f8fafc;
 
   --color-secondary: #f1f5f9;
@@ -51,6 +51,7 @@
     from {
       height: 0;
     }
+
     to {
       height: var(--radix-accordion-content-height);
     }
@@ -60,6 +61,7 @@
     from {
       height: var(--radix-accordion-content-height);
     }
+
     to {
       height: 0;
     }
@@ -74,6 +76,7 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   font-family:
+    'Be Vietnam Pro',
     system-ui,
     -apple-system,
     sans-serif;
