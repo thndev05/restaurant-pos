@@ -22,7 +22,6 @@ export interface CreatePaymentData {
 }
 
 export interface ProcessPaymentData {
-  transactionId?: string;
   notes?: string;
 }
 

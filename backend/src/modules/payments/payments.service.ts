@@ -8,6 +8,7 @@ import {
   OrderStatus,
   OrderItemStatus,
 } from 'src/generated/prisma';
+import { generateTransactionId } from 'src/common/utils';
 
 @Injectable()
 export class PaymentsService {
@@ -90,6 +91,9 @@ export class PaymentsService {
       throw new BadRequestException('Payment already exists for this session.');
     }
 
+    // Generate unique transaction ID
+    const transactionId = generateTransactionId();
+
     // Create payment
     const payment = await this.db.create({
       data: {
@@ -100,6 +104,7 @@ export class PaymentsService {
         discount: createPaymentDto.discount || '0',
         paymentMethod: createPaymentDto.paymentMethod,
         status: PaymentStatus.PENDING,
+        transactionId,
         notes: createPaymentDto.notes,
       },
       include: {
@@ -169,9 +174,7 @@ export class PaymentsService {
 
   async processPayment(id: string, processPaymentDto: ProcessPaymentDto) {
     const startTime = Date.now();
-    console.log(
-      `[Payment:${id}] Starting payment processing with transaction ID: ${processPaymentDto.transactionId}`,
-    );
+    console.log(`[Payment:${id}] Starting payment processing`);
 
     try {
       const result = await this.prismaService.$transaction(async (tx) => {
@@ -213,7 +216,6 @@ export class PaymentsService {
           data: {
             status: PaymentStatus.SUCCESS,
             paymentTime: now,
-            transactionId: processPaymentDto.transactionId,
             notes: processPaymentDto.notes,
           },
           include: {

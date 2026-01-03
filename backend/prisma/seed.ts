@@ -1148,7 +1148,7 @@ async function main() {
         discount,
         paymentMethod: paymentMethod as 'CASH' | 'BANKING' | 'CARD',
         status: 'SUCCESS' as const,
-        transactionId: `TXN${faker.string.alphanumeric({ length: 12, casing: 'upper' })}`,
+        transactionId: `TX${Array.from({ length: 10 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 33)]).join('')}`,
         paymentTime,
         createdAt: orderTime,
       });

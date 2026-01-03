@@ -318,7 +318,7 @@ model Payment {
   discount      Decimal       @default(0) @db.Decimal(10, 2)
   paymentMethod PaymentMethod @map("payment_method")
   status        PaymentStatus @default(PENDING)
-  transactionId String?       @map("transaction_id")
+  transactionId String?       @unique @map("transaction_id")
   paymentTime   DateTime?     @map("payment_time")
   notes         String?       @db.Text
   sessionId     String?       @unique @map("session_id") @db.Uuid

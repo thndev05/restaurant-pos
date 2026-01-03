@@ -37,6 +37,7 @@
  */
 
 export * from './authorization.util';
+export * from './transaction.util';
 
 /**
  * Available Roles:

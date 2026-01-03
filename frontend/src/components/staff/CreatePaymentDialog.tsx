@@ -93,7 +93,6 @@ export function CreatePaymentDialog({
   const [discount, setDiscount] = useState<number>(0);
   const [tax, setTax] = useState<number>(10); // Default 10% tax
   const [notes, setNotes] = useState('');
-  const [transactionId, setTransactionId] = useState('');
   const [cashReceived, setCashReceived] = useState<string>('');
   const [tipAmount, setTipAmount] = useState<string>('');
   const [billData, setBillData] = useState<OrderBill | null>(null);
@@ -229,7 +228,6 @@ export function CreatePaymentDialog({
       if (sessionId && createResponse.data.id) {
         const paymentId = createResponse.data.id;
         await paymentsService.processPayment(paymentId, {
-          transactionId: transactionId || undefined,
           notes: notes || undefined,
         });
       }
@@ -247,7 +245,6 @@ export function CreatePaymentDialog({
       setDiscount(0);
       setTax(0);
       setNotes('');
-      setTransactionId('');
     } catch (error) {
       console.error('Failed to process payment:', error);
       const message =
@@ -542,19 +539,6 @@ export function CreatePaymentDialog({
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Transaction ID (for non-cash payments) */}
-            {paymentMethod !== 'CASH' && (
-              <div className="space-y-2">
-                <Label htmlFor="transaction-id">Transaction ID (Optional)</Label>
-                <Input
-                  id="transaction-id"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Enter transaction ID"
-                />
-              </div>
-            )}
 
             <Separator />
 
