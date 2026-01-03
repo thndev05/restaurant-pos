@@ -103,8 +103,8 @@ export default function CustomerHomePage() {
         <div className="relative z-10 container mx-auto px-4">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div className="space-y-6 text-white">
-              <p className="font-cursive text-xl sm:text-2xl text-amber-300">Eat Sleep And</p>
-              <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
+              <p className="font-cursive text-xl text-amber-300 sm:text-2xl">Eat Sleep And</p>
+              <h1 className="font-serif text-5xl leading-[1.1] font-bold tracking-tight sm:text-6xl lg:text-7xl">
                 Supper delicious
                 <br />
                 Burger in town!
@@ -116,7 +116,7 @@ export default function CustomerHomePage() {
                 <Link to="/customer/reservation">
                   <Button
                     size="lg"
-                    className="h-14 bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] px-10 text-lg font-bold hover:from-[#5e1616] hover:to-[#4a1212] shadow-lg shadow-red-900/40 hover:shadow-xl hover:shadow-red-900/50 transition-all"
+                    className="h-14 bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] px-10 text-lg font-bold shadow-lg shadow-red-900/40 transition-all hover:from-[#5e1616] hover:to-[#4a1212] hover:shadow-xl hover:shadow-red-900/50"
                   >
                     Book A Table
                   </Button>
@@ -191,16 +191,16 @@ export default function CustomerHomePage() {
               />
             </div>
             <div className="space-y-6">
-              <h2 className="text-4xl font-bold leading-tight tracking-tight text-gray-900 lg:text-5xl">
+              <h2 className="text-4xl leading-tight font-bold tracking-tight text-gray-900 lg:text-5xl">
                 Caferio, Burgers, and
                 <br />
                 Best Pizzas <span className="text-[#7a1f1f]">in Town!</span>
               </h2>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="leading-relaxed text-gray-600">
                 The restaurants in Hangzhou also catered to many northern Chinese who had fled south
                 from Kaifeng during the Jurchen invasion of the 1120s.
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
                     <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50">
@@ -208,8 +208,12 @@ export default function CustomerHomePage() {
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">Delicious & Healthy Foods</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">Expertly prepared with fresh ingredients</p>
+                    <h3 className="mb-1 text-lg leading-tight font-bold text-gray-900">
+                      Delicious & Healthy Foods
+                    </h3>
+                    <p className="text-sm leading-relaxed text-gray-600">
+                      Expertly prepared with fresh ingredients
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -219,8 +223,12 @@ export default function CustomerHomePage() {
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">Family & Kids Zone</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">Safe, dedicated play areas for families</p>
+                    <h3 className="mb-1 text-lg leading-tight font-bold text-gray-900">
+                      Family & Kids Zone
+                    </h3>
+                    <p className="text-sm leading-relaxed text-gray-600">
+                      Safe, dedicated play areas for families
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -230,8 +238,12 @@ export default function CustomerHomePage() {
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">Music & Amenities</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">Live entertainment and comfortable seating</p>
+                    <h3 className="mb-1 text-lg leading-tight font-bold text-gray-900">
+                      Music & Amenities
+                    </h3>
+                    <p className="text-sm leading-relaxed text-gray-600">
+                      Live entertainment and comfortable seating
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -241,15 +253,19 @@ export default function CustomerHomePage() {
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1">Fast Delivery</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">Premium food delivered to your door</p>
+                    <h3 className="mb-1 text-lg leading-tight font-bold text-gray-900">
+                      Fast Delivery
+                    </h3>
+                    <p className="text-sm leading-relaxed text-gray-600">
+                      Premium food delivered to your door
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="pt-4">
                 <Button
                   size="lg"
-                  className="h-14 bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] px-10 font-bold hover:from-[#5e1616] hover:to-[#4a1212] shadow-lg shadow-red-900/40 transition-all"
+                  className="h-14 bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] px-10 font-bold shadow-lg shadow-red-900/40 transition-all hover:from-[#5e1616] hover:to-[#4a1212]"
                 >
                   Order Now
                 </Button>
@@ -292,7 +308,7 @@ export default function CustomerHomePage() {
             {popularDishes.map((dish, index) => (
               <Card
                 key={index}
-                className="group overflow-hidden rounded-xl border border-[#E6E1DE] bg-white shadow-sm hover:shadow-2xl transition-all duration-300"
+                className="group overflow-hidden rounded-xl border border-[#E6E1DE] bg-white shadow-sm transition-all duration-300 hover:shadow-2xl"
               >
                 <div className="relative aspect-video overflow-hidden">
                   <img
@@ -308,8 +324,10 @@ export default function CustomerHomePage() {
                 </div>
                 <CardContent className="p-5">
                   <div className="mb-3 flex items-start justify-between">
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-[#7a1f1f] transition-colors">{dish.name}</h3>
-                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-lg flex-shrink-0">
+                    <h3 className="text-lg leading-tight font-bold text-gray-900 transition-colors group-hover:text-[#7a1f1f]">
+                      {dish.name}
+                    </h3>
+                    <div className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-yellow-50 px-2 py-0.5">
                       <span className="text-xs font-bold text-yellow-600">{dish.rating}</span>
                       <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
                     </div>
@@ -327,9 +345,9 @@ export default function CustomerHomePage() {
                     </div>
                     <Button
                       size="sm"
-                      className="h-9 px-4 bg-[#7a1f1f]/10 hover:bg-[#7a1f1f] text-[#7a1f1f] hover:text-white rounded-lg transition-colors font-bold"
+                      className="h-9 rounded-lg bg-[#7a1f1f]/10 px-4 font-bold text-[#7a1f1f] transition-colors hover:bg-[#7a1f1f] hover:text-white"
                     >
-                      <Plus className="h-4 w-4 mr-1" />
+                      <Plus className="mr-1 h-4 w-4" />
                       Add
                     </Button>
                   </div>
@@ -342,7 +360,7 @@ export default function CustomerHomePage() {
             <Link to="/customer/menu">
               <Button
                 size="lg"
-                className="h-14 bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] px-10 font-semibold hover:from-[#5e1616] hover:to-[#4a1212] shadow-lg shadow-red-900/40"
+                className="h-14 bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] px-10 font-semibold shadow-lg shadow-red-900/40 hover:from-[#5e1616] hover:to-[#4a1212]"
               >
                 View Full Menu
               </Button>

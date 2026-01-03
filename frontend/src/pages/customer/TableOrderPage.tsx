@@ -86,11 +86,14 @@ export default function TableOrderPage() {
         setMenuItems(data);
 
         // Extract unique categories
-        const uniqueCategories = ['All', ...new Set(
-          data
-            .filter((item: MenuItem) => item.category)
-            .map((item: MenuItem) => item.category!.name)
-        )];
+        const uniqueCategories = [
+          'All',
+          ...new Set(
+            data
+              .filter((item: MenuItem) => item.category)
+              .map((item: MenuItem) => item.category!.name)
+          ),
+        ];
         setCategories(uniqueCategories);
       } catch (error) {
         console.error('Failed to load menu:', error);
@@ -209,7 +212,7 @@ export default function TableOrderPage() {
     try {
       setIsPlacingOrder(true);
 
-      const items = cart.map(item => ({
+      const items = cart.map((item) => ({
         menuItemId: item.id,
         quantity: item.quantity,
         ...(item.notes && { notes: item.notes }),
@@ -240,8 +243,8 @@ export default function TableOrderPage() {
     }
   };
 
-  const isInCart = (itemId: string) => cart.some(item => item.id === itemId);
-  const getCartItem = (itemId: string) => cart.find(item => item.id === itemId);
+  const isInCart = (itemId: string) => cart.some((item) => item.id === itemId);
+  const getCartItem = (itemId: string) => cart.find((item) => item.id === itemId);
 
   if (!session) {
     return null;
@@ -256,12 +259,14 @@ export default function TableOrderPage() {
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-full bg-primary text-white">
+              <div className="bg-primary flex size-8 items-center justify-center rounded-full text-white">
                 <UtensilsCrossed className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
-                <h1 className="text-base font-bold leading-tight tracking-tight">BBQ Prime</h1>
-                <span className="text-xs font-medium text-gray-500">Table {session.tableInfo.number}</span>
+                <h1 className="text-base leading-tight font-bold tracking-tight">BBQ Prime</h1>
+                <span className="text-xs font-medium text-gray-500">
+                  Table {session.tableInfo.number}
+                </span>
               </div>
             </div>
           </div>
@@ -269,7 +274,9 @@ export default function TableOrderPage() {
             <div className="flex animate-pulse items-center gap-2 rounded-full border border-yellow-200 bg-yellow-50 px-4 py-1.5 text-yellow-800">
               <Clock className="h-[18px] w-[18px]" />
               <span className="text-sm font-bold tabular-nums">
-                {timeRemaining !== null ? `${String(Math.floor(timeRemaining)).padStart(2, '0')}:${String(Math.floor((timeRemaining % 1) * 60)).padStart(2, '0')}` : '00:00'}
+                {timeRemaining !== null
+                  ? `${String(Math.floor(timeRemaining)).padStart(2, '0')}:${String(Math.floor((timeRemaining % 1) * 60)).padStart(2, '0')}`
+                  : '00:00'}
               </span>
               <span className="text-xs font-medium opacity-80">remaining</span>
             </div>
@@ -278,7 +285,9 @@ export default function TableOrderPage() {
             {/* Timer (Mobile) */}
             <div className="flex items-center gap-1 rounded-lg border border-yellow-200 bg-yellow-50 px-2 py-1 text-yellow-800 md:hidden">
               <span className="text-xs font-bold tabular-nums">
-                {timeRemaining !== null ? `${String(Math.floor(timeRemaining)).padStart(2, '0')}:${String(Math.floor((timeRemaining % 1) * 60)).padStart(2, '0')}` : '00:00'}
+                {timeRemaining !== null
+                  ? `${String(Math.floor(timeRemaining)).padStart(2, '0')}:${String(Math.floor((timeRemaining % 1) * 60)).padStart(2, '0')}`
+                  : '00:00'}
               </span>
             </div>
             {/* Call Waiter - Desktop */}
@@ -320,7 +329,7 @@ export default function TableOrderPage() {
             >
               <ShoppingCart className="h-6 w-6 text-gray-800" />
               {cart.length > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white ring-2 ring-white">
+                <span className="bg-primary absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white ring-2 ring-white">
                   {cart.length}
                 </span>
               )}
@@ -335,22 +344,24 @@ export default function TableOrderPage() {
           <div className="flex gap-8">
             <button
               onClick={() => setActiveTab('menu')}
-              className={`relative flex flex-col items-center pb-3 text-sm font-bold transition-colors ${activeTab === 'menu' ? 'text-primary' : 'text-gray-500 hover:text-gray-800'
-                }`}
+              className={`relative flex flex-col items-center pb-3 text-sm font-bold transition-colors ${
+                activeTab === 'menu' ? 'text-primary' : 'text-gray-500 hover:text-gray-800'
+              }`}
             >
               Menu
               {activeTab === 'menu' && (
-                <span className="absolute bottom-0 h-[3px] w-full rounded-t-full bg-primary"></span>
+                <span className="bg-primary absolute bottom-0 h-[3px] w-full rounded-t-full"></span>
               )}
             </button>
             <button
               onClick={() => setActiveTab('cart')}
-              className={`relative flex flex-col items-center pb-3 text-sm font-bold transition-colors ${activeTab === 'cart' ? 'text-primary' : 'text-gray-500 hover:text-gray-800'
-                }`}
+              className={`relative flex flex-col items-center pb-3 text-sm font-bold transition-colors ${
+                activeTab === 'cart' ? 'text-primary' : 'text-gray-500 hover:text-gray-800'
+              }`}
             >
               My Order
               {activeTab === 'cart' && (
-                <span className="absolute bottom-0 h-[3px] w-full rounded-t-full bg-primary"></span>
+                <span className="bg-primary absolute bottom-0 h-[3px] w-full rounded-t-full"></span>
               )}
             </button>
           </div>
@@ -359,16 +370,17 @@ export default function TableOrderPage() {
         {activeTab === 'menu' && (
           <>
             {/* Categories */}
-            <div className="no-scrollbar mb-6 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div className="no-scrollbar -mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <div className="flex min-w-max gap-3">
                 {categories.map((category) => (
                   <button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`flex h-9 items-center gap-2 rounded-xl px-4 shadow-md transition-all active:scale-95 ${selectedCategory === category
-                      ? 'bg-primary text-white shadow-primary/20'
-                      : 'border border-gray-200 bg-white text-gray-800 hover:border-gray-300'
-                      }`}
+                    className={`flex h-9 items-center gap-2 rounded-xl px-4 shadow-md transition-all active:scale-95 ${
+                      selectedCategory === category
+                        ? 'bg-primary shadow-primary/20 text-white'
+                        : 'border border-gray-200 bg-white text-gray-800 hover:border-gray-300'
+                    }`}
                   >
                     {category === selectedCategory && category !== 'All' && (
                       <Star className="h-[18px] w-[18px]" />
@@ -382,7 +394,7 @@ export default function TableOrderPage() {
             {/* Menu Grid */}
             {isLoadingMenu ? (
               <div className="col-span-full py-16 text-center">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+                <Loader2 className="text-primary mx-auto h-12 w-12 animate-spin" />
                 <p className="mt-4 text-gray-600">Loading menu...</p>
               </div>
             ) : filteredItems.length === 0 ? (
@@ -401,26 +413,30 @@ export default function TableOrderPage() {
                       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
                         <div
                           className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-                          style={{ backgroundImage: `url(${item.image || '/assets/images/food-placeholder.png'})` }}
+                          style={{
+                            backgroundImage: `url(${item.image || '/assets/images/food-placeholder.png'})`,
+                          }}
                         />
                         {item.tags.includes('new') && (
-                          <span className="absolute left-3 top-3 flex items-center gap-1 rounded-lg bg-primary/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                          <span className="bg-primary/90 absolute top-3 left-3 flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold tracking-wide text-white uppercase backdrop-blur-sm">
                             Best Seller
                           </span>
                         )}
                         {item.tags.includes('spicy') && (
-                          <span className="absolute left-3 top-3 flex items-center gap-1 rounded-lg bg-orange-500/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                          <span className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-orange-500/90 px-2 py-1 text-[10px] font-bold tracking-wide text-white uppercase backdrop-blur-sm">
                             <Flame className="h-[12px] w-[12px]" /> Spicy
                           </span>
                         )}
-                        <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-lg bg-white/90 px-2 py-1 shadow-sm backdrop-blur-sm">
+                        <div className="absolute right-3 bottom-3 flex items-center gap-1 rounded-lg bg-white/90 px-2 py-1 shadow-sm backdrop-blur-sm">
                           <Star className="h-[14px] w-[14px] fill-yellow-500 text-yellow-500" />
                           <span className="text-xs font-bold">4.9</span>
                         </div>
                       </div>
                       <div className="flex flex-1 flex-col p-4">
                         <div className="mb-2 flex items-start justify-between">
-                          <h3 className="text-lg font-bold leading-tight text-gray-900">{item.name}</h3>
+                          <h3 className="text-lg leading-tight font-bold text-gray-900">
+                            {item.name}
+                          </h3>
                         </div>
                         <p className="mb-4 line-clamp-2 flex-1 text-sm text-gray-500">
                           {item.description || 'Freshly prepared with premium ingredients'}
@@ -428,26 +444,30 @@ export default function TableOrderPage() {
                         <div className="mt-auto flex items-center justify-between border-t border-gray-50 pt-3">
                           <div className="flex flex-col">
                             <span className="text-xs font-medium text-gray-400">Price</span>
-                            <span className="text-lg font-bold text-primary">${Number(item.price).toFixed(2)}</span>
+                            <span className="text-primary text-lg font-bold">
+                              ${Number(item.price).toFixed(2)}
+                            </span>
                           </div>
                           {cartItem ? (
                             <div className="flex items-center gap-3">
                               <button
                                 onClick={() => {
-                                  const idx = cart.findIndex(c => c.id === item.id);
+                                  const idx = cart.findIndex((c) => c.id === item.id);
                                   updateQuantity(idx, -1);
                                 }}
                                 className="flex size-8 items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200"
                               >
                                 <Minus className="h-[18px] w-[18px]" />
                               </button>
-                              <span className="w-4 text-center text-sm font-bold">{cartItem.quantity}</span>
+                              <span className="w-4 text-center text-sm font-bold">
+                                {cartItem.quantity}
+                              </span>
                               <button
                                 onClick={() => {
-                                  const idx = cart.findIndex(c => c.id === item.id);
+                                  const idx = cart.findIndex((c) => c.id === item.id);
                                   updateQuantity(idx, 1);
                                 }}
-                                className="flex size-8 items-center justify-center rounded-lg bg-primary text-white shadow-sm shadow-primary/30"
+                                className="bg-primary shadow-primary/30 flex size-8 items-center justify-center rounded-lg text-white shadow-sm"
                               >
                                 <Plus className="h-[18px] w-[18px]" />
                               </button>
@@ -456,7 +476,7 @@ export default function TableOrderPage() {
                             <button
                               onClick={() => addToCart(item)}
                               disabled={!item.isAvailable}
-                              className="flex items-center justify-center rounded-xl bg-primary p-2.5 text-white shadow-sm shadow-primary/30 transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 group/btn"
+                              className="bg-primary shadow-primary/30 group/btn flex items-center justify-center rounded-xl p-2.5 text-white shadow-sm transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <Plus className="h-[20px] w-[20px] transition-transform group-active/btn:scale-90" />
                             </button>
@@ -477,7 +497,7 @@ export default function TableOrderPage() {
               <Card className="animate-in fade-in zoom-in border-2 border-gray-200/50 bg-gradient-to-br from-white to-white/80 shadow-xl duration-500">
                 <CardContent className="py-16 text-center sm:py-24">
                   <div className="animate-in zoom-in mb-6 inline-flex items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-orange-100 p-8 shadow-2xl duration-700 sm:mb-8 sm:p-10">
-                    <ShoppingCart className="h-16 w-16 text-primary sm:h-20 sm:w-20" />
+                    <ShoppingCart className="text-primary h-16 w-16 sm:h-20 sm:w-20" />
                   </div>
                   <h3 className="animate-in slide-in-from-bottom mb-2 text-2xl font-bold tracking-tight text-gray-900 delay-100 duration-500 sm:mb-3 sm:text-3xl">
                     Your cart is empty
@@ -487,7 +507,7 @@ export default function TableOrderPage() {
                   </p>
                   <Button
                     onClick={() => setActiveTab('menu')}
-                    className="animate-in zoom-in group relative overflow-hidden bg-gradient-to-r from-primary to-[#9b0c0c] px-6 py-5 text-base font-semibold shadow-xl shadow-primary/30 transition-all delay-300 duration-500 hover:scale-105 hover:shadow-2xl active:scale-95 sm:px-8 sm:py-6 sm:text-lg"
+                    className="animate-in zoom-in group from-primary shadow-primary/30 relative overflow-hidden bg-gradient-to-r to-[#9b0c0c] px-6 py-5 text-base font-semibold shadow-xl transition-all delay-300 duration-500 hover:scale-105 hover:shadow-2xl active:scale-95 sm:px-8 sm:py-6 sm:text-lg"
                   >
                     <UtensilsCrossed className="mr-2 h-5 w-5 transition-transform group-hover:rotate-12" />
                     Browse Menu
@@ -498,7 +518,10 @@ export default function TableOrderPage() {
               <div className="space-y-4 sm:space-y-6">
                 <div className="space-y-3 sm:space-y-4">
                   {cart.map((item, index) => (
-                    <Card key={index} className="overflow-hidden border-2 transition-all hover:border-primary hover:shadow-lg">
+                    <Card
+                      key={index}
+                      className="hover:border-primary overflow-hidden border-2 transition-all hover:shadow-lg"
+                    >
                       <CardContent className="p-3 sm:p-4">
                         <div className="flex gap-3 sm:gap-4">
                           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-red-100 to-orange-100 sm:h-24 sm:w-24">
@@ -511,9 +534,13 @@ export default function TableOrderPage() {
                           <div className="flex-1">
                             <div className="mb-2 flex items-start justify-between gap-2">
                               <div className="flex-1">
-                                <h3 className="text-sm font-bold text-gray-900 sm:text-base">{item.name}</h3>
+                                <h3 className="text-sm font-bold text-gray-900 sm:text-base">
+                                  {item.name}
+                                </h3>
                                 {item.notes && (
-                                  <p className="mt-0.5 text-[10px] text-gray-500 sm:text-xs">Note: {item.notes}</p>
+                                  <p className="mt-0.5 text-[10px] text-gray-500 sm:text-xs">
+                                    Note: {item.notes}
+                                  </p>
                                 )}
                               </div>
                               <button
@@ -531,15 +558,17 @@ export default function TableOrderPage() {
                                 >
                                   <Minus className="h-3 w-3" />
                                 </button>
-                                <span className="w-7 text-center text-sm font-bold sm:w-8 sm:text-base">{item.quantity}</span>
+                                <span className="w-7 text-center text-sm font-bold sm:w-8 sm:text-base">
+                                  {item.quantity}
+                                </span>
                                 <button
                                   onClick={() => updateQuantity(index, 1)}
-                                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white active:scale-90 sm:h-8 sm:w-8"
+                                  className="bg-primary flex h-7 w-7 items-center justify-center rounded-lg text-white active:scale-90 sm:h-8 sm:w-8"
                                 >
                                   <Plus className="h-3 w-3" />
                                 </button>
                               </div>
-                              <span className="text-lg font-bold text-primary sm:text-xl">
+                              <span className="text-primary text-lg font-bold sm:text-xl">
                                 ${(item.price * item.quantity).toFixed(2)}
                               </span>
                             </div>
@@ -553,10 +582,12 @@ export default function TableOrderPage() {
                 <Card className="animate-in slide-in-from-bottom overflow-hidden border-2 border-red-300/30 bg-gradient-to-br from-white to-red-50/50 shadow-2xl delay-300 duration-700">
                   <div className="bg-gradient-to-r from-red-50 via-orange-50 to-red-50 p-5 sm:p-8">
                     <div className="mb-4 flex items-center gap-2 sm:mb-6 sm:gap-3">
-                      <div className="rounded-full bg-gradient-to-br from-primary to-[#9b0c0c] p-2 shadow-lg sm:p-2.5">
+                      <div className="from-primary rounded-full bg-gradient-to-br to-[#9b0c0c] p-2 shadow-lg sm:p-2.5">
                         <Sparkles className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                       </div>
-                      <h3 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">Order Summary</h3>
+                      <h3 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+                        Order Summary
+                      </h3>
                     </div>
                     <div className="space-y-3 sm:space-y-4">
                       <div className="flex justify-between rounded-lg bg-white/60 p-2.5 text-sm text-gray-700 backdrop-blur-sm sm:p-3 sm:text-base">
@@ -570,10 +601,14 @@ export default function TableOrderPage() {
                       <div className="rounded-xl border-2 border-red-300 bg-gradient-to-r from-red-100 to-orange-100 p-3 shadow-lg sm:p-4">
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-xs font-medium text-primary sm:text-sm">Total Amount</p>
-                            <span className="text-2xl font-bold text-primary sm:text-3xl">${total.toFixed(2)}</span>
+                            <p className="text-primary text-xs font-medium sm:text-sm">
+                              Total Amount
+                            </p>
+                            <span className="text-primary text-2xl font-bold sm:text-3xl">
+                              ${total.toFixed(2)}
+                            </span>
                           </div>
-                          <div className="rounded-full bg-primary p-2 shadow-lg sm:p-3">
+                          <div className="bg-primary rounded-full p-2 shadow-lg sm:p-3">
                             <Check className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                           </div>
                         </div>
@@ -586,7 +621,7 @@ export default function TableOrderPage() {
                   size="lg"
                   disabled={isPlacingOrder}
                   onClick={handlePlaceOrder}
-                  className="animate-in zoom-in group relative h-16 w-full overflow-hidden bg-gradient-to-r from-primary via-red-700 to-[#9b0c0c] text-lg font-bold shadow-2xl shadow-primary/40 transition-all delay-400 duration-700 hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:h-20 sm:text-xl"
+                  className="animate-in zoom-in group from-primary shadow-primary/40 relative h-16 w-full overflow-hidden bg-gradient-to-r via-red-700 to-[#9b0c0c] text-lg font-bold shadow-2xl transition-all delay-400 duration-700 hover:scale-[1.02] hover:shadow-2xl active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:h-20 sm:text-xl"
                 >
                   {isPlacingOrder ? (
                     <>
@@ -609,16 +644,19 @@ export default function TableOrderPage() {
         )}
       </main>
 
-
-
       {/* Sticky Bottom Cart Bar */}
       {cart.length > 0 && (
         <div className="fixed bottom-0 left-0 z-50 w-full">
-          <div className="w-full bg-primary-dark p-4 pb-safe text-white shadow-[0_-4px_20px_rgba(0,0,0,0.15)]" style={{ backgroundColor: '#9b0c0c' }}>
+          <div
+            className="bg-primary-dark pb-safe w-full p-4 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.15)]"
+            style={{ backgroundColor: '#9b0c0c' }}
+          >
             <div className="mx-auto flex max-w-7xl items-center justify-between">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <div className="rounded bg-white/20 px-2 py-1 text-xs font-bold">{cart.length} Items</div>
+                  <div className="rounded bg-white/20 px-2 py-1 text-xs font-bold">
+                    {cart.length} Items
+                  </div>
                   <span className="text-xs font-medium text-white/70">in cart</span>
                 </div>
                 <div className="mt-0.5 text-lg font-bold">
@@ -627,7 +665,7 @@ export default function TableOrderPage() {
               </div>
               <button
                 onClick={() => setActiveTab('cart')}
-                className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary-dark shadow-lg transition-all hover:bg-gray-100 active:scale-95"
+                className="text-primary-dark flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold shadow-lg transition-all hover:bg-gray-100 active:scale-95"
                 style={{ color: '#9b0c0c' }}
               >
                 <span>View Order</span>
@@ -656,7 +694,9 @@ export default function TableOrderPage() {
               <div>
                 <h3 className="mb-1 text-xl font-bold text-gray-900">{selectedItem.name}</h3>
                 <div className="flex items-center justify-between">
-                  <p className="text-3xl font-bold text-primary">${Number(selectedItem.price).toFixed(2)}</p>
+                  <p className="text-primary text-3xl font-bold">
+                    ${Number(selectedItem.price).toFixed(2)}
+                  </p>
                   {itemQuantity > 1 && (
                     <p className="text-lg font-semibold text-gray-600">
                       Total: ${(Number(selectedItem.price) * itemQuantity).toFixed(2)}
@@ -673,10 +713,12 @@ export default function TableOrderPage() {
                   >
                     <Minus className="h-5 w-5" />
                   </button>
-                  <span className="min-w-[3rem] text-center text-2xl font-bold">{itemQuantity}</span>
+                  <span className="min-w-[3rem] text-center text-2xl font-bold">
+                    {itemQuantity}
+                  </span>
                   <button
                     onClick={() => setItemQuantity(itemQuantity + 1)}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white transition-colors hover:bg-red-700 active:scale-95"
+                    className="bg-primary flex h-10 w-10 items-center justify-center rounded-lg text-white transition-colors hover:bg-red-700 active:scale-95"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -702,7 +744,7 @@ export default function TableOrderPage() {
                   Cancel
                 </Button>
                 <Button
-                  className="flex-1 bg-gradient-to-r from-primary to-[#9b0c0c] hover:from-[#9b0c0c] hover:to-[#9b0c0c]"
+                  className="from-primary flex-1 bg-gradient-to-r to-[#9b0c0c] hover:from-[#9b0c0c] hover:to-[#9b0c0c]"
                   onClick={confirmAddToCart}
                 >
                   Add to Cart
@@ -718,7 +760,7 @@ export default function TableOrderPage() {
         <div className="animate-in fade-in fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md duration-300">
           <Card className="animate-in zoom-in w-full max-w-sm overflow-hidden border-2 border-red-500/50 bg-gradient-to-br from-white to-red-50/30 shadow-2xl duration-500 sm:max-w-lg">
             <CardContent className="relative p-8 text-center sm:p-12">
-              <div className="animate-in zoom-in mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-[#9b0c0c] shadow-2xl shadow-primary/40 delay-100 duration-700 sm:mb-6 sm:h-28 sm:w-28">
+              <div className="animate-in zoom-in from-primary shadow-primary/40 mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br to-[#9b0c0c] shadow-2xl delay-100 duration-700 sm:mb-6 sm:h-28 sm:w-28">
                 <Check className="h-9 w-9 stroke-[3] text-white sm:h-12 sm:w-12" />
               </div>
               <h3 className="animate-in slide-in-from-bottom mb-2 text-2xl font-bold text-gray-900 delay-300 duration-500 sm:mb-3 sm:text-4xl">
@@ -727,7 +769,7 @@ export default function TableOrderPage() {
               <p className="animate-in slide-in-from-bottom mb-4 text-base text-gray-700 delay-400 duration-500 sm:mb-6 sm:text-lg">
                 Your order has been sent to the kitchen
               </p>
-              <div className="animate-in fade-in inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-red-100 to-orange-100 px-4 py-2 text-xs font-semibold text-primary shadow-lg delay-500 duration-500 sm:px-6 sm:py-3 sm:text-sm">
+              <div className="animate-in fade-in text-primary inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-red-100 to-orange-100 px-4 py-2 text-xs font-semibold shadow-lg delay-500 duration-500 sm:px-6 sm:py-3 sm:text-sm">
                 <Clock className="h-4 w-4 animate-pulse sm:h-5 sm:w-5" />
                 <span>Your delicious food will be ready soon!</span>
               </div>

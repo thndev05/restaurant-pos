@@ -6,13 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Eye,
-  EyeOff,
-  UtensilsCrossed,
-  AlertCircle,
-  User,
-} from 'lucide-react';
+import { Eye, EyeOff, UtensilsCrossed, AlertCircle, User } from 'lucide-react';
 
 export default function StaffLoginPage() {
   const navigate = useNavigate();
@@ -84,9 +78,7 @@ export default function StaffLoginPage() {
                 <User className="text-primary h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div>
-                <CardTitle className="text-xl sm:text-2xl">
-                  Staff Login
-                </CardTitle>
+                <CardTitle className="text-xl sm:text-2xl">Staff Login</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
                   Enter your credentials to continue
                 </CardDescription>
@@ -133,11 +125,7 @@ export default function StaffLoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -148,9 +136,7 @@ export default function StaffLoginPage() {
                     type="checkbox"
                     id="remember"
                     checked={formData.rememberMe}
-                    onChange={(e) =>
-                      setFormData({ ...formData, rememberMe: e.target.checked })
-                    }
+                    onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <Label htmlFor="remember" className="text-sm font-normal">
@@ -169,8 +155,8 @@ export default function StaffLoginPage() {
 
             <div className="bg-muted mt-6 rounded-lg p-4">
               <p className="text-muted-foreground text-center text-sm">
-                For customers:{' '}
-                <span className="font-medium">Scan QR code on your table</span> to order
+                For customers: <span className="font-medium">Scan QR code on your table</span> to
+                order
               </p>
             </div>
           </CardContent>

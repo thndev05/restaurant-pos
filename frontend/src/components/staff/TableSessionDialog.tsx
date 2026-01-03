@@ -154,7 +154,9 @@ export function TableSessionDialog({
         console.log(`      Items: ${order.orderItems?.length || 0}`);
       });
     }
-    console.log(`  Filtered orders (non-cancelled): ${activeSession.orders?.filter((o) => o.status !== 'CANCELLED').length || 0}`);
+    console.log(
+      `  Filtered orders (non-cancelled): ${activeSession.orders?.filter((o) => o.status !== 'CANCELLED').length || 0}`
+    );
   }
   console.log('==========================================================\n');
 

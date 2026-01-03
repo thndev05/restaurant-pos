@@ -3,7 +3,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 /**
  * Decorator to extract table session from request
  * Use with TableSessionGuard
- * 
+ *
  * @example
  * ```typescript
  * @UseGuards(TableSessionGuard)

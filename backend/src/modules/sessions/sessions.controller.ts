@@ -10,7 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
-import { CreateSessionDto, UpdateSessionDto, CloseSessionDto, InitSessionDto } from './dto';
+import {
+  CreateSessionDto,
+  UpdateSessionDto,
+  CloseSessionDto,
+  InitSessionDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { TablesService } from '../tables/tables.service';
@@ -26,7 +31,7 @@ export class SessionsController {
   /**
    * PUBLIC: Initialize customer session from QR code token
    * This is the entry point for QR-based ordering
-   * 
+   *
    * Handles race conditions when multiple requests arrive simultaneously
    */
   @Public()
@@ -40,11 +45,11 @@ export class SessionsController {
     }
 
     const token = authHeader.substring(7);
-    
+
     try {
       // Verify QR token and extract table info
       const { tableId } = await this.tablesService.verifyQrToken(token);
-      
+
       // Initialize session (protected against race conditions)
       return await this.sessionsService.initializeSession(tableId, initDto);
     } catch (error) {

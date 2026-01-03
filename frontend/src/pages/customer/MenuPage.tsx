@@ -164,10 +164,11 @@ export default function MenuPage() {
                 key={category}
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory(category)}
-                className={`h-11 px-6 rounded-full font-semibold transition-all ${selectedCategory === category
+                className={`h-11 rounded-full px-6 font-semibold transition-all ${
+                  selectedCategory === category
                     ? 'bg-primary text-white shadow-lg shadow-red-900/30 hover:shadow-xl'
-                    : 'bg-white border-2 border-[#E6E1DE] text-gray-700 hover:border-primary hover:bg-red-50'
-                  }`}
+                    : 'hover:border-primary border-2 border-[#E6E1DE] bg-white text-gray-700 hover:bg-red-50'
+                }`}
               >
                 {category}
               </Button>
@@ -179,7 +180,7 @@ export default function MenuPage() {
             {filteredItems.map((item, index) => (
               <Card
                 key={item.id}
-                className="group overflow-hidden rounded-xl border border-[#E6E1DE] bg-white shadow-sm hover:shadow-2xl transition-all duration-300"
+                className="group overflow-hidden rounded-xl border border-[#E6E1DE] bg-white shadow-sm transition-all duration-300 hover:shadow-2xl"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="relative aspect-video overflow-hidden">
@@ -213,22 +214,22 @@ export default function MenuPage() {
                 </div>
                 <CardContent className="p-5">
                   <div className="mb-3 flex items-start justify-between">
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight group-hover:text-primary transition-colors">
+                    <h3 className="group-hover:text-primary text-lg leading-tight font-bold text-gray-900 transition-colors">
                       {item.name}
                     </h3>
-                    <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-lg flex-shrink-0">
+                    <div className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-yellow-50 px-2 py-0.5">
                       <span className="text-xs font-bold text-yellow-600">{item.rating}</span>
                       <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
                     </div>
                   </div>
 
-                  <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 mb-4">
+                  <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-gray-600">
                     {item.description}
                   </p>
 
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-2xl font-bold text-primary">${item.price}</span>
+                      <span className="text-primary text-2xl font-bold">${item.price}</span>
                       {item.originalPrice && (
                         <span className="text-xs text-gray-400 line-through">
                           ${item.originalPrice}

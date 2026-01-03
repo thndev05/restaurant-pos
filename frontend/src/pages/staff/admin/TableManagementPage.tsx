@@ -85,11 +85,11 @@ export default function TableManagementPage() {
     setIsLoading(true);
     try {
       const data = await tablesService.getTables();
-      
+
       // DEBUG LOG
       console.log('\n========== FRONTEND: LOAD TABLES DEBUG ==========');
       console.log('Total tables:', data.length);
-      data.forEach(table => {
+      data.forEach((table) => {
         console.log(`Table #${table.number}:`);
         console.log(`  ID: ${table.id}`);
         console.log(`  Status: ${table.status}`);
@@ -111,7 +111,7 @@ export default function TableManagementPage() {
         }
       });
       console.log('=================================================\n');
-      
+
       setTables(data);
 
       // Update selectedTable if it exists to reflect new data
@@ -222,7 +222,7 @@ export default function TableManagementPage() {
       }
     }
     console.log('==================================================\n');
-    
+
     setSelectedTable(table);
     setShowSessionDialog(true);
   };
@@ -627,16 +627,12 @@ export default function TableManagementPage() {
                 <p className="text-muted-foreground text-center text-xs sm:text-sm">
                   Scan this QR code to access the menu for Table {selectedTable.number}
                 </p>
-                
+
                 {/* Link Display with Copy Button */}
                 <div className="w-full space-y-2">
                   <label className="text-sm font-medium">Table Link:</label>
                   <div className="flex gap-2">
-                    <Input
-                      value={qrUrl}
-                      readOnly
-                      className="text-xs sm:text-sm"
-                    />
+                    <Input value={qrUrl} readOnly className="text-xs sm:text-sm" />
                     <Button
                       variant="outline"
                       size="icon"

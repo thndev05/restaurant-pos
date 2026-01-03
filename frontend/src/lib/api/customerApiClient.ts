@@ -97,15 +97,17 @@ class CustomerApiClient {
   /**
    * Create order
    */
-  async createOrder(items: Array<{
-    menuItemId: string;
-    quantity: number;
-    notes?: string;
-  }>) {
+  async createOrder(
+    items: Array<{
+      menuItemId: string;
+      quantity: number;
+      notes?: string;
+    }>
+  ) {
     // Get sessionId from localStorage
     const sessionData = localStorage.getItem('table_session');
     let sessionId: string | undefined;
-    
+
     if (sessionData) {
       try {
         const { sessionId: id } = JSON.parse(sessionData);
@@ -126,7 +128,10 @@ class CustomerApiClient {
   /**
    * Create staff action (call waiter, request bill, etc.)
    */
-  async createAction(actionType: 'CALL_STAFF' | 'REQUEST_BILL' | 'REQUEST_WATER' | 'REQUEST_UTENSILS' | 'OTHER', description?: string) {
+  async createAction(
+    actionType: 'CALL_STAFF' | 'REQUEST_BILL' | 'REQUEST_WATER' | 'REQUEST_UTENSILS' | 'OTHER',
+    description?: string
+  ) {
     return this.client.post('/customer/actions', {
       actionType,
       description,

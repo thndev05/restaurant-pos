@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator';
 import { TableSessionGuard } from 'src/common/guards/table-session.guard';
 import { TableSession } from 'src/common/decorators/table-session.decorator';
@@ -81,13 +74,13 @@ export class CustomerController {
     console.log('=================================================\n');
 
     const result = await this.ordersService.createOrder(orderDto);
-    
+
     console.log('\n========== ORDER CREATED RESULT ==========');
     console.log(`  Order ID: ${result.data.id}`);
     console.log(`  Order Status: ${result.data.status}`);
     console.log(`  Session ID: ${result.data.sessionId}`);
     console.log('==========================================\n');
-    
+
     return result;
   }
 

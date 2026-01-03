@@ -76,7 +76,7 @@ export class TablesService {
 
     // DEBUG LOG
     console.log('\n========== GET TABLES DEBUG ==========');
-    tables.forEach(table => {
+    tables.forEach((table) => {
       console.log(`Table #${table.number} (${table.id}):`);
       console.log(`  Status: ${table.status}`);
       console.log(`  Active Sessions: ${table.sessions?.length || 0}`);
@@ -352,7 +352,7 @@ export class TablesService {
    */
   async generateQrToken(tableId: string, branchId?: string) {
     const table = await this.getTableById(tableId);
-    
+
     const payload = {
       tableId: table.id,
       branchId: branchId || 'default',
@@ -383,7 +383,7 @@ export class TablesService {
       const payload = this.jwtService.verify(token, { secret });
 
       const table = await this.getTableById(payload.tableId);
-      
+
       return {
         tableId: table.id,
         tableNumber: table.number,

@@ -1,6 +1,15 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
-import { CreateSessionDto, UpdateSessionDto, CloseSessionDto, InitSessionDto } from './dto';
+import {
+  CreateSessionDto,
+  UpdateSessionDto,
+  CloseSessionDto,
+  InitSessionDto,
+} from './dto';
 import { SessionStatus, TableStatus } from 'src/generated/prisma';
 
 @Injectable()
@@ -44,7 +53,7 @@ export class SessionsService {
   async createSession(createSessionDto: CreateSessionDto) {
     console.log('\n========== CREATE SESSION DEBUG ==========');
     console.log('Table ID:', createSessionDto.tableId);
-    
+
     // Check if table exists
     const table = await this.prismaService.table.findUnique({
       where: { id: createSessionDto.tableId },
@@ -69,14 +78,18 @@ export class SessionsService {
       },
     });
 
-    console.log(`Existing session: ${existingSession ? existingSession.id : 'NONE'}`);
+    console.log(
+      `Existing session: ${existingSession ? existingSession.id : 'NONE'}`,
+    );
 
     if (existingSession) {
-      console.log('Table already has an active session - cannot create new session');
+      console.log(
+        'Table already has an active session - cannot create new session',
+      );
       console.log('==========================================\n');
-      
+
       throw new BadRequestException(
-        `Table #${table.number} already has an active session. Please close the existing session first or use the existing session.`
+        `Table #${table.number} already has an active session. Please close the existing session first or use the existing session.`,
       );
     }
 
@@ -168,7 +181,7 @@ export class SessionsService {
   async closeSession(id: string, closeSessionDto: CloseSessionDto) {
     console.log('\n========== CLOSE SESSION DEBUG ==========');
     console.log('Session ID:', id);
-    
+
     const session = await this.getSessionById(id);
 
     if (session.status === SessionStatus.CLOSED) {
@@ -177,7 +190,7 @@ export class SessionsService {
 
     console.log(`Session for Table #${session.table.number}`);
     console.log(`Session orders: ${session.orders.length}`);
-    
+
     // Check ALL active sessions for this table and their orders
     const allTableSessions = await this.db.findMany({
       where: {
@@ -190,20 +203,28 @@ export class SessionsService {
     });
 
     console.log(`Total active sessions for table: ${allTableSessions.length}`);
-    
+
     // Get all pending orders from all active sessions
     const allPendingOrders: any[] = [];
-    allTableSessions.forEach(sess => {
+    allTableSessions.forEach((sess) => {
       const pending = sess.orders.filter(
-        (order) => order.status !== 'SERVED' && order.status !== 'CANCELLED' && order.status !== 'PAID',
+        (order) =>
+          order.status !== 'SERVED' &&
+          order.status !== 'CANCELLED' &&
+          order.status !== 'PAID',
       );
       allPendingOrders.push(...pending);
     });
 
-    console.log(`Total pending orders across all sessions: ${allPendingOrders.length}`);
+    console.log(
+      `Total pending orders across all sessions: ${allPendingOrders.length}`,
+    );
 
     if (allPendingOrders.length > 0) {
-      console.log('Pending orders:', allPendingOrders.map(o => `${o.id} (${o.status})`));
+      console.log(
+        'Pending orders:',
+        allPendingOrders.map((o) => `${o.id} (${o.status})`),
+      );
       console.log('=========================================\n');
       throw new BadRequestException(
         `Cannot close session. There are ${allPendingOrders.length} pending orders.`,
@@ -212,7 +233,7 @@ export class SessionsService {
 
     // Close ALL active sessions for this table
     console.log('Closing all active sessions for the table...');
-    
+
     await this.prismaService.$transaction(async (tx) => {
       // Close all active sessions for this table
       await tx.tableSession.updateMany({
@@ -225,7 +246,7 @@ export class SessionsService {
           endTime: new Date(),
         },
       });
-      
+
       // Update specific session with notes if provided
       if (closeSessionDto.notes) {
         await tx.tableSession.update({
@@ -235,7 +256,7 @@ export class SessionsService {
           },
         });
       }
-      
+
       // Update table status to available
       await tx.table.update({
         where: { id: session.tableId },
@@ -294,7 +315,7 @@ export class SessionsService {
   /**
    * Initialize a customer session from QR code token
    * This is the secure entry point for customer ordering
-   * 
+   *
    * Security: Each table can only have ONE active session at a time
    * This prevents multiple devices from creating separate sessions on the same table
    * Uses database transaction with row-level locking to prevent race conditions
@@ -303,87 +324,92 @@ export class SessionsService {
     console.log('\n========== INIT SESSION DEBUG ==========');
     console.log(`Table ID: ${tableId}`);
     console.log(`Init DTO:`, initDto);
-    
+
     // Use a transaction with row-level locking to prevent race conditions
-    return await this.prismaService.$transaction(async (tx) => {
-      // Check if table exists and lock the row
-      const table = await tx.table.findUnique({
-        where: { id: tableId },
-      });
+    return await this.prismaService.$transaction(
+      async (tx) => {
+        // Check if table exists and lock the row
+        const table = await tx.table.findUnique({
+          where: { id: tableId },
+        });
 
-      if (!table) {
-        throw new BadRequestException('Table not found');
-      }
+        if (!table) {
+          throw new BadRequestException('Table not found');
+        }
 
-      console.log(`Table #${table.number} found, status: ${table.status}`);
+        console.log(`Table #${table.number} found, status: ${table.status}`);
 
-      // Check table status
-      if (table.status === TableStatus.OUT_OF_SERVICE) {
-        throw new BadRequestException('Table is out of service');
-      }
+        // Check table status
+        if (table.status === TableStatus.OUT_OF_SERVICE) {
+          throw new BadRequestException('Table is out of service');
+        }
 
-      // Check if table already has an active session WITH ROW LOCK
-      // This ensures only one request can check and create at a time
-      const existingSession = await tx.tableSession.findFirst({
-        where: {
-          tableId,
-          status: {
-            in: [SessionStatus.ACTIVE, SessionStatus.PAID],
+        // Check if table already has an active session WITH ROW LOCK
+        // This ensures only one request can check and create at a time
+        const existingSession = await tx.tableSession.findFirst({
+          where: {
+            tableId,
+            status: {
+              in: [SessionStatus.ACTIVE, SessionStatus.PAID],
+            },
           },
-        },
-      });
+        });
 
-      if (existingSession) {
-        console.log(`Table #${table.number} already has active session: ${existingSession.id}`);
+        if (existingSession) {
+          console.log(
+            `Table #${table.number} already has active session: ${existingSession.id}`,
+          );
+          console.log('=========================================\n');
+          throw new BadRequestException(
+            `Table #${table.number} is currently occupied. Please choose another table or wait until it becomes available.`,
+          );
+        }
+
+        console.log('No existing session found. Creating new session...');
+
+        // Calculate expiration (120 minutes from now)
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 120);
+
+        // Create new session
+        const newSession = await tx.tableSession.create({
+          data: {
+            tableId,
+            customerCount: initDto.customerCount,
+            notes: initDto.notes,
+            status: SessionStatus.ACTIVE,
+            expiresAt,
+            startTime: new Date(),
+          },
+        });
+
+        // Update table status to OCCUPIED
+        await tx.table.update({
+          where: { id: tableId },
+          data: { status: TableStatus.OCCUPIED },
+        });
+
+        console.log(`New session created: ${newSession.id}`);
         console.log('=========================================\n');
-        throw new BadRequestException(
-          `Table #${table.number} is currently occupied. Please choose another table or wait until it becomes available.`
-        );
-      }
 
-      console.log('No existing session found. Creating new session...');
-
-      // Calculate expiration (120 minutes from now)
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 120);
-
-      // Create new session
-      const newSession = await tx.tableSession.create({
-        data: {
-          tableId,
-          customerCount: initDto.customerCount,
-          notes: initDto.notes,
-          status: SessionStatus.ACTIVE,
-          expiresAt,
-          startTime: new Date(),
-        },
-      });
-
-      // Update table status to OCCUPIED
-      await tx.table.update({
-        where: { id: tableId },
-        data: { status: TableStatus.OCCUPIED },
-      });
-
-      console.log(`New session created: ${newSession.id}`);
-      console.log('=========================================\n');
-
-      return {
-        sessionId: newSession.id,
-        sessionSecret: newSession.sessionSecret,
-        tableInfo: {
-          id: table.id,
-          number: table.number,
-          capacity: table.capacity,
-          status: TableStatus.OCCUPIED,
-        },
-        expiresAt: newSession.expiresAt,
-      };
-    }, {
-      isolationLevel: 'Serializable', // Highest isolation level to prevent race conditions
-      maxWait: 5000, // Wait up to 5 seconds for a transaction slot
-      timeout: 10000, // Transaction timeout 10 seconds
-    });
+        return {
+          sessionId: newSession.id,
+          sessionSecret: newSession.sessionSecret,
+          tableInfo: {
+            id: table.id,
+            number: table.number,
+            capacity: table.capacity,
+            status: TableStatus.OCCUPIED,
+          },
+          expiresAt: newSession.expiresAt,
+        };
+      },
+      {
+        isolationLevel: 'Serializable', // Highest isolation level to prevent race conditions
+        maxWait: 5000, // Wait up to 5 seconds for a transaction slot
+        timeout: 10000, // Transaction timeout 10 seconds
+      },
+    );
   }
 
   /**

@@ -40,7 +40,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(storedSession);
         // Convert expiresAt string back to Date
         parsed.expiresAt = new Date(parsed.expiresAt);
-        
+
         // Check if session is expired
         if (parsed.expiresAt > new Date()) {
           setSession(parsed);
