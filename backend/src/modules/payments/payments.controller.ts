@@ -49,4 +49,9 @@ export class PaymentsController {
   ) {
     return this.paymentsService.processPayment(id, processPaymentDto);
   }
+
+  @Get(':id/qr-code')
+  async getPaymentQrCode(@Param('id') id: string) {
+    return this.paymentsService.getPaymentQrCode(id);
+  }
 }

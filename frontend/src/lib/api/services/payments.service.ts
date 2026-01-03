@@ -108,6 +108,28 @@ class PaymentsService extends BaseApiService<never> {
     const response = await apiClient.get(`${this.endpoint}?page=${page}&limit=${limit}`);
     return response.data;
   }
+
+  /**
+   * Get payment QR code for bank transfer
+   */
+  async getPaymentQrCode(id: string): Promise<{
+    code: number;
+    message: string;
+    data: {
+      paymentId: string;
+      transactionId: string;
+      amount: number;
+      status: PaymentStatus;
+      accountNumber: string;
+      bankName: string;
+      accountHolder: string;
+      content: string;
+      qrCodeUrl: string;
+    };
+  }> {
+    const response = await apiClient.get(`${this.endpoint}/${id}/qr-code`);
+    return response.data;
+  }
 }
 
 export const paymentsService = new PaymentsService();

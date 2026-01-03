@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
-import { CreatePaymentDto, ProcessPaymentDto } from './dto';
+import { CreatePaymentDto, ProcessPaymentDto, SepayWebhookDto } from './dto';
 import {
   PaymentStatus,
   SessionStatus,
@@ -8,7 +8,11 @@ import {
   OrderStatus,
   OrderItemStatus,
 } from 'src/generated/prisma';
-import { generateTransactionId } from 'src/common/utils';
+import {
+  generateTransactionId,
+  isValidTransactionId,
+  getBankTransferInfo,
+} from 'src/common/utils';
 
 @Injectable()
 export class PaymentsService {
@@ -19,8 +23,7 @@ export class PaymentsService {
   }
 
   async createPayment(createPaymentDto: CreatePaymentDto) {
-    // For orders without session (TAKEAWAY), we'll directly update order status to PAID
-    // instead of creating a payment record
+    // For orders without session (TAKEAWAY), handle based on payment method
     if (createPaymentDto.orderId && !createPaymentDto.sessionId) {
       const order = await this.prismaService.order.findUnique({
         where: { id: createPaymentDto.orderId },
@@ -42,27 +45,55 @@ export class PaymentsService {
         );
       }
 
-      // Update order status to PAID
-      await this.prismaService.order.update({
-        where: { id: createPaymentDto.orderId },
-        data: { status: OrderStatus.PAID },
-      });
+      // For CASH payments, mark as paid immediately
+      if (createPaymentDto.paymentMethod === 'CASH') {
+        await this.prismaService.order.update({
+          where: { id: createPaymentDto.orderId },
+          data: { status: OrderStatus.PAID },
+        });
 
-      // Return a mock payment response for consistency
-      return {
-        code: 201,
-        message: 'Order marked as paid successfully.',
+        return {
+          code: 201,
+          message: 'Order marked as paid successfully.',
+          data: {
+            id: `mock-${createPaymentDto.orderId}`,
+            orderId: createPaymentDto.orderId,
+            totalAmount: createPaymentDto.totalAmount,
+            subTotal: createPaymentDto.subTotal,
+            tax: createPaymentDto.tax || '0',
+            discount: createPaymentDto.discount || '0',
+            paymentMethod: createPaymentDto.paymentMethod,
+            status: PaymentStatus.SUCCESS,
+            notes: createPaymentDto.notes,
+          },
+        };
+      }
+
+      // For BANKING/CARD, create pending payment with transaction ID
+      const transactionId = generateTransactionId();
+
+      const payment = await this.db.create({
         data: {
-          id: `mock-${createPaymentDto.orderId}`,
           orderId: createPaymentDto.orderId,
           totalAmount: createPaymentDto.totalAmount,
           subTotal: createPaymentDto.subTotal,
           tax: createPaymentDto.tax || '0',
           discount: createPaymentDto.discount || '0',
           paymentMethod: createPaymentDto.paymentMethod,
-          status: PaymentStatus.SUCCESS,
+          status: PaymentStatus.PENDING,
+          transactionId,
           notes: createPaymentDto.notes,
         },
+        include: {
+          order: true,
+        },
+      });
+
+      return {
+        code: 201,
+        message:
+          'Payment created successfully. Waiting for bank transfer confirmation.',
+        data: payment,
       };
     }
 
@@ -373,6 +404,260 @@ export class PaymentsService {
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Handle SePay webhook for bank transfer payment confirmation
+   * Extracts transaction ID from transfer content and updates payment status
+   */
+  async handleSepayWebhook(webhookData: SepayWebhookDto) {
+    console.log('[SePay Webhook] Received webhook:', {
+      id: webhookData.id,
+      amount: webhookData.transferAmount,
+      content: webhookData.content,
+      type: webhookData.transferType,
+    });
+
+    // Only process incoming transfers
+    if (webhookData.transferType !== 'in') {
+      console.log('[SePay Webhook] Skipping outgoing transfer');
+      return {
+        success: true,
+        message: 'Outgoing transfer ignored',
+      };
+    }
+
+    // Extract transaction ID from content
+    // Expected format: content contains transaction ID like "TX1234567890"
+    const transactionIdMatch = webhookData.content.match(/TX[A-Z0-9]{10}/);
+
+    if (!transactionIdMatch) {
+      console.log(
+        '[SePay Webhook] No valid transaction ID found in content:',
+        webhookData.content,
+      );
+      return {
+        success: false,
+        message: 'No transaction ID found in transfer content',
+      };
+    }
+
+    const transactionId = transactionIdMatch[0];
+    console.log('[SePay Webhook] Extracted transaction ID:', transactionId);
+
+    // Validate transaction ID format
+    if (!isValidTransactionId(transactionId)) {
+      console.log(
+        '[SePay Webhook] Invalid transaction ID format:',
+        transactionId,
+      );
+      return {
+        success: false,
+        message: 'Invalid transaction ID format',
+      };
+    }
+
+    // Find payment by transaction ID
+    const payment = await this.db.findUnique({
+      where: { transactionId },
+      include: {
+        session: {
+          include: {
+            table: true,
+          },
+        },
+        order: true,
+      },
+    });
+
+    if (!payment) {
+      console.log(
+        '[SePay Webhook] Payment not found for transaction ID:',
+        transactionId,
+      );
+      return {
+        success: false,
+        message: `Payment not found for transaction ID: ${transactionId}`,
+      };
+    }
+
+    // Check if payment is already successful
+    if (payment.status === PaymentStatus.SUCCESS) {
+      console.log('[SePay Webhook] Payment already processed:', payment.id);
+      return {
+        success: true,
+        message: 'Payment already processed',
+      };
+    }
+
+    // Verify amount matches
+    // Database stores as Decimal (e.g., 100000.00)
+    // SePay sends as integer (e.g., 100000)
+    // Round both to nearest integer for comparison
+    const expectedAmount = Math.round(
+      parseFloat(payment.totalAmount.toString()),
+    );
+    const receivedAmount = Math.round(webhookData.transferAmount);
+
+    if (expectedAmount !== receivedAmount) {
+      console.log('[SePay Webhook] Amount mismatch:', {
+        expected: expectedAmount,
+        received: receivedAmount,
+        expectedOriginal: payment.totalAmount.toString(),
+        receivedOriginal: webhookData.transferAmount,
+      });
+      return {
+        success: false,
+        message: `Amount mismatch. Expected: ${expectedAmount}, Received: ${receivedAmount}`,
+      };
+    }
+
+    // Update payment status to SUCCESS
+    try {
+      const now = new Date();
+
+      await this.prismaService.$transaction(async (tx) => {
+        // Update payment
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.SUCCESS,
+            paymentTime: now,
+            notes: payment.notes
+              ? `${payment.notes}\nSePay Reference: ${webhookData.referenceCode}`
+              : `SePay Reference: ${webhookData.referenceCode}`,
+          },
+        });
+
+        // If payment has a session, close the session
+        if (payment.sessionId) {
+          await tx.tableSession.update({
+            where: { id: payment.sessionId },
+            data: {
+              status: SessionStatus.PAID,
+              endTime: now,
+            },
+          });
+
+          // Update all orders in the session to PAID
+          await tx.order.updateMany({
+            where: { sessionId: payment.sessionId },
+            data: { status: OrderStatus.PAID },
+          });
+
+          // Update all order items to SERVED
+          const sessionOrders = await tx.order.findMany({
+            where: { sessionId: payment.sessionId },
+            select: { id: true },
+          });
+
+          const orderIds = sessionOrders.map((order) => order.id);
+
+          await tx.orderItem.updateMany({
+            where: {
+              orderId: { in: orderIds },
+              status: { not: OrderItemStatus.CANCELLED },
+            },
+            data: { status: OrderItemStatus.SERVED },
+          });
+
+          // Free up the table
+          const session = await tx.tableSession.findUnique({
+            where: { id: payment.sessionId },
+            select: { tableId: true },
+          });
+
+          if (session) {
+            await tx.table.update({
+              where: { id: session.tableId },
+              data: { status: TableStatus.AVAILABLE },
+            });
+          }
+        }
+
+        // If payment has an order (without session), mark order as PAID
+        if (payment.orderId) {
+          await tx.order.update({
+            where: { id: payment.orderId },
+            data: { status: OrderStatus.PAID },
+          });
+        }
+      });
+
+      console.log(
+        '[SePay Webhook] Payment processed successfully:',
+        payment.id,
+      );
+
+      return {
+        success: true,
+        message: 'Payment processed successfully',
+        paymentId: payment.id,
+      };
+    } catch (error) {
+      console.error('[SePay Webhook] Error processing payment:', error);
+      return {
+        success: false,
+        message: 'Error processing payment',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get payment QR code for bank transfer
+   * Returns bank transfer information and QR code URL
+   */
+  async getPaymentQrCode(id: string) {
+    const payment = await this.db.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        transactionId: true,
+        totalAmount: true,
+        status: true,
+        paymentMethod: true,
+      },
+    });
+
+    if (!payment) {
+      throw new BadRequestException(`Payment with ID "${id}" does not exist.`);
+    }
+
+    if (payment.paymentMethod !== 'BANKING') {
+      throw new BadRequestException(
+        'QR code is only available for bank transfer payments.',
+      );
+    }
+
+    if (!payment.transactionId) {
+      throw new BadRequestException('Payment does not have a transaction ID.');
+    }
+
+    if (payment.status === PaymentStatus.SUCCESS) {
+      return {
+        code: 200,
+        message: 'Payment already completed',
+        data: {
+          status: payment.status,
+          transactionId: payment.transactionId,
+        },
+      };
+    }
+
+    // Get bank transfer info with QR code
+    const amount = parseFloat(payment.totalAmount.toString());
+    const bankInfo = getBankTransferInfo(payment.transactionId, amount);
+
+    return {
+      code: 200,
+      message: 'QR code generated successfully',
+      data: {
+        paymentId: payment.id,
+        status: payment.status,
+        ...bankInfo,
       },
     };
   }

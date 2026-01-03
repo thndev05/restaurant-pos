@@ -1,0 +1,14 @@
+{
+  "id": 92704,
+  "gateway": "TPBank",
+  "transactionDate": "2026-01-04 14:30:00",
+  "accountNumber": "00002084815",
+  "code": null,
+  "content": "Thanh toan TX1234567890",
+  "transferType": "in",
+  "transferAmount": 100000,
+  "accumulated": 5000000,
+  "subAccount": null,
+  "referenceCode": "FT26004123456789",
+  "description": "NGUYEN VAN A chuyen tien Thanh toan TX1234567890"
+}

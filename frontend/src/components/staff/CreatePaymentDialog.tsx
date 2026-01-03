@@ -18,7 +18,20 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { DollarSign, CreditCard, Building2, Banknote, Printer, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  DollarSign,
+  CreditCard,
+  Building2,
+  Banknote,
+  Printer,
+  Loader2,
+  QrCode,
+  CheckCircle2,
+  Copy,
+  AlertCircle,
+} from 'lucide-react';
 import {
   paymentsService,
   type PaymentMethod,
@@ -97,6 +110,27 @@ export function CreatePaymentDialog({
   const [tipAmount, setTipAmount] = useState<string>('');
   const [billData, setBillData] = useState<OrderBill | null>(null);
   const [isLoadingBill, setIsLoadingBill] = useState(false);
+  const [showQrCode, setShowQrCode] = useState(false);
+  const [qrCodeData, setQrCodeData] = useState<{
+    paymentId: string;
+    transactionId: string;
+    amount: number;
+    status: string;
+    accountNumber: string;
+    bankName: string;
+    accountHolder: string;
+    content: string;
+    qrCodeUrl: string;
+  } | null>(null);
+  const [isLoadingQr, setIsLoadingQr] = useState(false);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copied!',
+      description: `${label} copied to clipboard`,
+    });
+  };
 
   const loadBillDetails = useCallback(async () => {
     if (orderId) {
@@ -197,16 +231,6 @@ export function CreatePaymentDialog({
   };
 
   const handleCreateAndProcessPayment = async () => {
-    // Check if payment method is not CASH
-    if (paymentMethod !== 'CASH') {
-      toast({
-        title: 'Coming Soon',
-        description: `${PAYMENT_METHOD_CONFIG[paymentMethod].label} payment method is coming soon!`,
-        variant: 'default',
-      });
-      return;
-    }
-
     setIsProcessing(true);
     try {
       // Step 1: Create payment
@@ -223,28 +247,65 @@ export function CreatePaymentDialog({
 
       const createResponse = await paymentsService.createPayment(createPaymentData);
 
-      // Step 2: Process payment immediately (only for session-based payments)
-      // For order-based payments, the backend already marks order as PAID
-      if (sessionId && createResponse.data.id) {
-        const paymentId = createResponse.data.id;
-        await paymentsService.processPayment(paymentId, {
-          notes: notes || undefined,
+      // Step 2: Handle different payment methods
+      if (paymentMethod === 'BANKING') {
+        // For bank transfer, show QR code and wait for webhook
+        if (createResponse.data.id && !createResponse.data.id.startsWith('mock-')) {
+          setIsLoadingQr(true);
+          try {
+            const qrResponse = await paymentsService.getPaymentQrCode(createResponse.data.id);
+            setQrCodeData(qrResponse.data);
+            setShowQrCode(true);
+            setIsProcessing(false);
+            setIsLoadingQr(false);
+
+            toast({
+              title: 'Payment Created',
+              description: 'Please scan the QR code to complete payment',
+            });
+          } catch (error) {
+            console.error('Failed to load QR code:', error);
+            toast({
+              title: 'Error',
+              description: 'Failed to generate QR code',
+              variant: 'destructive',
+            });
+            setIsProcessing(false);
+            setIsLoadingQr(false);
+          }
+        }
+      } else if (paymentMethod === 'CASH') {
+        // For CASH, process payment immediately
+        if (sessionId && createResponse.data.id) {
+          const paymentId = createResponse.data.id;
+          await paymentsService.processPayment(paymentId, {
+            notes: notes || undefined,
+          });
+        }
+
+        toast({
+          title: 'Success',
+          description: 'Payment processed successfully',
         });
+
+        onPaymentCreated?.();
+        onOpenChange(false);
+
+        // Reset form
+        setPaymentMethod('CASH');
+        setDiscount(0);
+        setTax(0);
+        setNotes('');
+        setIsProcessing(false);
+      } else {
+        // CARD and other methods
+        toast({
+          title: 'Coming Soon',
+          description: `${PAYMENT_METHOD_CONFIG[paymentMethod].label} payment method is coming soon!`,
+          variant: 'default',
+        });
+        setIsProcessing(false);
       }
-
-      toast({
-        title: 'Success',
-        description: 'Payment processed successfully',
-      });
-
-      onPaymentCreated?.();
-      onOpenChange(false);
-
-      // Reset form
-      setPaymentMethod('CASH');
-      setDiscount(0);
-      setTax(0);
-      setNotes('');
     } catch (error) {
       console.error('Failed to process payment:', error);
       const message =
@@ -431,245 +492,441 @@ export function CreatePaymentDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Left Column - Bill Details */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Bill Details</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrintBill}
-                disabled={isPrinting || !billData}
-              >
-                <Printer className="mr-2 h-4 w-4" />
-                {isPrinting ? 'Printing...' : 'Print Bill'}
-              </Button>
-            </div>
-
-            {isLoadingBill ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-              </div>
-            ) : billData ? (
-              <div className="space-y-4">
-                {/* Bill Info */}
-                <div className="bg-muted space-y-2 rounded-lg p-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bill Number:</span>
-                    <span className="font-medium">{billData.orderNumber}</span>
-                  </div>
-                  {billData.tableNumber && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Table:</span>
-                      <span className="font-medium">{billData.tableNumber}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type:</span>
-                    <span className="font-medium">
-                      {billData.tableNumber ? 'Dine In' : 'Take Away'}
-                    </span>
-                  </div>
-                  {billData.confirmedBy && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Server:</span>
-                      <span className="font-medium">{billData.confirmedBy}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date:</span>
-                    <span className="font-medium">
-                      {new Date(billData.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Order Items */}
-                <div className="rounded-lg border">
-                  <div className="bg-muted px-4 py-2 font-semibold">Order Items</div>
-                  <div className="divide-y">
-                    {billData.items.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between px-4 py-3">
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-muted-foreground text-sm">
-                            {formatCurrency(item.price)} × {item.quantity}
-                          </div>
-                        </div>
-                        <div className="font-medium">
-                          {formatCurrency(item.price * item.quantity)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        {/* QR Code Display for Bank Transfer */}
+        {showQrCode && qrCodeData ? (
+          <div className="space-y-6 p-2">
+            {isLoadingQr ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-12">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-muted-foreground">Generating QR Code...</p>
               </div>
             ) : (
-              <div className="text-muted-foreground py-8 text-center">No bill data available</div>
-            )}
-          </div>
-
-          {/* Right Column - Payment Details */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Payment Details</h3>
-
-            {/* Payment Method */}
-            <div className="space-y-2">
-              <Label htmlFor="payment-method">Payment Method</Label>
-              <Select
-                value={paymentMethod}
-                onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
-              >
-                <SelectTrigger id="payment-method">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PAYMENT_METHOD_CONFIG).map(([method, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <SelectItem key={method} value={method}>
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-4 w-4" />
-                          {config.label}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            {/* Discount and Tax Inputs */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="discount">Discount (%)</Label>
-                <Input
-                  id="discount"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tax">Tax/Service (%)</Label>
-                <Input
-                  id="tax"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={tax}
-                  onChange={(e) => setTax(Number(e.target.value))}
-                />
-              </div>
-            </div>
-
-            {/* Cash Payment Fields */}
-            {paymentMethod === 'CASH' && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cash-received">Cash Received</Label>
-                  <Input
-                    id="cash-received"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={cashReceived}
-                    onChange={(e) => setCashReceived(e.target.value)}
-                    placeholder="Enter amount received"
-                  />
+              <>
+                {/* Header with Icon */}
+                <div className="flex items-center justify-center gap-3">
+                  <div className="rounded-full bg-primary/10 p-3">
+                    <QrCode className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold">Scan to Pay</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Use your banking app to complete payment
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tip">Tip (Optional)</Label>
-                  <Input
-                    id="tip"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={tipAmount}
-                    onChange={(e) => setTipAmount(e.target.value)}
-                    placeholder="Enter tip amount"
-                  />
-                </div>
-
-                {cashReceived && parseFloat(cashReceived) > 0 && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-green-900">Change to Return:</span>
-                      <span className="text-2xl font-bold text-green-600">
-                        {formatCurrency(calculateChange())}
-                      </span>
+                {/* QR Code Card */}
+                <Card className="border-2 border-primary/20">
+                  <CardContent className="flex justify-center p-8">
+                    <div className="relative">
+                      <img
+                        src={qrCodeData.qrCodeUrl}
+                        alt="Payment QR Code"
+                        className="h-72 w-72 rounded-lg shadow-lg"
+                      />
+                      <div className="absolute -right-2 -top-2 rounded-full bg-primary p-2 shadow-lg">
+                        <QrCode className="h-5 w-5 text-primary-foreground" />
+                      </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Payment Amount Highlight */}
+                <Card className="border-2 border-green-200 bg-green-50/50">
+                  <CardContent className="p-6 text-center">
+                    <p className="text-muted-foreground mb-2 text-sm font-medium">
+                      Payment Amount
+                    </p>
+                    <p className="text-4xl font-bold text-green-600">
+                      {formatCurrency(qrCodeData.amount)}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Bank Transfer Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Building2 className="h-5 w-5" />
+                      Transfer Details
+                    </CardTitle>
+                    <CardDescription>Bank account information</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid gap-3">
+                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                        <span className="text-muted-foreground text-sm font-medium">Bank</span>
+                        <span className="font-semibold">{qrCodeData.bankName}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                        <span className="text-muted-foreground text-sm font-medium">
+                          Account Number
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-semibold">
+                            {qrCodeData.accountNumber}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() =>
+                              copyToClipboard(qrCodeData.accountNumber, 'Account number')
+                            }
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                        <span className="text-muted-foreground text-sm font-medium">
+                          Account Holder
+                        </span>
+                        <span className="font-semibold">{qrCodeData.accountHolder}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                        <span className="text-muted-foreground text-sm font-medium">
+                          Transfer Content
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold">
+                            {qrCodeData.content}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => copyToClipboard(qrCodeData.content, 'Transfer content')}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                        <span className="text-muted-foreground text-xs font-medium">
+                          Transaction ID
+                        </span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {qrCodeData.transactionId}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Instructions Alert */}
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertCircle className="h-5 w-5 text-blue-600" />
+                  <AlertDescription>
+                    <p className="mb-3 font-semibold text-blue-900">How to pay:</p>
+                    <ol className="space-y-2 text-sm text-blue-800">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>Open your mobile banking app</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>Scan the QR code or enter transfer details manually</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>Verify the amount and transfer content match exactly</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>Complete the transfer - payment will be confirmed automatically</span>
+                      </li>
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+
+                {/* Waiting Status */}
+                <Alert className="border-amber-200 bg-amber-50">
+                  <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                  <AlertDescription>
+                    <p className="font-semibold text-amber-900">
+                      Waiting for payment confirmation...
+                    </p>
+                    <p className="mt-1 text-sm text-amber-700">
+                      This window will update automatically when payment is received. Please do not
+                      close this dialog.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              </>
+            )}
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowQrCode(false);
+                  setQrCodeData(null);
+                  onPaymentCreated?.();
+                  onOpenChange(false);
+                }}
+              >
+                Close & Continue Later
+              </Button>
+              <Button
+                variant="default"
+                onClick={() => {
+                  window.print();
+                }}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Print QR Code
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Left Column - Bill Details */}
+              {/* Left Column - Bill Details */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Bill Details</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrintBill}
+                    disabled={isPrinting || !billData}
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    {isPrinting ? 'Printing...' : 'Print Bill'}
+                  </Button>
+                </div>
+
+                {isLoadingBill ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                  </div>
+                ) : billData ? (
+                  <div className="space-y-4">
+                    {/* Bill Info */}
+                    <div className="bg-muted space-y-2 rounded-lg p-4 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Bill Number:</span>
+                        <span className="font-medium">{billData.orderNumber}</span>
+                      </div>
+                      {billData.tableNumber && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Table:</span>
+                          <span className="font-medium">{billData.tableNumber}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Type:</span>
+                        <span className="font-medium">
+                          {billData.tableNumber ? 'Dine In' : 'Take Away'}
+                        </span>
+                      </div>
+                      {billData.confirmedBy && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Server:</span>
+                          <span className="font-medium">{billData.confirmedBy}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Date:</span>
+                        <span className="font-medium">
+                          {new Date(billData.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Order Items */}
+                    <div className="rounded-lg border">
+                      <div className="bg-muted px-4 py-2 font-semibold">Order Items</div>
+                      <div className="divide-y">
+                        {billData.items.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between px-4 py-3">
+                            <div>
+                              <div className="font-medium">{item.name}</div>
+                              <div className="text-muted-foreground text-sm">
+                                {formatCurrency(item.price)} × {item.quantity}
+                              </div>
+                            </div>
+                            <div className="font-medium">
+                              {formatCurrency(item.price * item.quantity)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground py-8 text-center">
+                    No bill data available
                   </div>
                 )}
               </div>
-            )}
 
-            <Separator />
+              {/* Right Column - Payment Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Payment Details</h3>
 
-            {/* Summary */}
-            <div className="bg-muted space-y-2 rounded-lg p-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal:</span>
-                <span>{formatCurrency(subTotal)}</span>
-              </div>
-              {tax > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tax ({tax.toFixed(1)}%):</span>
-                  <span>{formatCurrency(taxAmount)}</span>
+                {/* Payment Method */}
+                <div className="space-y-2">
+                  <Label htmlFor="payment-method">Payment Method</Label>
+                  <Select
+                    value={paymentMethod}
+                    onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+                  >
+                    <SelectTrigger id="payment-method">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(PAYMENT_METHOD_CONFIG).map(([method, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <SelectItem key={method} value={method}>
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              {config.label}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-              {discount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Discount ({discount.toFixed(1)}%):</span>
-                  <span className="text-red-600">-{formatCurrency(discountAmount)}</span>
+
+                <Separator />
+
+                {/* Discount and Tax Inputs */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="discount">Discount (%)</Label>
+                    <Input
+                      id="discount"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={discount}
+                      onChange={(e) => setDiscount(Number(e.target.value))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tax">Tax/Service (%)</Label>
+                    <Input
+                      id="tax"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={tax}
+                      onChange={(e) => setTax(Number(e.target.value))}
+                    />
+                  </div>
                 </div>
-              )}
-              <Separator />
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total:</span>
-                <span>{formatCurrency(totalAmount)}</span>
+
+                {/* Cash Payment Fields */}
+                {paymentMethod === 'CASH' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cash-received">Cash Received</Label>
+                      <Input
+                        id="cash-received"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={cashReceived}
+                        onChange={(e) => setCashReceived(e.target.value)}
+                        placeholder="Enter amount received"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tip">Tip (Optional)</Label>
+                      <Input
+                        id="tip"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={tipAmount}
+                        onChange={(e) => setTipAmount(e.target.value)}
+                        placeholder="Enter tip amount"
+                      />
+                    </div>
+
+                    {cashReceived && parseFloat(cashReceived) > 0 && (
+                      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-green-900">Change to Return:</span>
+                          <span className="text-2xl font-bold text-green-600">
+                            {formatCurrency(calculateChange())}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <Separator />
+
+                {/* Summary */}
+                <div className="bg-muted space-y-2 rounded-lg p-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal:</span>
+                    <span>{formatCurrency(subTotal)}</span>
+                  </div>
+                  {tax > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Tax ({tax.toFixed(1)}%):</span>
+                      <span>{formatCurrency(taxAmount)}</span>
+                    </div>
+                  )}
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Discount ({discount.toFixed(1)}%):
+                      </span>
+                      <span className="text-red-600">-{formatCurrency(discountAmount)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span>{formatCurrency(totalAmount)}</span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add payment notes..."
+                    rows={3}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add payment notes..."
-                rows={3}
-              />
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateAndProcessPayment}
-            disabled={isProcessing}
-            className={paymentMethod !== 'CASH' ? 'bg-gray-500 hover:bg-gray-600' : ''}
-          >
-            {isProcessing
-              ? 'Processing...'
-              : paymentMethod !== 'CASH'
-                ? 'Coming Soon'
-                : `Process Payment - ${formatCurrency(totalAmount)}`}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateAndProcessPayment} disabled={isProcessing}>
+                {isProcessing
+                  ? 'Processing...'
+                  : `Process Payment - ${formatCurrency(totalAmount)}`}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
