@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { QrCode, CheckCircle, Plus, Loader2 } from 'lucide-react';
+import { QrCode, CheckCircle, Plus, Loader2, Pizza, Wine, Beef, Drumstick } from 'lucide-react';
 import { CustomerLayout } from '@/layouts/customer';
 import { customerService } from '@/lib/api/services';
 import type { MenuItem } from '@/lib/api/services/menuItems.service';
@@ -23,7 +23,7 @@ export default function CustomerHomePage() {
           customerService.getAvailableMenu(),
           customerService.getCategories(),
         ]);
-        
+
         // Sort items by category priority for better display
         // Priority: Combo > Fried Chicken > Burger > Side > Drink
         const categoryPriority: Record<string, number> = {
@@ -33,22 +33,22 @@ export default function CustomerHomePage() {
           Side: 4,
           Drink: 5,
         };
-        
+
         const sortedItems = [...itemsData].sort((a, b) => {
           const aPriority = categoryPriority[a.category?.name || ''] || 999;
           const bPriority = categoryPriority[b.category?.name || ''] || 999;
           return aPriority - bPriority;
         });
-        
+
         setMenuItems(sortedItems);
-        
+
         // Sort categories by priority as well
         const sortedCategories = [...categoriesData].sort((a, b) => {
           const aPriority = categoryPriority[a.name] || 999;
           const bPriority = categoryPriority[b.name] || 999;
           return aPriority - bPriority;
         });
-        
+
         setCategories(sortedCategories);
       } catch (error) {
         console.error('Error fetching menu:', error);
@@ -74,26 +74,31 @@ export default function CustomerHomePage() {
       title: 'Mexican Pizza',
       description: 'Delicious Mexican-style pizza with authentic flavors and fresh ingredients.',
       image: '/assets/images/promo-1.png',
+      icon: Pizza,
     },
     {
       title: 'Soft Drinks',
       description: 'Refreshing beverages to complement your meal perfectly.',
       image: '/assets/images/promo-2.png',
+      icon: Wine,
     },
     {
       title: 'French Fry',
       description: 'Crispy golden fries seasoned to perfection.',
       image: '/assets/images/promo-3.png',
+      icon: Beef,
     },
     {
       title: 'Burger Kingo',
       description: 'Our signature burger with premium ingredients.',
       image: '/assets/images/promo-4.png',
+      icon: Beef,
     },
     {
       title: 'Chicken Masala',
       description: 'Tender chicken in rich, aromatic masala sauce.',
       image: '/assets/images/promo-5.png',
+      icon: Drumstick,
     },
   ];
 
@@ -160,7 +165,7 @@ export default function CustomerHomePage() {
                   <div className="relative">
                     <div className="mb-6 flex h-16 items-center justify-center">
                       <div className="rounded-full bg-red-100 p-4 transition-transform duration-300 group-hover:scale-110">
-                        <div className="h-10 w-10 rounded-full bg-[#7a1f1f]"></div>
+                        <item.icon className="h-8 w-8 text-[#7a1f1f]" />
                       </div>
                     </div>
                     <h3 className="mb-3 text-xl font-bold text-gray-900">{item.title}</h3>
