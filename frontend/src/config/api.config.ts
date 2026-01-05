@@ -107,4 +107,15 @@ export const API_ENDPOINTS = {
     NO_SHOW: (id: string | number) => `reservations/${id}/no-show`,
     CANCEL: (id: string | number) => `reservations/${id}/cancel`,
   },
+  // Customer-facing endpoints (public, no auth required)
+  CUSTOMER: {
+    MENU: 'customer/menu',
+    MENU_ITEM: (id: string | number) => `customer/menu/${id}`,
+    CATEGORIES: 'customer/categories',
+    CATEGORY: (id: string | number) => `customer/categories/${id}`,
+    SESSION: 'customer/session',
+    SESSION_BILL: 'customer/session/bill',
+    ORDERS: 'customer/orders',
+    ACTIONS: 'customer/actions',
+  },
 } as const;

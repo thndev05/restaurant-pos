@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards, Param } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator';
 import { TableSessionGuard } from 'src/common/guards/table-session.guard';
 import { TableSession } from 'src/common/decorators/table-session.decorator';
 import { MenuItemsService } from '../menu-items/menu-items.service';
+import { CategoriesService } from '../categories/categories.service';
 import { OrdersService } from '../orders/orders.service';
 import { ActionsService } from '../actions/actions.service';
 import { SessionsService } from '../sessions/sessions.service';
@@ -11,31 +12,90 @@ import { CreateActionDto } from '../actions/dto';
 import type { TableSession as TableSessionType } from 'src/generated/prisma';
 
 /**
- * Customer-facing endpoints for QR-based table ordering
- * All endpoints require valid table session (X-Table-Session and X-Table-Secret headers)
+ * Customer-facing endpoints for menu browsing and QR-based table ordering
+ * Public endpoints (menu, categories) do not require authentication
+ * Session endpoints require valid table session (X-Table-Session and X-Table-Secret headers)
  */
 @Public()
-@UseGuards(TableSessionGuard)
 @Controller('customer')
 export class CustomerController {
   constructor(
     private readonly menuItemsService: MenuItemsService,
+    private readonly categoriesService: CategoriesService,
     private readonly ordersService: OrdersService,
     private readonly actionsService: ActionsService,
     private readonly sessionsService: SessionsService,
   ) {}
 
+  // ========== PUBLIC ENDPOINTS (No authentication required) ==========
+
   /**
-   * Get available menu items for ordering
+   * Get all available menu items (public access)
+   * Only returns items with isAvailable: true and isActive: true
    */
   @Get('menu')
   async getAvailableMenu() {
-    return this.menuItemsService.getMenuItems({});
+    const menuItems = await this.menuItemsService.getMenuItems({});
+
+    // Filter only available items for customers
+    return menuItems.filter((item) => item.isAvailable && item.isActive);
   }
 
   /**
-   * Get current session details with orders and actions
+   * Get single menu item by ID (public access)
+   * Only returns if item is available and active
    */
+  @Get('menu/:id')
+  async getMenuItemById(@Param('id') id: string) {
+    const menuItem = await this.menuItemsService.getMenuItemById(id);
+
+    // Return 404 if item is not available for customers
+    if (!menuItem.isAvailable || !menuItem.isActive) {
+      throw new Error('Menu item not available');
+    }
+
+    return menuItem;
+  }
+
+  /**
+   * Get all active categories with available menu items (public access)
+   */
+  @Get('categories')
+  async getCategories() {
+    const categories = await this.categoriesService.getCategories();
+
+    // Filter categories and their menu items to only show available ones
+    return categories.map((category) => ({
+      ...category,
+      menuItems: category.menuItems.filter(
+        (item) => item.isAvailable && item.isActive,
+      ),
+    }));
+  }
+
+  /**
+   * Get single category by ID with available menu items (public access)
+   */
+  @Get('categories/:id')
+  async getCategoryById(@Param('id') id: string) {
+    const category = await this.categoriesService.getCategoryById(id);
+
+    // Filter menu items to only show available ones
+    return {
+      ...category,
+      menuItems: category.menuItems.filter(
+        (item) => item.isAvailable && item.isActive,
+      ),
+    };
+  }
+
+  // ========== PROTECTED ENDPOINTS (Require table session) ==========
+
+  /**
+   * Get current session details with orders and actions
+   * Requires valid table session
+   */
+  @UseGuards(TableSessionGuard)
   @Get('session')
   async getCurrentSession(@TableSession() session: TableSessionType) {
     return this.sessionsService.getCustomerSession(session.id);
@@ -43,7 +103,9 @@ export class CustomerController {
 
   /**
    * Get session bill
+   * Requires valid table session
    */
+  @UseGuards(TableSessionGuard)
   @Get('session/bill')
   async getSessionBill(@TableSession() session: TableSessionType) {
     return this.sessionsService.getSessionBill(session.id);
@@ -51,7 +113,9 @@ export class CustomerController {
 
   /**
    * Create a new order for the session
+   * Requires valid table session
    */
+  @UseGuards(TableSessionGuard)
   @Post('orders')
   async createOrder(
     @TableSession() session: TableSessionType,
@@ -87,7 +151,9 @@ export class CustomerController {
 
   /**
    * Create a staff action (call waiter, request bill, etc.)
+   * Requires valid table session
    */
+  @UseGuards(TableSessionGuard)
   @Post('actions')
   async createAction(
     @TableSession() session: TableSessionType,
@@ -103,7 +169,9 @@ export class CustomerController {
 
   /**
    * Get all actions for current session
+   * Requires valid table session
    */
+  @UseGuards(TableSessionGuard)
   @Get('actions')
   async getSessionActions(@TableSession() session: TableSessionType) {
     return this.actionsService.getActionsBySessionId(session.id);

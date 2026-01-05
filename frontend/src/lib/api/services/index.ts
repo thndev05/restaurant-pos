@@ -15,6 +15,7 @@ export { sessionsService } from './sessions.service';
 export { ordersService } from './orders.service';
 export { paymentsService } from './payments.service';
 export { kitchenService } from './kitchen.service';
+export { customerService } from './customer.service';
 
 // Export types from auth service (User type is exported here explicitly)
 export type {

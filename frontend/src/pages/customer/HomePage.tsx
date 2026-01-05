@@ -1,11 +1,74 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { QrCode, Star, CheckCircle, Plus } from 'lucide-react';
+import { QrCode, CheckCircle, Plus, Loader2 } from 'lucide-react';
 import { CustomerLayout } from '@/layouts/customer';
+import { customerService } from '@/lib/api/services';
+import type { MenuItem } from '@/lib/api/services/menuItems.service';
 
 export default function CustomerHomePage() {
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
+
+  // Fetch menu items from API
+  useEffect(() => {
+    const fetchMenuData = async () => {
+      try {
+        setLoading(true);
+        const [itemsData, categoriesData] = await Promise.all([
+          customerService.getAvailableMenu(),
+          customerService.getCategories(),
+        ]);
+        
+        // Sort items by category priority for better display
+        // Priority: Combo > Fried Chicken > Burger > Side > Drink
+        const categoryPriority: Record<string, number> = {
+          Combo: 1,
+          'Fried Chicken': 2,
+          Burger: 3,
+          Side: 4,
+          Drink: 5,
+        };
+        
+        const sortedItems = [...itemsData].sort((a, b) => {
+          const aPriority = categoryPriority[a.category?.name || ''] || 999;
+          const bPriority = categoryPriority[b.category?.name || ''] || 999;
+          return aPriority - bPriority;
+        });
+        
+        setMenuItems(sortedItems);
+        
+        // Sort categories by priority as well
+        const sortedCategories = [...categoriesData].sort((a, b) => {
+          const aPriority = categoryPriority[a.name] || 999;
+          const bPriority = categoryPriority[b.name] || 999;
+          return aPriority - bPriority;
+        });
+        
+        setCategories(sortedCategories);
+      } catch (error) {
+        console.error('Error fetching menu:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuData();
+  }, []);
+
+  // Filter items by category (already sorted by priority)
+  const filteredDishes =
+    selectedCategory === 'All'
+      ? menuItems.slice(0, 6) // Show first 6 items (already prioritized)
+      : menuItems.filter((item) => item.category?.name === selectedCategory).slice(0, 6);
+
+  // Build category list for filter buttons
+  const categoryList = ['All', ...categories.slice(0, 4).map((cat) => cat.name)];
+
   const promoItems = [
     {
       title: 'Mexican Pizza',
@@ -31,63 +94,6 @@ export default function CustomerHomePage() {
       title: 'Chicken Masala',
       description: 'Tender chicken in rich, aromatic masala sauce.',
       image: '/assets/images/promo-5.png',
-    },
-  ];
-
-  const popularDishes = [
-    {
-      name: 'Fried Chicken Unlimited',
-      category: 'Chicken',
-      image: '/assets/images/food-menu-1.png',
-      price: 49.0,
-      originalPrice: 69.0,
-      discount: '-15%',
-      rating: 5,
-    },
-    {
-      name: 'Burger King Whopper',
-      category: 'Burger',
-      image: '/assets/images/food-menu-2.png',
-      price: 29.0,
-      originalPrice: 39.0,
-      discount: '-10%',
-      rating: 5,
-    },
-    {
-      name: 'White Castle Pizzas',
-      category: 'Pizza',
-      image: '/assets/images/food-menu-3.png',
-      price: 49.0,
-      originalPrice: 69.0,
-      discount: '-25%',
-      rating: 5,
-    },
-    {
-      name: 'Bell Burrito Supreme',
-      category: 'Burrito',
-      image: '/assets/images/food-menu-4.png',
-      price: 59.0,
-      originalPrice: 69.0,
-      discount: '-20%',
-      rating: 5,
-    },
-    {
-      name: 'Kung Pao Chicken BBQ',
-      category: 'Nuggets',
-      image: '/assets/images/food-menu-5.png',
-      price: 49.0,
-      originalPrice: 69.0,
-      discount: '-5%',
-      rating: 5,
-    },
-    {
-      name: "Wendy's Chicken",
-      category: 'Chicken',
-      image: '/assets/images/food-menu-6.png',
-      price: 49.0,
-      originalPrice: 69.0,
-      discount: '-15%',
-      rating: 5,
     },
   ];
 
@@ -289,12 +295,13 @@ export default function CustomerHomePage() {
           </div>
 
           <div className="mb-8 flex flex-wrap justify-center gap-3">
-            {['All', 'Pizza', 'Burger', 'Drinks', 'Sandwich'].map((category) => (
+            {categoryList.map((category) => (
               <Button
                 key={category}
-                variant={category === 'All' ? 'default' : 'outline'}
+                variant={category === selectedCategory ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory(category)}
                 className={
-                  category === 'All'
+                  category === selectedCategory
                     ? 'bg-gradient-to-r from-[#7a1f1f] to-[#5e1616] hover:from-[#5e1616] hover:to-[#4a1212]'
                     : 'hover:border-[#7a1f1f] hover:text-[#7a1f1f]'
                 }
@@ -304,57 +311,58 @@ export default function CustomerHomePage() {
             ))}
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {popularDishes.map((dish, index) => (
-              <Card
-                key={index}
-                className="group overflow-hidden rounded-xl border border-[#E6E1DE] bg-white shadow-sm transition-all duration-300 hover:shadow-2xl"
-              >
-                <div className="relative aspect-video overflow-hidden">
-                  <img
-                    src={dish.image}
-                    alt={dish.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  {dish.discount && (
-                    <Badge className="absolute top-3 left-3 bg-[#7a1f1f] px-2 py-1 text-xs font-bold shadow-md">
-                      {dish.discount}
-                    </Badge>
-                  )}
-                </div>
-                <CardContent className="p-5">
-                  <div className="mb-3 flex items-start justify-between">
-                    <h3 className="text-lg leading-tight font-bold text-gray-900 transition-colors group-hover:text-[#7a1f1f]">
-                      {dish.name}
-                    </h3>
-                    <div className="flex flex-shrink-0 items-center gap-1 rounded-lg bg-yellow-50 px-2 py-0.5">
-                      <span className="text-xs font-bold text-yellow-600">{dish.rating}</span>
-                      <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
-                    </div>
+          {loading ? (
+            <div className="flex min-h-[400px] items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-[#7a1f1f]" />
+                <p className="text-lg text-gray-600">Loading delicious dishes...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredDishes.map((dish) => (
+                <Card
+                  key={dish.id}
+                  className="group overflow-hidden rounded-xl border border-[#E6E1DE] bg-white shadow-sm transition-all duration-300 hover:shadow-2xl"
+                >
+                  <div className="relative aspect-video overflow-hidden">
+                    <img
+                      src={dish.image || '/assets/images/placeholder-food.png'}
+                      alt={dish.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/assets/images/placeholder-food.png';
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-2xl font-bold text-[#7a1f1f]">
-                        ${dish.price.toFixed(2)}
-                      </span>
-                      {dish.originalPrice && (
-                        <span className="text-xs text-gray-400 line-through">
-                          ${dish.originalPrice.toFixed(2)}
-                        </span>
+                  <CardContent className="p-5">
+                    <div className="mb-3 flex items-start justify-between">
+                      <h3 className="text-lg leading-tight font-bold text-gray-900 transition-colors group-hover:text-[#7a1f1f]">
+                        {dish.name}
+                      </h3>
+                      {dish.category && (
+                        <Badge variant="secondary" className="flex-shrink-0 text-xs">
+                          {dish.category.name}
+                        </Badge>
                       )}
                     </div>
-                    <Button
-                      size="sm"
-                      className="h-9 rounded-lg bg-[#7a1f1f]/10 px-4 font-bold text-[#7a1f1f] transition-colors hover:bg-[#7a1f1f] hover:text-white"
-                    >
-                      <Plus className="mr-1 h-4 w-4" />
-                      Add
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-[#7a1f1f]">
+                        ${Number(dish.price).toFixed(2)}
+                      </span>
+                      <Button
+                        size="sm"
+                        className="h-9 rounded-lg bg-[#7a1f1f]/10 px-4 font-bold text-[#7a1f1f] transition-colors hover:bg-[#7a1f1f] hover:text-white"
+                      >
+                        <Plus className="mr-1 h-4 w-4" />
+                        Add
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           <div className="mt-12 text-center">
             <Link to="/customer/menu">
