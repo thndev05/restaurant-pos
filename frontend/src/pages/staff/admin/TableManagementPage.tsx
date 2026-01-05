@@ -62,7 +62,7 @@ const TABLE_STATUS_CONFIG = {
 export default function TableManagementPage() {
   const { toast } = useToast();
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [qrToken, setQrToken] = useState<string>('');
+  const [_qrToken, _setQrToken] = useState<string>('');
   const [qrUrl, setQrUrl] = useState<string>('');
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [showSessionDialog, setShowSessionDialog] = useState(false);
@@ -163,10 +163,10 @@ export default function TableManagementPage() {
     setSelectedTable(table);
     try {
       const response = await tablesService.generateQrToken(table.id);
-      setQrToken(response.token);
+      _setQrToken(response.token);
       setQrUrl(`${window.location.origin}/t/${response.token}`);
       setShowQRDialog(true);
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to generate QR code',

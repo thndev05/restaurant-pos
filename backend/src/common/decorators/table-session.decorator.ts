@@ -1,4 +1,9 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import type { TableSession as TableSessionType } from 'src/generated/prisma';
+
+interface RequestWithTableSession {
+  tableSession: TableSessionType;
+}
 
 /**
  * Decorator to extract table session from request
@@ -17,8 +22,8 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
  * ```
  */
 export const TableSession = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
+  (data: unknown, ctx: ExecutionContext): TableSessionType => {
+    const request = ctx.switchToHttp().getRequest<RequestWithTableSession>();
     return request.tableSession;
   },
 );

@@ -8,10 +8,11 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationsService } from './notifications.service';
 import { Notification, NotificationType } from '../../generated/prisma';
+import { JwtPayload } from '../auth/strategies/jwt-payload.interface';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -61,7 +62,7 @@ export class NotificationsGateway
       client.role = payload.role;
 
       // Join user to their personal room
-      client.join(`user:${client.userId}`);
+      void client.join(`user:${client.userId}`);
 
       // Store connected client
       this.connectedClients.set(client.id, client);
@@ -75,10 +76,12 @@ export class NotificationsGateway
         const unreadCount = await this.notificationsService.getUnreadCount(
           client.userId,
         );
-        client.emit('unreadCount', unreadCount);
+        void client.emit('unreadCount', unreadCount);
       }
-    } catch (error) {
-      this.logger.error(`Error during connection: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error during connection: ${errorMessage}`);
       client.disconnect();
     }
   }
@@ -89,19 +92,21 @@ export class NotificationsGateway
   }
 
   private extractTokenFromHandshake(client: Socket): string | null {
-    const token =
-      client.handshake.auth?.token ||
-      client.handshake.headers?.authorization?.replace('Bearer ', '');
-    return token || null;
+    const authToken = client.handshake.auth?.token as string | undefined;
+    const headerAuth = client.handshake.headers?.authorization;
+    const token = authToken || headerAuth?.replace('Bearer ', '') || null;
+    return token;
   }
 
-  private async verifyToken(token: string): Promise<any> {
+  private async verifyToken(token: string): Promise<JwtPayload | null> {
     try {
-      return await this.jwtService.verifyAsync(token, {
+      return await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: process.env.JWT_SECRET || 'your-secret-key',
       });
-    } catch (error) {
-      this.logger.error(`Token verification failed: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Token verification failed: ${errorMessage}`);
       return null;
     }
   }
@@ -171,7 +176,7 @@ export class NotificationsGateway
     type: NotificationType,
     title: string,
     message: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
   ) {
     const notifications = await this.notificationsService.createAndNotifyRoles(
       type,
@@ -209,9 +214,11 @@ export class NotificationsGateway
       );
       client.emit('unreadCount', unreadCount);
       return { success: true };
-    } catch (error) {
-      this.logger.error(`Error marking notification as read: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error marking notification as read: ${errorMessage}`);
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -227,11 +234,13 @@ export class NotificationsGateway
       );
       client.emit('unreadCount', unreadCount);
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
-        `Error marking all notifications as read: ${error.message}`,
+        `Error marking all notifications as read: ${errorMessage}`,
       );
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -245,8 +254,10 @@ export class NotificationsGateway
         client.userId,
       );
       return { count: unreadCount };
-    } catch (error) {
-      this.logger.error(`Error getting unread count: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Error getting unread count: ${errorMessage}`);
       return { count: 0 };
     }
   }

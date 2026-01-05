@@ -264,7 +264,7 @@ export function CreatePaymentDialog({
         audio.play().catch(() => {
           // Ignore if sound fails to play
         });
-      } catch (error) {
+      } catch {
         // Ignore sound errors
       }
 
@@ -315,7 +315,9 @@ export function CreatePaymentDialog({
           if (data.paymentId === paymentId) {
             if (data.status === 'SUCCESS') {
               // Update QR code data status
-              setQrCodeData((prev) => (prev ? { ...prev, status: 'SUCCESS' as any } : null));
+              setQrCodeData((prev) =>
+                prev ? { ...prev, status: 'SUCCESS' as 'SUCCESS' | 'PENDING' } : null
+              );
               handlePaymentSuccess(data.amount);
             } else if (data.status === 'FAILED') {
               setIsWaitingPayment(false);

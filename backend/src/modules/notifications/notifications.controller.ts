@@ -12,6 +12,12 @@ import {
 import { NotificationsService } from './notifications.service';
 import { QueryNotificationsDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtPayload } from '../auth/strategies/jwt-payload.interface';
+import { Request as ExpressRequest } from 'express';
+
+interface RequestWithUser extends ExpressRequest {
+  user: JwtPayload;
+}
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
@@ -19,12 +25,15 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  async findAll(@Request() req, @Query() query: QueryNotificationsDto) {
+  async findAll(
+    @Request() req: RequestWithUser,
+    @Query() query: QueryNotificationsDto,
+  ) {
     return this.notificationsService.findAll(req.user.userId, query);
   }
 
   @Get('unread-count')
-  async getUnreadCount(@Request() req) {
+  async getUnreadCount(@Request() req: RequestWithUser) {
     const count = await this.notificationsService.getUnreadCount(
       req.user.userId,
     );
@@ -32,28 +41,28 @@ export class NotificationsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Request() req) {
+  async findOne(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.notificationsService.findOne(id, req.user.userId);
   }
 
   @Patch(':id/read')
-  async markAsRead(@Param('id') id: string, @Request() req) {
+  async markAsRead(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.notificationsService.markAsRead(id, req.user.userId);
   }
 
   @Patch(':id/unread')
-  async markAsUnread(@Param('id') id: string, @Request() req) {
+  async markAsUnread(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.notificationsService.markAsUnread(id, req.user.userId);
   }
 
   @Post('mark-all-read')
-  async markAllAsRead(@Request() req) {
+  async markAllAsRead(@Request() req: RequestWithUser) {
     await this.notificationsService.markAllAsRead(req.user.userId);
     return { message: 'All notifications marked as read' };
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string, @Request() req) {
+  async remove(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.notificationsService.remove(id, req.user.userId);
   }
 }

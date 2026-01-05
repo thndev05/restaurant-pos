@@ -5,6 +5,7 @@ import {
   Notification,
   NotificationType,
   RoleName,
+  Prisma,
 } from '../../generated/prisma';
 
 @Injectable()
@@ -26,7 +27,7 @@ export class NotificationsService {
     type: NotificationType,
     title: string,
     message: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
   ): Promise<Notification[]> {
     this.logger.log(
       `Creating ${userIds.length} notifications of type ${type} for users: ${userIds.join(', ')}`,
@@ -40,7 +41,7 @@ export class NotificationsService {
             type,
             title,
             message,
-            metadata,
+            metadata: metadata as Prisma.InputJsonValue | undefined,
           },
         }),
       ),
@@ -88,14 +89,14 @@ export class NotificationsService {
     });
   }
 
-  async markAsRead(id: string, userId: string): Promise<Notification> {
+  async markAsRead(id: string, _userId: string): Promise<Notification> {
     return this.prisma.notification.update({
       where: { id },
       data: { isRead: true },
     });
   }
 
-  async markAsUnread(id: string, userId: string): Promise<Notification> {
+  async markAsUnread(id: string, _userId: string): Promise<Notification> {
     return this.prisma.notification.update({
       where: { id },
       data: { isRead: false },
@@ -115,7 +116,7 @@ export class NotificationsService {
     });
   }
 
-  async remove(id: string, userId: string): Promise<Notification> {
+  async remove(id: string, _userId: string): Promise<Notification> {
     return this.prisma.notification.delete({
       where: { id },
     });
@@ -204,7 +205,7 @@ export class NotificationsService {
     type: NotificationType,
     title: string,
     message: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
   ): Promise<Notification[]> {
     const roles = this.getRolesForNotificationType(type);
     const userIds = await this.getUserIdsByRoles(roles);

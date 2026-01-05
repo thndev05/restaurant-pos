@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { CreateTableDto, UpdateTableDto, GetTablesDto } from './dto';
 import { TableStatus, ReservationStatus } from 'src/generated/prisma';
+import { JwtPayload } from '../auth/strategies/jwt-payload.interface';
 
 @Injectable()
 export class TablesService {
@@ -356,7 +357,9 @@ export class TablesService {
   async verifyQrToken(token: string) {
     try {
       const secret = this.configService.get<string>('JWT_SECRET');
-      const payload = this.jwtService.verify(token, { secret });
+      const payload = this.jwtService.verify<
+        JwtPayload & { tableId: string; branchId: string }
+      >(token, { secret });
 
       const table = await this.getTableById(payload.tableId);
 
@@ -367,7 +370,7 @@ export class TablesService {
         status: table.status,
         branchId: payload.branchId,
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired QR code token');
     }
   }

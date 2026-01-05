@@ -52,9 +52,12 @@ export class SessionsController {
 
       // Initialize session (protected against race conditions)
       return await this.sessionsService.initializeSession(tableId, initDto);
-    } catch (error) {
+    } catch (error: unknown) {
       // If table is already occupied, provide helpful message
-      if (error.message?.includes('is currently occupied')) {
+      if (
+        error instanceof Error &&
+        error.message?.includes('is currently occupied')
+      ) {
         throw error;
       }
       throw error;

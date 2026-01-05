@@ -5,13 +5,11 @@ import { customerApi } from '@/lib/api/customerApiClient';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Bell,
-  CreditCard,
   Minus,
   Plus,
   ShoppingCart,
@@ -231,7 +229,7 @@ export default function TableOrderPage() {
         title: 'Order Placed',
         description: 'Your order has been sent to the kitchen!',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to place order:', error);
       toast({
         title: 'Error',
@@ -243,7 +241,6 @@ export default function TableOrderPage() {
     }
   };
 
-  const isInCart = (itemId: string) => cart.some((item) => item.id === itemId);
   const getCartItem = (itemId: string) => cart.find((item) => item.id === itemId);
 
   if (!session) {

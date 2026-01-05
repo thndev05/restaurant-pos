@@ -541,7 +541,7 @@ export class PaymentsService {
           await tx.tableSession.update({
             where: { id: payment.sessionId },
             data: {
-              status: SessionStatus.PAID,
+              status: SessionStatus.CLOSED, // Changed from PAID to CLOSED - session ends after payment
               endTime: now,
             },
           });
@@ -612,7 +612,7 @@ export class PaymentsService {
       await this.notificationsGateway.emitToRoles(
         NotificationType.PAYMENT_SUCCESS,
         'Payment Successful',
-        `Payment of ${payment.totalAmount} VND received for ${tableInfo}`,
+        `Payment of ${payment.totalAmount.toString()} VND received for ${tableInfo}`,
         { paymentId: payment.id, transactionId: payment.transactionId },
       );
 

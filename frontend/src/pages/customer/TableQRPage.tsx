@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSession } from '@/contexts';
 import { customerApi } from '@/lib/api/customerApiClient';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Loader2,
@@ -20,11 +19,15 @@ const initializingTokens = new Set<string>();
 export default function TableQRPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { initializeSession, session, clearSession } = useSession();
+  const { initializeSession, session } = useSession();
 
   const [status, setStatus] = useState<'validating' | 'success' | 'error'>('validating');
   const [errorMessage, setErrorMessage] = useState('');
-  const [tableInfo, setTableInfo] = useState<any>(null);
+  const [tableInfo, setTableInfo] = useState<{
+    id: string;
+    number: number;
+    capacity: number;
+  } | null>(null);
 
   useEffect(() => {
     const validateAndInitSession = async () => {
@@ -103,14 +106,17 @@ export default function TableQRPage() {
             navigate('/customer/order', { replace: true });
             initializingTokens.delete(token);
           }, 1500);
-        } catch (createError: any) {
+        } catch (createError: unknown) {
           // Handle session creation errors
 
           initializingTokens.delete(token);
 
           // Check if table is occupied
-          if (createError.response?.status === 400) {
-            const errorMsg = createError.response?.data?.message || '';
+          const createErr = createError as {
+            response?: { status?: number; data?: { message?: string } };
+          };
+          if (createErr.response?.status === 400) {
+            const errorMsg = createErr.response?.data?.message || '';
 
             if (errorMsg.includes('occupied')) {
               // Table has active session
@@ -118,7 +124,10 @@ export default function TableQRPage() {
               const storedSession = localStorage.getItem('table_session');
               if (storedSession) {
                 try {
-                  const { sessionId, tableInfo: storedTableInfo } = JSON.parse(storedSession);
+                  const { tableInfo: storedTableInfo } = JSON.parse(storedSession) as {
+                    sessionId?: string;
+                    tableInfo: { id: string; number: number; capacity: number };
+                  };
 
                   // If we have a session for this table, just redirect to menu
                   if (storedTableInfo.id === tableIdFromToken) {
@@ -146,21 +155,21 @@ export default function TableQRPage() {
               setStatus('error');
               setErrorMessage(errorMsg);
             }
-          } else if (createError.response?.status === 401) {
+          } else if (createErr.response?.status === 401) {
             console.error('Failed to create session:', createError);
             setStatus('error');
             setErrorMessage('Invalid or expired QR code');
-          } else if (createError.response?.data?.message) {
+          } else if (createErr.response?.data?.message) {
             console.error('Failed to create session:', createError);
             setStatus('error');
-            setErrorMessage(createError.response.data.message);
+            setErrorMessage(createErr.response.data.message);
           } else {
             console.error('Failed to create session:', createError);
             setStatus('error');
             setErrorMessage('Failed to initialize session. Please try again.');
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Unexpected error:', error);
         setStatus('error');
         initializingTokens.delete(token);

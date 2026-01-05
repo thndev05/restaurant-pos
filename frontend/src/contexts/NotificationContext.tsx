@@ -25,7 +25,7 @@ export interface Notification {
   type: string;
   title: string;
   message: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   isRead: boolean;
   createdAt: string;
   updatedAt: string;

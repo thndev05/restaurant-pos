@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Search, ShoppingCart, Star, Flame, ChefHat, Clock } from 'lucide-react';
+import { Search, ShoppingCart, Star, ChefHat } from 'lucide-react';
 import { CustomerLayout } from '@/layouts/customer';
 
 export default function MenuPage() {

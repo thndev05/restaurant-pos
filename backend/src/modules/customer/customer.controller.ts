@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { Public } from '../auth/decorators/public.decorator';
 import { TableSessionGuard } from 'src/common/guards/table-session.guard';
 import { TableSession } from 'src/common/decorators/table-session.decorator';
@@ -8,6 +8,7 @@ import { ActionsService } from '../actions/actions.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { CreateOrderDto } from '../orders/dto';
 import { CreateActionDto } from '../actions/dto';
+import type { TableSession as TableSessionType } from 'src/generated/prisma';
 
 /**
  * Customer-facing endpoints for QR-based table ordering
@@ -36,7 +37,7 @@ export class CustomerController {
    * Get current session details with orders and actions
    */
   @Get('session')
-  async getCurrentSession(@TableSession() session: any) {
+  async getCurrentSession(@TableSession() session: TableSessionType) {
     return this.sessionsService.getCustomerSession(session.id);
   }
 
@@ -44,7 +45,7 @@ export class CustomerController {
    * Get session bill
    */
   @Get('session/bill')
-  async getSessionBill(@TableSession() session: any) {
+  async getSessionBill(@TableSession() session: TableSessionType) {
     return this.sessionsService.getSessionBill(session.id);
   }
 
@@ -53,7 +54,7 @@ export class CustomerController {
    */
   @Post('orders')
   async createOrder(
-    @TableSession() session: any,
+    @TableSession() session: TableSessionType,
     @Body() createOrderDto: CreateOrderDto,
   ) {
     // Override sessionId from validated session
@@ -89,7 +90,7 @@ export class CustomerController {
    */
   @Post('actions')
   async createAction(
-    @TableSession() session: any,
+    @TableSession() session: TableSessionType,
     @Body() createActionDto: Omit<CreateActionDto, 'sessionId'>,
   ) {
     const actionDto: CreateActionDto = {
@@ -104,7 +105,7 @@ export class CustomerController {
    * Get all actions for current session
    */
   @Get('actions')
-  async getSessionActions(@TableSession() session: any) {
+  async getSessionActions(@TableSession() session: TableSessionType) {
     return this.actionsService.getActionsBySessionId(session.id);
   }
 }

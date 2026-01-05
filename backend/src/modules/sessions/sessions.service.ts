@@ -10,7 +10,7 @@ import {
   CloseSessionDto,
   InitSessionDto,
 } from './dto';
-import { SessionStatus, TableStatus } from 'src/generated/prisma';
+import { SessionStatus, TableStatus, Order } from 'src/generated/prisma';
 
 @Injectable()
 export class SessionsService {
@@ -23,9 +23,7 @@ export class SessionsService {
   async getAllSessions() {
     const sessions = await this.db.findMany({
       where: {
-        status: {
-          in: [SessionStatus.ACTIVE, SessionStatus.PAID],
-        },
+        status: SessionStatus.ACTIVE, // Only get ACTIVE sessions (PAID is removed - sessions auto-close after payment)
       },
       include: {
         table: true,
@@ -72,9 +70,7 @@ export class SessionsService {
     const existingSession = await this.db.findFirst({
       where: {
         tableId: createSessionDto.tableId,
-        status: {
-          in: [SessionStatus.ACTIVE, SessionStatus.PAID],
-        },
+        status: SessionStatus.ACTIVE, // Only check ACTIVE (sessions auto-close after payment)
       },
     });
 
@@ -205,7 +201,7 @@ export class SessionsService {
     console.log(`Total active sessions for table: ${allTableSessions.length}`);
 
     // Get all pending orders from all active sessions
-    const allPendingOrders: any[] = [];
+    const allPendingOrders: Order[] = [];
     allTableSessions.forEach((sess) => {
       const pending = sess.orders.filter(
         (order) =>
@@ -344,28 +340,28 @@ export class SessionsService {
           throw new BadRequestException('Table is out of service');
         }
 
-        // Check if table already has an active session WITH ROW LOCK
-        // This ensures only one request can check and create at a time
-        const existingSession = await tx.tableSession.findFirst({
+        // Check if table already has an ACTIVE session
+        // Sessions automatically close after payment, so we only need to check ACTIVE
+        const activeSession = await tx.tableSession.findFirst({
           where: {
             tableId,
-            status: {
-              in: [SessionStatus.ACTIVE, SessionStatus.PAID],
-            },
+            status: SessionStatus.ACTIVE,
           },
         });
 
-        if (existingSession) {
+        if (activeSession) {
           console.log(
-            `Table #${table.number} already has active session: ${existingSession.id}`,
+            `Table #${table.number} already has active session: ${activeSession.id} (Status: ${activeSession.status})`,
           );
+          console.log('ERROR: Table is currently in use!');
           console.log('=========================================\n');
+          
           throw new BadRequestException(
-            `Table #${table.number} is currently occupied. Please choose another table or wait until it becomes available.`,
+            `Table #${table.number} is currently in use. Please select another table or contact staff.`,
           );
         }
 
-        console.log('No existing session found. Creating new session...');
+        console.log('No active session found. Creating new session...');
 
         // Calculate expiration (120 minutes from now)
         const expiresAt = new Date();
