@@ -2,59 +2,32 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/staff/StatusBadge';
-import {
-  CreditCard,
-  Banknote,
-  DollarSign,
-  Printer,
-  Clock,
-  Receipt,
-  RefreshCw,
-  Loader2,
-  Phone,
-} from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { DollarSign, Printer, Clock, Receipt, RefreshCw, Loader2, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { ordersService, type Order, type OrderBillItem } from '@/lib/api/services/orders.service';
-import {
-  paymentsService,
-  type PaymentMethod,
-  type CreatePaymentData,
-} from '@/lib/api/services/payments.service';
-
-interface OrderBill {
-  orderId: string;
-  orderType: string;
-  createdAt: string;
-  tableNumber?: number;
-  customerCount?: number;
-  sessionId?: string;
-  customerName?: string;
-  customerPhone?: string;
-  items: {
-    name: string;
-    quantity: number;
-    price: number;
-    total: number;
-  }[];
-  subTotal: number;
-  tax: number;
-  discount: number;
-  total: number;
-}
+import { ordersService, type Order } from '@/lib/api/services/orders.service';
+import { CreatePaymentDialog } from '@/components/staff/CreatePaymentDialog';
 
 interface OrderWithBill extends Order {
-  bill?: OrderBill;
+  bill?: {
+    orderId: string;
+    orderNumber: string;
+    orderType: string;
+    createdAt: string;
+    confirmedBy: string | null;
+    tableNumber?: number;
+    items: {
+      name: string;
+      quantity: number;
+      price: number;
+      total: number;
+    }[];
+    subTotal: number;
+    tax: number;
+    discount: number;
+    total: number;
+  };
 }
 
 export default function CashierPaymentQueuePage() {
@@ -70,12 +43,8 @@ export default function CashierPaymentQueuePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<OrderWithBill | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
-  const [cashReceived, setCashReceived] = useState('');
-  const [tipAmount, setTipAmount] = useState('');
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
   // Load orders ready for payment from API
@@ -148,9 +117,6 @@ export default function CashierPaymentQueuePage() {
       const bill = await ordersService.getOrderBill(order.id);
       setSelectedOrder({ ...order, bill });
       setShowPaymentDialog(true);
-      setCashReceived('');
-      setTipAmount('');
-      setPaymentMethod('CASH');
     } catch (error) {
       console.error('Failed to load bill:', error);
       const message =
@@ -165,87 +131,10 @@ export default function CashierPaymentQueuePage() {
     }
   };
 
-  const calculateChange = () => {
-    if (!selectedOrder || !cashReceived) return 0;
-    const total = selectedOrder.bill?.total || 0;
-    const tip = parseFloat(tipAmount) || 0;
-    const received = parseFloat(cashReceived) || 0;
-    return Math.max(0, received - total - tip);
-  };
-
-  const handleProcessPayment = async () => {
-    if (!selectedOrder) return;
-
-    if (paymentMethod === 'CASH' && !cashReceived) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please enter the amount received',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (paymentMethod === 'CASH') {
-      const total = selectedOrder.bill?.total || 0;
-      const received = parseFloat(cashReceived) || 0;
-      if (received < total) {
-        toast({
-          title: 'Validation Error',
-          description: 'Cash received is less than the total amount',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
-
-    setIsProcessing(true);
-    try {
-      const bill = selectedOrder.bill!;
-
-      // Create payment
-      const paymentData: CreatePaymentData = {
-        sessionId: selectedOrder.sessionId, // Will be undefined for takeaway
-        orderId: selectedOrder.id,
-        totalAmount: bill.total,
-        subTotal: bill.subTotal,
-        tax: bill.tax,
-        discount: bill.discount,
-        paymentMethod: paymentMethod,
-        notes: tipAmount ? `Tip: $${tipAmount}` : undefined,
-      };
-
-      const paymentResponse = await paymentsService.createPayment(paymentData);
-
-      // Process payment (mark as paid)
-      if (paymentResponse.data.id && !paymentResponse.data.id.startsWith('mock-')) {
-        await paymentsService.processPayment(paymentResponse.data.id);
-      }
-
-      const change = calculateChange();
-      toast({
-        title: 'Payment Processed',
-        description:
-          paymentMethod === 'CASH'
-            ? `Payment completed. Change: $${change.toFixed(2)}`
-            : 'Payment completed successfully',
-      });
-
-      setShowPaymentDialog(false);
-      loadOrders(); // Refresh the list
-    } catch (error) {
-      console.error('Failed to process payment:', error);
-      const message =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to process payment',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+  const handlePaymentSuccess = () => {
+    setShowPaymentDialog(false);
+    setSelectedOrder(null);
+    loadOrders(); // Refresh the list
   };
 
   const handlePrintBill = async (order: Order) => {
@@ -265,11 +154,18 @@ export default function CashierPaymentQueuePage() {
         throw new Error('Unable to open print window');
       }
 
+      const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('vi-VN', {
+          style: 'currency',
+          currency: 'VND',
+        }).format(amount);
+      };
+
       const billHtml = `
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Bill - Table ${billData.tableNumber}</title>
+          <title>Bill - Table ${billData.tableNumber || 'N/A'}</title>
           <style>
             body {
               font-family: 'Courier New', monospace;
@@ -346,12 +242,9 @@ export default function CashierPaymentQueuePage() {
           
           <div class="info">
             <div>Date: ${new Date().toLocaleString()}</div>
-            <div>Order: ${billData.orderId.slice(0, 8).toUpperCase()}</div>
+            <div>Order: ${billData.orderNumber}</div>
             <div>Type: ${billData.orderType === 'DINE_IN' ? 'Dine-In' : 'Takeaway'}</div>
             ${billData.tableNumber ? `<div>Table: ${billData.tableNumber}</div>` : ''}
-            ${billData.customerCount ? `<div>Guests: ${billData.customerCount}</div>` : ''}
-            ${billData.customerName ? `<div>Customer: ${billData.customerName}</div>` : ''}
-            ${billData.customerPhone ? `<div>Phone: ${billData.customerPhone}</div>` : ''}
           </div>
 
           <table>
@@ -366,12 +259,12 @@ export default function CashierPaymentQueuePage() {
             <tbody>
               ${billData.items
                 .map(
-                  (item: OrderBillItem) => `
+                  (item) => `
                 <tr class="item-row">
                   <td>${item.name}</td>
                   <td style="text-align: center">${item.quantity}</td>
-                  <td style="text-align: right">$${item.price.toFixed(2)}</td>
-                  <td style="text-align: right">$${item.total.toFixed(2)}</td>
+                  <td style="text-align: right">${formatCurrency(item.price)}</td>
+                  <td style="text-align: right">${formatCurrency(item.total)}</td>
                 </tr>
               `
                 )
@@ -382,25 +275,25 @@ export default function CashierPaymentQueuePage() {
           <div class="totals">
             <div class="total-row">
               <span>Subtotal:</span>
-              <span>$${billData.subTotal.toFixed(2)}</span>
+              <span>${formatCurrency(billData.subTotal)}</span>
             </div>
             <div class="total-row">
               <span>Tax (10%):</span>
-              <span>$${billData.tax.toFixed(2)}</span>
+              <span>${formatCurrency(billData.tax)}</span>
             </div>
             ${
               billData.discount > 0
                 ? `
             <div class="total-row">
               <span>Discount:</span>
-              <span>-$${billData.discount.toFixed(2)}</span>
+              <span>-${formatCurrency(billData.discount)}</span>
             </div>
             `
                 : ''
             }
             <div class="total-row grand-total">
               <span>TOTAL:</span>
-              <span>$${billData.total.toFixed(2)}</span>
+              <span>${formatCurrency(billData.total)}</span>
             </div>
           </div>
 
@@ -589,188 +482,14 @@ export default function CashierPaymentQueuePage() {
         </div>
       )}
 
-      {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Process Payment</DialogTitle>
-            <DialogDescription>
-              {selectedOrder?.orderType === 'DINE_IN' && selectedOrder?.session ? (
-                <>
-                  Table {selectedOrder.session.table.number}
-                  {selectedOrder.session.customerCount &&
-                    ` - ${selectedOrder.session.customerCount} guests`}
-                </>
-              ) : (
-                <>
-                  Takeaway - {selectedOrder?.customerName}
-                  {selectedOrder?.customerPhone && ` (${selectedOrder.customerPhone})`}
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedOrder && selectedOrder.bill && (
-            <div className="space-y-4">
-              {/* Bill Items */}
-              <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border bg-slate-50 p-4">
-                <h4 className="mb-2 text-sm font-semibold">Order Items:</h4>
-                {selectedOrder.bill.items.map((item: OrderBillItem, index: number) => (
-                  <div key={index} className="flex justify-between text-xs">
-                    <span>
-                      {item.quantity}x {item.name}
-                    </span>
-                    <span>${item.total.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bill Summary */}
-              <div className="rounded-lg border bg-slate-50 p-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal:</span>
-                    <span>${selectedOrder.bill.subTotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax (10%):</span>
-                    <span>${selectedOrder.bill.tax.toFixed(2)}</span>
-                  </div>
-                  {selectedOrder.bill.discount > 0 && (
-                    <div className="text-success flex justify-between text-sm">
-                      <span>Discount:</span>
-                      <span>-${selectedOrder.bill.discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t pt-2 text-lg font-bold">
-                    <span>Total:</span>
-                    <span>${selectedOrder.bill.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Method */}
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant={paymentMethod === 'CASH' ? 'default' : 'outline'}
-                    onClick={() => setPaymentMethod('CASH')}
-                    className="w-full"
-                  >
-                    <Banknote className="mr-2 h-4 w-4" />
-                    Cash
-                  </Button>
-                  <Button
-                    variant={paymentMethod === 'BANKING' ? 'default' : 'outline'}
-                    onClick={() => setPaymentMethod('BANKING')}
-                    className="w-full"
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Banking
-                  </Button>
-                  <Button
-                    variant={paymentMethod === 'CARD' ? 'default' : 'outline'}
-                    onClick={() => setPaymentMethod('CARD')}
-                    className="w-full"
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Card
-                  </Button>
-                </div>
-              </div>
-
-              {/* Cash Payment Fields */}
-              {paymentMethod === 'CASH' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="cash-received">Cash Received *</Label>
-                    <Input
-                      id="cash-received"
-                      type="number"
-                      placeholder="0.00"
-                      value={cashReceived}
-                      onChange={(e) => setCashReceived(e.target.value)}
-                      step="0.01"
-                      min="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tip">Tip (Optional)</Label>
-                    <Input
-                      id="tip"
-                      type="number"
-                      placeholder="0.00"
-                      value={tipAmount}
-                      onChange={(e) => setTipAmount(e.target.value)}
-                      step="0.01"
-                      min="0"
-                    />
-                  </div>
-                  {cashReceived && (
-                    <div className="border-success bg-success/10 rounded-lg border-2 p-4">
-                      <div className="text-success flex justify-between text-lg font-bold">
-                        <span>Change:</span>
-                        <span>${calculateChange().toFixed(2)}</span>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Online Payment */}
-              {(paymentMethod === 'BANKING' || paymentMethod === 'CARD') && (
-                <div className="rounded-lg border bg-blue-50 p-4 text-sm text-blue-900">
-                  <p className="font-medium">
-                    {paymentMethod === 'BANKING' ? 'Banking' : 'Card'} Payment
-                  </p>
-                  <p className="mt-1 text-xs">
-                    Confirm that the payment has been received through{' '}
-                    {paymentMethod === 'BANKING' ? 'bank transfer' : 'card terminal'}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              onClick={() => setShowPaymentDialog(false)}
-              disabled={isProcessing}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => selectedOrder && handlePrintBill(selectedOrder)}
-              variant="outline"
-              disabled={isProcessing || isPrinting}
-              className="w-full sm:w-auto"
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              Print Bill
-            </Button>
-            <Button
-              onClick={handleProcessPayment}
-              disabled={isProcessing}
-              className="w-full sm:flex-1"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Complete Payment
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Payment Dialog - Using shared CreatePaymentDialog component */}
+      <CreatePaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        orderId={selectedOrder?.id}
+        orderTotal={selectedOrder?.bill?.total}
+        onPaymentCreated={handlePaymentSuccess}
+      />
     </div>
   );
 }

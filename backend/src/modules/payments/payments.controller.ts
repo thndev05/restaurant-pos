@@ -3,12 +3,18 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
-import { CreatePaymentDto, ProcessPaymentDto, RefundPaymentDto } from './dto';
+import {
+  CreatePaymentDto,
+  ProcessPaymentDto,
+  RefundPaymentDto,
+  UpdatePaymentStatusDto,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -61,5 +67,16 @@ export class PaymentsController {
     @Body() refundPaymentDto: RefundPaymentDto,
   ) {
     return this.paymentsService.refundPayment(id, refundPaymentDto);
+  }
+
+  @Patch(':id/status')
+  async updatePaymentStatus(
+    @Param('id') id: string,
+    @Body() updatePaymentStatusDto: UpdatePaymentStatusDto,
+  ) {
+    return this.paymentsService.updatePaymentStatus(
+      id,
+      updatePaymentStatusDto.status,
+    );
   }
 }

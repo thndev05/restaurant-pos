@@ -755,4 +755,85 @@ export class PaymentsService {
       data: updatedPayment,
     };
   }
+
+  async updatePaymentStatus(id: string, newStatus: PaymentStatus) {
+    console.log('\n========== UPDATE PAYMENT STATUS DEBUG ==========');
+    console.log('Payment ID:', id);
+    console.log('New Status:', newStatus);
+
+    const payment = await this.db.findUnique({
+      where: { id },
+      include: {
+        session: {
+          include: {
+            table: true,
+          },
+        },
+        order: true,
+      },
+    });
+
+    if (!payment) {
+      throw new BadRequestException(`Payment with ID "${id}" does not exist.`);
+    }
+
+    // Update payment status
+    const updatedPayment = await this.db.update({
+      where: { id },
+      data: {
+        status: newStatus,
+        paymentTime:
+          newStatus === PaymentStatus.SUCCESS
+            ? new Date()
+            : payment.paymentTime,
+      },
+      include: {
+        session: {
+          include: {
+            table: true,
+          },
+        },
+        order: true,
+      },
+    });
+
+    // If marking as SUCCESS, update related order/session
+    if (newStatus === PaymentStatus.SUCCESS) {
+      if (payment.orderId) {
+        await this.prismaService.order.update({
+          where: { id: payment.orderId },
+          data: { status: OrderStatus.PAID },
+        });
+      }
+
+      if (payment.sessionId) {
+        await this.prismaService.session.update({
+          where: { id: payment.sessionId },
+          data: { status: SessionStatus.PAID },
+        });
+      }
+
+      // Emit notification
+      if (
+        this.notificationsGateway &&
+        this.notificationsGateway.emitPaymentStatusUpdate
+      ) {
+        this.notificationsGateway.emitPaymentStatusUpdate({
+          paymentId: id,
+          status: 'SUCCESS',
+          amount: parseFloat(payment.totalAmount),
+          transactionId: payment.transactionId ?? undefined,
+        });
+      }
+    }
+
+    console.log(`Payment ${id} status updated to ${newStatus}`);
+    console.log('================================================\n');
+
+    return {
+      code: 200,
+      message: `Payment status updated to ${newStatus}`,
+      data: updatedPayment,
+    };
+  }
 }

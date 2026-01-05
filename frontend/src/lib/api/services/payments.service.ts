@@ -29,10 +29,10 @@ export interface Payment {
   id: string;
   sessionId?: string;
   orderId?: string;
-  totalAmount: number;
-  subTotal: number;
-  tax: number;
-  discount: number;
+  totalAmount: number | string; // Can be string from Prisma Decimal
+  subTotal: number | string;
+  tax: number | string;
+  discount: number | string;
   paymentMethod: PaymentMethod;
   status: PaymentStatus;
   transactionId?: string;
@@ -159,6 +159,17 @@ class PaymentsService extends BaseApiService<never> {
     data?: RefundPaymentData
   ): Promise<{ code: number; message: string; data: Payment }> {
     const response = await apiClient.post(`${this.endpoint}/${id}/refund`, data || {});
+    return response.data;
+  }
+
+  /**
+   * Update payment status (admin/manager only)
+   */
+  async updatePaymentStatus(
+    id: string,
+    status: PaymentStatus
+  ): Promise<{ code: number; message: string; data: Payment }> {
+    const response = await apiClient.patch(`${this.endpoint}/${id}/status`, { status });
     return response.data;
   }
 }

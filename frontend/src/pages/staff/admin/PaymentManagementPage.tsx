@@ -105,6 +105,7 @@ export default function PaymentManagementPage() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
   const [paymentToRefund, setPaymentToRefund] = useState<Payment | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const loadPayments = useCallback(async () => {
     setIsLoading(true);
@@ -142,6 +143,31 @@ export default function PaymentManagementPage() {
     setShowRefundDialog(false);
     setPaymentToRefund(null);
     loadPayments();
+  };
+
+  const handleUpdateStatus = async (paymentId: string, newStatus: PaymentStatus) => {
+    setIsUpdatingStatus(true);
+    try {
+      await paymentsService.updatePaymentStatus(paymentId, newStatus);
+      toast({
+        title: 'Success',
+        description: `Payment status updated to ${newStatus}`,
+      });
+      loadPayments();
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast({
+        title: 'Error',
+        description: message || 'Failed to update payment status',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   const handleExportCSV = () => {
@@ -209,7 +235,7 @@ export default function PaymentManagementPage() {
   const stats = {
     totalRevenue: payments
       .filter((p) => p.status === 'SUCCESS')
-      .reduce((sum, p) => sum + p.totalAmount, 0),
+      .reduce((sum, p) => sum + (parseFloat(p.totalAmount?.toString() || '0') || 0), 0),
     totalCount: payments.length,
     pendingCount: payments.filter((p) => p.status === 'PENDING').length,
     successCount: payments.filter((p) => p.status === 'SUCCESS').length,
@@ -219,7 +245,7 @@ export default function PaymentManagementPage() {
       payments.filter((p) => p.status === 'SUCCESS').length > 0
         ? payments
             .filter((p) => p.status === 'SUCCESS')
-            .reduce((sum, p) => sum + p.totalAmount, 0) /
+            .reduce((sum, p) => sum + (parseFloat(p.totalAmount?.toString() || '0') || 0), 0) /
           payments.filter((p) => p.status === 'SUCCESS').length
         : 0,
     successRate:
@@ -228,11 +254,12 @@ export default function PaymentManagementPage() {
         : 0,
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | string) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-    }).format(amount);
+    }).format(numAmount || 0);
   };
 
   const formatDateTime = (dateString: string) => {
@@ -501,26 +528,52 @@ export default function PaymentManagementPage() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewPayment(payment)}
-                          className="flex-1"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </Button>
-                        {payment.status === 'SUCCESS' && (
+                      <div className="space-y-2 pt-2">
+                        <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleRefundClick(payment)}
+                            onClick={() => handleViewPayment(payment)}
                             className="flex-1"
                           >
-                            <RotateCcw className="mr-2 h-4 w-4" />
-                            Refund
+                            <Eye className="mr-2 h-4 w-4" />
+                            View
                           </Button>
+                          {payment.status === 'SUCCESS' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRefundClick(payment)}
+                              className="flex-1"
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Refund
+                            </Button>
+                          )}
+                        </div>
+                        {payment.status === 'PENDING' && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateStatus(payment.id, 'SUCCESS')}
+                              disabled={isUpdatingStatus}
+                              className="flex-1 border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                            >
+                              <CheckCircle className="mr-1 h-3 w-3" />
+                              Confirm
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateStatus(payment.id, 'FAILED')}
+                              disabled={isUpdatingStatus}
+                              className="flex-1 border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                            >
+                              <XCircle className="mr-1 h-3 w-3" />
+                              Decline
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </CardContent>
