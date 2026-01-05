@@ -132,11 +132,6 @@ export default function TableOrderPage() {
     setSelectedItem(null);
     setItemNotes('');
     setItemQuantity(1);
-
-    toast({
-      title: 'Added to cart',
-      description: `${itemQuantity} × ${selectedItem.name} added to your cart.`,
-    });
   };
 
   const updateQuantity = (index: number, delta: number) => {
