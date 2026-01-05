@@ -27,7 +27,8 @@ export interface ProcessPaymentData {
 
 export interface Payment {
   id: string;
-  sessionId: string;
+  sessionId?: string;
+  orderId?: string;
   totalAmount: number;
   subTotal: number;
   tax: number;
@@ -39,6 +40,25 @@ export interface Payment {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  session?: {
+    id: string;
+    table: {
+      id: string;
+      number: number;
+    };
+    customerCount?: number;
+  };
+  order?: {
+    id: string;
+    customerName?: string;
+    customerPhone?: string;
+    orderType?: string;
+  };
+}
+
+export interface RefundPaymentData {
+  reason?: string;
+  notes?: string;
 }
 
 class PaymentsService extends BaseApiService<never> {
@@ -128,6 +148,17 @@ class PaymentsService extends BaseApiService<never> {
     };
   }> {
     const response = await apiClient.get(`${this.endpoint}/${id}/qr-code`);
+    return response.data;
+  }
+
+  /**
+   * Refund a payment (admin/manager only)
+   */
+  async refundPayment(
+    id: string,
+    data?: RefundPaymentData
+  ): Promise<{ code: number; message: string; data: Payment }> {
+    const response = await apiClient.post(`${this.endpoint}/${id}/refund`, data || {});
     return response.data;
   }
 }

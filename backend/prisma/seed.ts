@@ -256,10 +256,28 @@ async function main() {
 
     // Payment permissions
     {
+      name: 'payments.create',
+      description: 'Create payments',
+      resource: 'payments',
+      action: 'create',
+    },
+    {
+      name: 'payments.read',
+      description: 'View payments',
+      resource: 'payments',
+      action: 'read',
+    },
+    {
+      name: 'payments.update',
+      description: 'Update payments',
+      resource: 'payments',
+      action: 'update',
+    },
+    {
       name: 'payments.process',
       description: 'Process payments',
       resource: 'payments',
-      action: 'create',
+      action: 'process',
     },
     {
       name: 'payments.refund',
@@ -443,6 +461,9 @@ async function main() {
     'users.read',
     'reports.view',
     'reports.export',
+    'payments.create',
+    'payments.read',
+    'payments.update',
     'payments.process',
     'payments.refund',
     'notifications.read',
@@ -477,6 +498,8 @@ async function main() {
     'orders.read',
     'orders.update',
     'reservations.read',
+    'payments.create',
+    'payments.read',
     'payments.process',
     'payments.refund',
     'notifications.read',

@@ -36,6 +36,7 @@ const adminNavigationItems = [
   { path: '/staff/admin/tables', icon: TableIcon, label: 'Table Management' },
   { path: '/staff/admin/reservations', icon: Calendar, label: 'Reservations' },
   { path: '/staff/admin/orders', icon: ClipboardList, label: 'Order Management' },
+  { path: '/staff/admin/payments', icon: DollarSign, label: 'Payments' },
   { path: '/staff/admin/staff-management', icon: Users, label: 'Staff Management' },
 ];
 

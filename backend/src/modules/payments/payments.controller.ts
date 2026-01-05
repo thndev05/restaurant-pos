@@ -8,7 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
-import { CreatePaymentDto, ProcessPaymentDto } from './dto';
+import { CreatePaymentDto, ProcessPaymentDto, RefundPaymentDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
@@ -53,5 +53,13 @@ export class PaymentsController {
   @Get(':id/qr-code')
   async getPaymentQrCode(@Param('id') id: string) {
     return this.paymentsService.getPaymentQrCode(id);
+  }
+
+  @Post(':id/refund')
+  async refundPayment(
+    @Param('id') id: string,
+    @Body() refundPaymentDto: RefundPaymentDto,
+  ) {
+    return this.paymentsService.refundPayment(id, refundPaymentDto);
   }
 }

@@ -686,4 +686,73 @@ export class PaymentsService {
       },
     };
   }
+
+  /**
+   * Refund a payment (admin/manager only)
+   * Updates payment status to REFUNDED
+   */
+  async refundPayment(
+    id: string,
+    refundDto: { reason?: string; notes?: string },
+  ) {
+    console.log('\n========== REFUND PAYMENT DEBUG ==========');
+    console.log('Payment ID:', id);
+    console.log('Refund data:', refundDto);
+
+    const payment = await this.db.findUnique({
+      where: { id },
+      include: {
+        session: {
+          include: {
+            table: true,
+          },
+        },
+        order: true,
+      },
+    });
+
+    if (!payment) {
+      throw new BadRequestException(`Payment with ID "${id}" does not exist.`);
+    }
+
+    if (payment.status !== PaymentStatus.SUCCESS) {
+      throw new BadRequestException(
+        `Cannot refund payment with status "${payment.status}". Only successful payments can be refunded.`,
+      );
+    }
+
+    // Update payment status to REFUNDED
+    const refundNotes = [
+      payment.notes,
+      refundDto.reason ? `Refund Reason: ${refundDto.reason}` : null,
+      refundDto.notes ? `Additional Notes: ${refundDto.notes}` : null,
+    ]
+      .filter(Boolean)
+      .join(' | ');
+
+    const updatedPayment = await this.db.update({
+      where: { id },
+      data: {
+        status: PaymentStatus.REFUNDED,
+        notes: refundNotes,
+      },
+      include: {
+        session: {
+          include: {
+            table: true,
+          },
+        },
+        order: true,
+      },
+    });
+
+    console.log(`Payment ${id} refunded successfully`);
+    console.log('=========================================\n');
+
+    return {
+      code: 200,
+      message: 'Payment refunded successfully',
+      data: updatedPayment,
+    };
+  }
 }

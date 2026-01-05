@@ -355,7 +355,7 @@ export class SessionsService {
           );
           console.log('ERROR: Table is currently in use!');
           console.log('=========================================\n');
-          
+
           throw new BadRequestException(
             `Table #${table.number} is currently in use. Please select another table or contact staff.`,
           );
