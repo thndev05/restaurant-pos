@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, User, Menu, X, LogOut, Settings, UserCircle } from 'lucide-react';
+import { Search, User, Menu, X, LogOut, Settings, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts';
+import { NotificationBell } from '@/components/staff/NotificationBell';
 import StaffSidebar from './StaffSidebar';
 
 export default function StaffHeader() {
@@ -82,12 +82,7 @@ export default function StaffHeader() {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs">
-              3
-            </Badge>
-          </Button>
+          <NotificationBell />
 
           {/* User Menu */}
           <DropdownMenu>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,8 @@ import {
   type PaymentMethod,
   type CreatePaymentData,
 } from '@/lib/api/services/payments.service';
+import { authService } from '@/lib/api/services/auth.service';
+import { API_CONFIG } from '@/config/api.config';
 import {
   ordersService,
   type OrderBill,
@@ -123,6 +126,8 @@ export function CreatePaymentDialog({
     qrCodeUrl: string;
   } | null>(null);
   const [isLoadingQr, setIsLoadingQr] = useState(false);
+  const [isWaitingPayment, setIsWaitingPayment] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -215,6 +220,13 @@ export function CreatePaymentDialog({
   useEffect(() => {
     if (open) {
       loadBillDetails();
+    } else {
+      // Cleanup socket when dialog closes
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setIsWaitingPayment(false);
     }
   }, [open, loadBillDetails]);
 
@@ -229,6 +241,105 @@ export function CreatePaymentDialog({
     const received = parseFloat(cashReceived) || 0;
     return Math.max(0, received - totalAmount - tip);
   };
+
+  const handlePaymentSuccess = useCallback(
+    (amount: number) => {
+      // Disconnect socket
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setIsWaitingPayment(false);
+
+      // Show success notification
+      toast({
+        title: '✅ Payment Successful!',
+        description: `Payment of ${formatCurrency(amount)} has been confirmed`,
+        duration: 5000,
+      });
+
+      // Play success sound if available
+      try {
+        const audio = new Audio('/sounds/success.mp3');
+        audio.play().catch(() => {
+          // Ignore if sound fails to play
+        });
+      } catch (error) {
+        // Ignore sound errors
+      }
+
+      // Close dialog and trigger refresh
+      setTimeout(() => {
+        setShowQrCode(false);
+        setQrCodeData(null);
+        onPaymentCreated?.();
+        onOpenChange(false);
+      }, 2000);
+    },
+    [toast, onPaymentCreated, onOpenChange]
+  );
+
+  const connectPaymentSocket = useCallback(
+    (paymentId: string) => {
+      setIsWaitingPayment(true);
+
+      const token = authService.getAccessToken();
+      if (!token) {
+        console.error('No auth token available for socket connection');
+        return;
+      }
+
+      // Connect to notifications socket
+      const socket = io(`${API_CONFIG.BASE_URL}/notifications`, {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+      });
+
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        console.log('✅ Payment WebSocket connected');
+      });
+
+      socket.on('disconnect', () => {
+        console.log('❌ Payment WebSocket disconnected');
+      });
+
+      // Listen for payment status updates
+      socket.on(
+        'paymentStatus',
+        (data: { paymentId: string; status: string; amount: number; transactionId?: string }) => {
+          console.log('💰 Payment status update:', data);
+
+          // Only handle updates for our payment
+          if (data.paymentId === paymentId) {
+            if (data.status === 'SUCCESS') {
+              // Update QR code data status
+              setQrCodeData((prev) => (prev ? { ...prev, status: 'SUCCESS' as any } : null));
+              handlePaymentSuccess(data.amount);
+            } else if (data.status === 'FAILED') {
+              setIsWaitingPayment(false);
+              if (socketRef.current) {
+                socketRef.current.disconnect();
+                socketRef.current = null;
+              }
+
+              toast({
+                title: 'Payment Failed',
+                description: 'The payment was not successful. Please try again.',
+                variant: 'destructive',
+              });
+            }
+          }
+        }
+      );
+
+      socket.on('connect_error', (error) => {
+        console.error('Payment WebSocket connection error:', error);
+      });
+    },
+    [handlePaymentSuccess, toast]
+  );
 
   const handleCreateAndProcessPayment = async () => {
     setIsProcessing(true);
@@ -258,6 +369,9 @@ export function CreatePaymentDialog({
             setShowQrCode(true);
             setIsProcessing(false);
             setIsLoadingQr(false);
+
+            // Connect to WebSocket for real-time payment status
+            connectPaymentSocket(createResponse.data.id);
 
             toast({
               title: 'Payment Created',
@@ -497,15 +611,15 @@ export function CreatePaymentDialog({
           <div className="space-y-6 p-2">
             {isLoadingQr ? (
               <div className="flex flex-col items-center justify-center gap-4 py-12">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <Loader2 className="text-primary h-12 w-12 animate-spin" />
                 <p className="text-muted-foreground">Generating QR Code...</p>
               </div>
             ) : (
               <>
                 {/* Header with Icon */}
                 <div className="flex items-center justify-center gap-3">
-                  <div className="rounded-full bg-primary/10 p-3">
-                    <QrCode className="h-8 w-8 text-primary" />
+                  <div className="bg-primary/10 rounded-full p-3">
+                    <QrCode className="text-primary h-8 w-8" />
                   </div>
                   <div className="text-center">
                     <h3 className="text-2xl font-bold">Scan to Pay</h3>
@@ -516,30 +630,45 @@ export function CreatePaymentDialog({
                 </div>
 
                 {/* QR Code Card */}
-                <Card className="border-2 border-primary/20">
+                <Card className="border-primary/20 border-2">
                   <CardContent className="flex justify-center p-8">
                     <div className="relative">
                       <img
                         src={qrCodeData.qrCodeUrl}
                         alt="Payment QR Code"
-                        className="h-72 w-72 rounded-lg shadow-lg"
+                        className={`h-72 w-72 rounded-lg shadow-lg ${qrCodeData.status === 'SUCCESS' ? 'opacity-50' : ''}`}
                       />
-                      <div className="absolute -right-2 -top-2 rounded-full bg-primary p-2 shadow-lg">
-                        <QrCode className="h-5 w-5 text-primary-foreground" />
-                      </div>
+                      {qrCodeData.status === 'SUCCESS' ? (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="rounded-full bg-green-500 p-4 shadow-2xl">
+                            <CheckCircle2 className="h-16 w-16 text-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-primary absolute -top-2 -right-2 rounded-full p-2 shadow-lg">
+                          <QrCode className="text-primary-foreground h-5 w-5" />
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Payment Amount Highlight */}
-                <Card className="border-2 border-green-200 bg-green-50/50">
+                <Card
+                  className={`border-2 ${qrCodeData.status === 'SUCCESS' ? 'border-green-200 bg-green-50/50' : 'border-green-200 bg-green-50/50'}`}
+                >
                   <CardContent className="p-6 text-center">
                     <p className="text-muted-foreground mb-2 text-sm font-medium">
-                      Payment Amount
+                      {qrCodeData.status === 'SUCCESS' ? 'Payment Received' : 'Payment Amount'}
                     </p>
-                    <p className="text-4xl font-bold text-green-600">
-                      {formatCurrency(qrCodeData.amount)}
-                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-4xl font-bold text-green-600">
+                        {formatCurrency(qrCodeData.amount)}
+                      </p>
+                      {qrCodeData.status === 'SUCCESS' && (
+                        <CheckCircle2 className="h-8 w-8 text-green-600" />
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -554,12 +683,12 @@ export function CreatePaymentDialog({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid gap-3">
-                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                      <div className="bg-muted flex items-center justify-between rounded-lg p-3">
                         <span className="text-muted-foreground text-sm font-medium">Bank</span>
                         <span className="font-semibold">{qrCodeData.bankName}</span>
                       </div>
 
-                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                      <div className="bg-muted flex items-center justify-between rounded-lg p-3">
                         <span className="text-muted-foreground text-sm font-medium">
                           Account Number
                         </span>
@@ -580,14 +709,14 @@ export function CreatePaymentDialog({
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                      <div className="bg-muted flex items-center justify-between rounded-lg p-3">
                         <span className="text-muted-foreground text-sm font-medium">
                           Account Holder
                         </span>
                         <span className="font-semibold">{qrCodeData.accountHolder}</span>
                       </div>
 
-                      <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                      <div className="bg-muted flex items-center justify-between rounded-lg p-3">
                         <span className="text-muted-foreground text-sm font-medium">
                           Transfer Content
                         </span>
@@ -608,11 +737,11 @@ export function CreatePaymentDialog({
 
                       <Separator />
 
-                      <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                      <div className="bg-muted/50 flex items-center justify-between rounded-lg p-3">
                         <span className="text-muted-foreground text-xs font-medium">
                           Transaction ID
                         </span>
-                        <span className="font-mono text-xs text-muted-foreground">
+                        <span className="text-muted-foreground font-mono text-xs">
                           {qrCodeData.transactionId}
                         </span>
                       </div>
@@ -646,19 +775,34 @@ export function CreatePaymentDialog({
                   </AlertDescription>
                 </Alert>
 
-                {/* Waiting Status */}
-                <Alert className="border-amber-200 bg-amber-50">
-                  <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
-                  <AlertDescription>
-                    <p className="font-semibold text-amber-900">
-                      Waiting for payment confirmation...
-                    </p>
-                    <p className="mt-1 text-sm text-amber-700">
-                      This window will update automatically when payment is received. Please do not
-                      close this dialog.
-                    </p>
-                  </AlertDescription>
-                </Alert>
+                {/* Waiting/Success Status */}
+                {isWaitingPayment ? (
+                  <Alert className="border-amber-200 bg-amber-50">
+                    <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                    <AlertDescription>
+                      <p className="font-semibold text-amber-900">
+                        Waiting for payment confirmation...
+                      </p>
+                      <p className="mt-1 text-sm text-amber-700">
+                        This window will update automatically when payment is received. Please do
+                        not close this dialog.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                ) : qrCodeData?.status === 'SUCCESS' ? (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <AlertDescription>
+                      <p className="font-semibold text-green-900">
+                        Payment Confirmed Successfully! 🎉
+                      </p>
+                      <p className="mt-1 text-sm text-green-700">
+                        Payment of {formatCurrency(qrCodeData.amount)} has been received and
+                        confirmed.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
               </>
             )}
 
@@ -666,6 +810,12 @@ export function CreatePaymentDialog({
               <Button
                 variant="outline"
                 onClick={() => {
+                  // Disconnect socket when closing
+                  if (socketRef.current) {
+                    socketRef.current.disconnect();
+                    socketRef.current = null;
+                  }
+                  setIsWaitingPayment(false);
                   setShowQrCode(false);
                   setQrCodeData(null);
                   onPaymentCreated?.();

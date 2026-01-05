@@ -15,11 +15,16 @@ import {
   OrderItemStatus,
   OrderType,
   Prisma,
+  NotificationType,
 } from 'src/generated/prisma';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
 
   private get db() {
     return this.prismaService.order;
@@ -178,7 +183,11 @@ export class OrdersService {
             menuItem: true,
           },
         },
-        session: true,
+        session: {
+          include: {
+            table: true,
+          },
+        },
       },
     });
 
@@ -193,6 +202,29 @@ export class OrdersService {
     }
     console.log(`  Order Items: ${order.orderItems.length}`);
     console.log('===============================================\n');
+
+    // Send notification to staff based on order status
+    if (order.status === OrderStatus.CONFIRMED) {
+      const tableInfo = order.session?.table
+        ? `Table ${order.session.table.number}`
+        : 'Take-away';
+      await this.notificationsGateway.emitToRoles(
+        NotificationType.ORDER_CONFIRMED,
+        'New Order Confirmed',
+        `Order with ${order.orderItems.length} items confirmed for ${tableInfo}`,
+        { orderId: order.id, sessionId: order.sessionId },
+      );
+    } else if (order.status === OrderStatus.PENDING) {
+      const tableInfo = order.session?.table
+        ? `Table ${order.session.table.number}`
+        : 'Take-away';
+      await this.notificationsGateway.emitToRoles(
+        NotificationType.ORDER_NEW,
+        'New Order Created',
+        `New order with ${order.orderItems.length} items for ${tableInfo}`,
+        { orderId: order.id, sessionId: order.sessionId },
+      );
+    }
 
     return {
       code: 201,
@@ -472,6 +504,16 @@ export class OrdersService {
       where: { id: itemId },
       data,
     });
+
+    // Send notification when order item is ready
+    if (status === OrderItemStatus.READY) {
+      await this.notificationsGateway.emitToRoles(
+        NotificationType.ORDER_ITEM_READY,
+        'Order Item Ready',
+        `${orderItem.itemNameAtOrder} is ready for serving`,
+        { orderId: orderItem.orderId, orderItemId: itemId },
+      );
+    }
 
     return {
       code: 200,

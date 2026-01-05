@@ -1,11 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { CreateActionDto, UpdateActionDto } from './dto';
-import { ActionStatus } from 'src/generated/prisma';
+import { ActionStatus, NotificationType } from 'src/generated/prisma';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class ActionsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
 
   private get db() {
     return this.prismaService.staffAction;
@@ -45,6 +49,21 @@ export class ActionsService {
         },
       },
     });
+
+    // Send notification to staff about customer request
+    const actionTypeLabel = createActionDto.actionType
+      .replace(/_/g, ' ')
+      .toLowerCase();
+    await this.notificationsGateway.emitToRoles(
+      NotificationType.CUSTOMER_REQUEST,
+      'Customer Request',
+      `Table ${action.session.table.number} - ${actionTypeLabel}${createActionDto.description ? `: ${createActionDto.description}` : ''}`,
+      {
+        actionId: action.id,
+        tableNumber: action.session.table.number,
+        actionType: createActionDto.actionType,
+      },
+    );
 
     return {
       code: 201,

@@ -74,30 +74,6 @@ export class TablesService {
       orderBy: { number: 'asc' },
     });
 
-    // DEBUG LOG
-    console.log('\n========== GET TABLES DEBUG ==========');
-    tables.forEach((table) => {
-      console.log(`Table #${table.number} (${table.id}):`);
-      console.log(`  Status: ${table.status}`);
-      console.log(`  Active Sessions: ${table.sessions?.length || 0}`);
-      if (table.sessions && table.sessions.length > 0) {
-        table.sessions.forEach((session, idx) => {
-          console.log(`  Session ${idx + 1}:`);
-          console.log(`    ID: ${session.id}`);
-          console.log(`    Status: ${session.status}`);
-          console.log(`    Orders: ${session.orders?.length || 0}`);
-          if (session.orders && session.orders.length > 0) {
-            session.orders.forEach((order, orderIdx) => {
-              console.log(`      Order ${orderIdx + 1}: ${order.id}`);
-              console.log(`        Status: ${order.status}`);
-              console.log(`        Items: ${order.orderItems?.length || 0}`);
-            });
-          }
-        });
-      }
-    });
-    console.log('======================================\n');
-
     return tables;
   }
 

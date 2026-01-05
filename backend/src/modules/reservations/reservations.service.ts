@@ -6,11 +6,15 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/config/prisma/prisma.service';
 import { CreateReservationDto, UpdateReservationDto } from './dto';
-import { ReservationStatus } from 'src/generated/prisma';
+import { ReservationStatus, NotificationType } from 'src/generated/prisma';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class ReservationsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
 
   private get db() {
     return this.prismaService.reservation;
@@ -183,6 +187,14 @@ export class ReservationsService {
       },
     });
 
+    // Send notification to staff
+    await this.notificationsGateway.emitToRoles(
+      NotificationType.RESERVATION_NEW,
+      'New Reservation',
+      `New reservation for ${partySize} guests at table ${table.number} on ${reservationDate.toLocaleString()}`,
+      { reservationId: reservation.id, tableNumber: table.number },
+    );
+
     return reservation;
   }
 
@@ -281,6 +293,17 @@ export class ReservationsService {
     // Release table if no other active reservations
     await this.syncTableStatusForReservation(reservation.tableId);
 
+    // Send notification to staff
+    await this.notificationsGateway.emitToRoles(
+      NotificationType.RESERVATION_CANCELLED,
+      'Reservation Cancelled',
+      `Reservation for table ${updatedReservation.table.number} has been cancelled`,
+      {
+        reservationId: reservation.id,
+        tableNumber: updatedReservation.table.number,
+      },
+    );
+
     return updatedReservation;
   }
 
@@ -311,6 +334,17 @@ export class ReservationsService {
 
     // Auto-set table to RESERVED status if not already occupied
     await this.syncTableStatusForReservation(reservation.tableId);
+
+    // Send notification to staff
+    await this.notificationsGateway.emitToRoles(
+      NotificationType.RESERVATION_CONFIRMED,
+      'Reservation Confirmed',
+      `Reservation for ${reservation.partySize} guests at table ${updatedReservation.table.number} confirmed`,
+      {
+        reservationId: reservation.id,
+        tableNumber: updatedReservation.table.number,
+      },
+    );
 
     return updatedReservation;
   }

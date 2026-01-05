@@ -306,6 +306,20 @@ async function main() {
       action: 'cancel',
     },
 
+    // Notification permissions
+    {
+      name: 'notifications.read',
+      description: 'View notifications',
+      resource: 'notifications',
+      action: 'read',
+    },
+    {
+      name: 'notifications.manage',
+      description: 'Manage notifications',
+      resource: 'notifications',
+      action: 'manage',
+    },
+
     // Module Access permissions (for frontend navigation)
     {
       name: 'module.admin.access',
@@ -431,6 +445,8 @@ async function main() {
     'reports.export',
     'payments.process',
     'payments.refund',
+    'notifications.read',
+    'notifications.manage',
     'module.admin.access',
     'module.waiter.access',
     'module.kitchen.access',
@@ -463,6 +479,7 @@ async function main() {
     'reservations.read',
     'payments.process',
     'payments.refund',
+    'notifications.read',
     'module.cashier.access',
   ];
   const cashierPermissions = createdPermissions.filter((p) =>
@@ -489,6 +506,7 @@ async function main() {
     'orders.update',
     'reservations.read',
     'reservations.confirm',
+    'notifications.read',
     'module.waiter.access',
   ];
   const waiterPermissions = createdPermissions.filter((p) =>
@@ -509,6 +527,7 @@ async function main() {
     'orders.read',
     'kitchen.view-orders',
     'kitchen.update-status',
+    'notifications.read',
     'module.kitchen.access',
   ];
   const kitchenPermissions = createdPermissions.filter((p) =>
@@ -1065,11 +1084,15 @@ async function main() {
         const sessionDuration = faker.number.int({ min: 30, max: 120 });
         sessionId = faker.string.uuid();
 
+        const sessionEndTime = new Date(orderTime.getTime() + sessionDuration * 60000);
+        const sessionExpiresAt = new Date(sessionEndTime.getTime() + 24 * 60 * 60 * 1000); // Expires 24 hours after end time
+
         allSessions.push({
           id: sessionId,
           tableId: table.id,
           startTime: orderTime,
-          endTime: new Date(orderTime.getTime() + sessionDuration * 60000),
+          endTime: sessionEndTime,
+          expiresAt: sessionExpiresAt,
           status: 'CLOSED' as const,
           customerCount: faker.number.int({ min: 1, max: table.capacity }),
           createdAt: orderTime,

@@ -90,6 +90,20 @@ enum ActionStatus {
   CANCELLED
 }
 
+enum NotificationType {
+  RESERVATION_NEW
+  RESERVATION_CONFIRMED
+  RESERVATION_CANCELLED
+  ORDER_NEW
+  ORDER_CONFIRMED
+  ORDER_READY
+  ORDER_ITEM_READY
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  CUSTOMER_REQUEST
+  SYSTEM_ALERT
+}
+
 // ===== MODELS =====
 model MenuItem {
   id          String    @id @default(uuid()) @db.Uuid
@@ -210,6 +224,7 @@ model User {
   role            Role          @relation("UserToRole", fields: [roleId], references: [id])
   confirmedOrders Order[]       @relation("OrderConfirmedBy")
   handledActions  StaffAction[] @relation("ActionHandledBy")
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -351,4 +366,23 @@ model StaffAction {
   @@index([sessionId, status])
   @@index([actionType, status])
   @@map("staff_actions")
+}
+
+// ===== NOTIFICATION SYSTEM =====
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  metadata  Json?
+  isRead    Boolean          @default(false) @map("is_read")
+  userId    String           @map("user_id") @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

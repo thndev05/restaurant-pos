@@ -20,6 +20,7 @@ import { KitchenModule } from './modules/kitchen/kitchen.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { CustomerModule } from './modules/customer/customer.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
@@ -55,6 +56,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
     ReservationsModule,
     AnalyticsModule,
     CustomerModule,
+    NotificationsModule,
   ],
   providers: [
     // Global throttler guard for rate limiting

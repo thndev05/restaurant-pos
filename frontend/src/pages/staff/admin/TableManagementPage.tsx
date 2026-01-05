@@ -86,32 +86,6 @@ export default function TableManagementPage() {
     try {
       const data = await tablesService.getTables();
 
-      // DEBUG LOG
-      console.log('\n========== FRONTEND: LOAD TABLES DEBUG ==========');
-      console.log('Total tables:', data.length);
-      data.forEach((table) => {
-        console.log(`Table #${table.number}:`);
-        console.log(`  ID: ${table.id}`);
-        console.log(`  Status: ${table.status}`);
-        console.log(`  Sessions: ${table.sessions?.length || 0}`);
-        if (table.sessions && table.sessions.length > 0) {
-          table.sessions.forEach((session, idx) => {
-            console.log(`  Session ${idx + 1}:`);
-            console.log(`    ID: ${session.id}`);
-            console.log(`    Status: ${session.status}`);
-            console.log(`    Orders: ${session.orders?.length || 0}`);
-            if (session.orders) {
-              session.orders.forEach((order, orderIdx) => {
-                console.log(`      Order ${orderIdx + 1}: ${order.id}`);
-                console.log(`        Status: ${order.status}`);
-                console.log(`        Items: ${order.orderItems?.length || 0}`);
-              });
-            }
-          });
-        }
-      });
-      console.log('=================================================\n');
-
       setTables(data);
 
       // Update selectedTable if it exists to reflect new data

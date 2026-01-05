@@ -7,16 +7,21 @@ import {
   TableStatus,
   OrderStatus,
   OrderItemStatus,
+  NotificationType,
 } from 'src/generated/prisma';
 import {
   generateTransactionId,
   isValidTransactionId,
   getBankTransferInfo,
 } from 'src/common/utils';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
 
   private get db() {
     return this.prismaService.payment;
@@ -589,6 +594,26 @@ export class PaymentsService {
       console.log(
         '[SePay Webhook] Payment processed successfully:',
         payment.id,
+      );
+
+      // Emit payment status update via WebSocket
+      this.notificationsGateway.emitPaymentStatusToAll({
+        paymentId: payment.id,
+        status: 'SUCCESS',
+        amount: parseFloat(payment.totalAmount.toString()),
+        transactionId: payment.transactionId || undefined,
+        sessionId: payment.sessionId || undefined,
+      });
+
+      // Send notification to staff about successful payment
+      const tableInfo = payment.session?.table
+        ? `Table ${payment.session.table.number}`
+        : 'Take-away';
+      await this.notificationsGateway.emitToRoles(
+        NotificationType.PAYMENT_SUCCESS,
+        'Payment Successful',
+        `Payment of ${payment.totalAmount} VND received for ${tableInfo}`,
+        { paymentId: payment.id, transactionId: payment.transactionId },
       );
 
       return {
