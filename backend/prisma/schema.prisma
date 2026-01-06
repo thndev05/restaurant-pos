@@ -102,6 +102,7 @@ enum NotificationType {
   PAYMENT_FAILED
   CUSTOMER_REQUEST
   SYSTEM_ALERT
+  TABLE_SESSION_STARTED
 }
 
 // ===== MODELS =====

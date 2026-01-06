@@ -10,11 +10,15 @@ import {
   CloseSessionDto,
   InitSessionDto,
 } from './dto';
-import { SessionStatus, TableStatus, Order } from 'src/generated/prisma';
+import { SessionStatus, TableStatus, Order, NotificationType } from 'src/generated/prisma';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class SessionsService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
 
   private get db() {
     return this.prismaService.tableSession;
@@ -121,6 +125,14 @@ export class SessionsService {
 
     console.log(`New session created: ${session.id}`);
     console.log('==========================================\n');
+
+    // Send notification when customer scans QR code (creates session)
+    await this.notificationsGateway.emitToRoles(
+      NotificationType.TABLE_SESSION_STARTED,
+      'New Table Session',
+      `Customer scanned QR code - Table ${table.number} session started with ${session.customerCount} guests`,
+      { sessionId: session.id, tableNumber: table.number, customerCount: session.customerCount },
+    );
 
     return {
       code: 201,

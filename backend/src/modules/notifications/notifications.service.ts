@@ -62,6 +62,8 @@ export class NotificationsService {
       ...(isRead !== undefined && { isRead }),
     };
 
+    this.logger.log(`Fetching notifications for user: ${userId}, isRead: ${isRead}, page: ${page}, limit: ${limit}`);
+
     const [notifications, total] = await Promise.all([
       this.prisma.notification.findMany({
         where,
@@ -71,6 +73,9 @@ export class NotificationsService {
       }),
       this.prisma.notification.count({ where }),
     ]);
+
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+    this.logger.log(`Returned ${notifications.length} notifications (${unreadCount} unread) for user ${userId}`);
 
     return {
       data: notifications,
@@ -110,6 +115,27 @@ export class NotificationsService {
     });
   }
 
+  /**
+   * Mark old notifications as read (older than specified hours)
+   */
+  async markOldNotificationsAsRead(userId: string, hoursOld: number = 24): Promise<number> {
+    const cutoffDate = new Date();
+    cutoffDate.setHours(cutoffDate.getHours() - hoursOld);
+
+    const result = await this.prisma.notification.updateMany({
+      where: {
+        userId,
+        isRead: false,
+        createdAt: {
+          lt: cutoffDate,
+        },
+      },
+      data: { isRead: true },
+    });
+
+    return result.count;
+  }
+
   async getUnreadCount(userId: string): Promise<number> {
     return this.prisma.notification.count({
       where: { userId, isRead: false },
@@ -143,13 +169,19 @@ export class NotificationsService {
    */
   getRolesForNotificationType(type: NotificationType): RoleName[] {
     const roleMap: Record<NotificationType, RoleName[]> = {
-      // Reservation notifications - Manager and Waiter
-      [NotificationType.RESERVATION_NEW]: [RoleName.MANAGER, RoleName.WAITER],
+      // Reservation notifications - Admin, Manager and Waiter
+      [NotificationType.RESERVATION_NEW]: [
+        RoleName.ADMIN,
+        RoleName.MANAGER,
+        RoleName.WAITER,
+      ],
       [NotificationType.RESERVATION_CONFIRMED]: [
+        RoleName.ADMIN,
         RoleName.MANAGER,
         RoleName.WAITER,
       ],
       [NotificationType.RESERVATION_CANCELLED]: [
+        RoleName.ADMIN,
         RoleName.MANAGER,
         RoleName.WAITER,
       ],
@@ -178,12 +210,31 @@ export class NotificationsService {
         RoleName.WAITER,
       ],
 
-      // Payment notifications - Cashier and Manager
-      [NotificationType.PAYMENT_SUCCESS]: [RoleName.CASHIER, RoleName.MANAGER],
-      [NotificationType.PAYMENT_FAILED]: [RoleName.CASHIER, RoleName.MANAGER],
+      // Payment notifications - Admin, Cashier and Manager
+      [NotificationType.PAYMENT_SUCCESS]: [
+        RoleName.ADMIN,
+        RoleName.CASHIER,
+        RoleName.MANAGER,
+      ],
+      [NotificationType.PAYMENT_FAILED]: [
+        RoleName.ADMIN,
+        RoleName.CASHIER,
+        RoleName.MANAGER,
+      ],
 
-      // Customer requests - Waiter and Manager
-      [NotificationType.CUSTOMER_REQUEST]: [RoleName.WAITER, RoleName.MANAGER],
+      // Customer requests - Admin, Waiter and Manager
+      [NotificationType.CUSTOMER_REQUEST]: [
+        RoleName.ADMIN,
+        RoleName.WAITER,
+        RoleName.MANAGER,
+      ],
+
+      // Table session notifications - Admin, Waiter and Manager
+      [NotificationType.TABLE_SESSION_STARTED]: [
+        RoleName.ADMIN,
+        RoleName.WAITER,
+        RoleName.MANAGER,
+      ],
 
       // System alerts - All staff
       [NotificationType.SYSTEM_ALERT]: [

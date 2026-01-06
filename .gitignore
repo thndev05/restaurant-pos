@@ -66,3 +66,5 @@ temp/
 # React
 /frontend/node_modules/
 /frontend/.vite-cache/
+
+/diagrams/*

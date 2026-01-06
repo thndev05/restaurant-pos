@@ -9,7 +9,7 @@ import {
   useState,
   useEffect,
   useRef,
-  ReactNode,
+  type ReactNode,
   useCallback,
 } from 'react';
 import { io, Socket } from 'socket.io-client';
@@ -68,8 +68,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         if (params?.page) queryParams.append('page', String(params.page));
         if (params?.limit) queryParams.append('limit', String(params.limit));
 
-        console.log('📥 Fetching notifications with params:', params);
-
         const response = await fetch(
           `${API_BASE_URL}/${API_VERSION}/notifications?${queryParams}`,
           {
@@ -84,18 +82,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         const data = await response.json();
         const fetchedNotifications = data.data || [];
 
-        console.log(`📦 Fetched ${fetchedNotifications.length} notifications from API`);
-
-        // Always replace notifications to prevent duplicates
         setNotifications(fetchedNotifications);
 
-        // Update unread count
         const unreadNotifications = fetchedNotifications.filter((n: Notification) => !n.isRead);
         setUnreadCount(unreadNotifications.length);
-
-        console.log(
-          `✅ Updated state: ${fetchedNotifications.length} total, ${unreadNotifications.length} unread`
-        );
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
       }
@@ -169,8 +159,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     const token = authService.getAccessToken();
     const user = authService.getCurrentUser();
 
-    // Only connect if user is authenticated and is staff
-    if (!token || !user || !user.role) {
+    // Only connect if user is authenticated
+    if (!token || !user) {
       return;
     }
 
@@ -184,34 +174,26 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
     socketRef.current = socket;
 
-    // Connection event handlers
+    // Connection handlers
     socket.on('connect', () => {
-      console.log('✅ WebSocket connected');
       setIsConnected(true);
     });
 
     socket.on('disconnect', () => {
-      console.log('❌ WebSocket disconnected');
       setIsConnected(false);
     });
 
-    socket.on('connect_error', (error) => {
+    socket.on('connect_error', (error: Error) => {
       console.error('WebSocket connection error:', error);
       setIsConnected(false);
     });
 
     // Listen for new notifications
     socket.on('notification', (notification: Notification) => {
-      console.log('🔔 New notification received:', notification);
-
-      // Add to notifications list with deduplication
       setNotifications((prev) => {
-        // Check if notification already exists
+        // Prevent duplicates
         const exists = prev.some((n) => n.id === notification.id);
-        if (exists) {
-          console.log('⚠️ Duplicate notification prevented:', notification.id);
-          return prev;
-        }
+        if (exists) return prev;
         return [notification, ...prev];
       });
 
@@ -220,7 +202,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         setUnreadCount((prev) => prev + 1);
       }
 
-      // Show browser notification for critical notifications (no toast dependency)
+      // Show browser notification for critical types
       const criticalTypes = [
         'CUSTOMER_REQUEST',
         'ORDER_NEW',
@@ -230,7 +212,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       ];
 
       if (criticalTypes.includes(notification.type)) {
-        // Use browser notifications if available
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification(notification.title, {
             body: notification.message,
@@ -242,7 +223,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
     // Listen for unread count updates
     socket.on('unreadCount', (count: number) => {
-      console.log('📊 Unread count updated:', count);
       setUnreadCount(count);
     });
 

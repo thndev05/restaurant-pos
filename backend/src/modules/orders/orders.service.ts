@@ -407,6 +407,7 @@ export class OrdersService {
     }
 
     const { status } = updateOrderStatusDto;
+    const previousStatus = order.status;
 
     // Automatically update all order items status when order status changes
     let orderItemStatus: OrderItemStatus | undefined;
@@ -436,6 +437,17 @@ export class OrdersService {
         },
         data: { status: orderItemStatus },
       });
+    }
+
+    // Send notification when order is confirmed (PENDING -> CONFIRMED)
+    if (previousStatus === OrderStatus.PENDING && status === OrderStatus.CONFIRMED) {
+      const tableInfo = order.session?.table ? `Table ${order.session.table.number}` : order.customerName || 'Customer';
+      await this.notificationsGateway.emitToRoles(
+        NotificationType.ORDER_CONFIRMED,
+        'Order Confirmed',
+        `Order #${order.id.substring(0, 8)} for ${tableInfo} has been confirmed and sent to kitchen`,
+        { orderId: order.id, orderType: order.orderType },
+      );
     }
 
     return {
