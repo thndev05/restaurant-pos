@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts';
 import { useToast } from '@/hooks/use-toast';
 
 export default function WaiterActionsPage() {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'handled'>('pending');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'handled'>('pending');
   const [actions, setActions] = useState<Action[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -69,9 +69,10 @@ export default function WaiterActionsPage() {
   };
 
   // Map API status to display status
-  const mapStatus = (status: APIActionStatus): 'Pending' | 'Handled' => {
+  const mapStatus = (status: APIActionStatus): 'Pending' | 'In Progress' | 'Handled' => {
     if (status === 'PENDING') return 'Pending';
-    return 'Handled'; // IN_PROGRESS, COMPLETED, CANCELLED all map to Handled
+    if (status === 'IN_PROGRESS') return 'In Progress';
+    return 'Handled'; // COMPLETED, CANCELLED map to Handled
   };
 
   const filteredActions = actions
@@ -79,21 +80,25 @@ export default function WaiterActionsPage() {
       const displayStatus = mapStatus(action.status);
       if (filter === 'all') return true;
       if (filter === 'pending') return displayStatus === 'Pending';
+      if (filter === 'in_progress') return displayStatus === 'In Progress';
       if (filter === 'handled') return displayStatus === 'Handled';
       return true;
     })
     .sort((a, b) => {
-      // Pending first, then by time
+      // Pending first, then In Progress, then by time
       const statusA = mapStatus(a.status);
       const statusB = mapStatus(b.status);
       if (statusA === 'Pending' && statusB !== 'Pending') return -1;
       if (statusA !== 'Pending' && statusB === 'Pending') return 1;
+      if (statusA === 'In Progress' && statusB === 'Handled') return -1;
+      if (statusA === 'Handled' && statusB === 'In Progress') return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
   const stats = {
     total: actions.length,
     pending: actions.filter((a) => mapStatus(a.status) === 'Pending').length,
+    inProgress: actions.filter((a) => mapStatus(a.status) === 'In Progress').length,
     handled: actions.filter((a) => mapStatus(a.status) === 'Handled').length,
   };
 
@@ -124,6 +129,8 @@ export default function WaiterActionsPage() {
         description: 'Action marked as in progress.',
       });
       await refreshActionsSilently();
+      // Switch to in progress tab after taking action
+      setFilter('in_progress');
     } catch (error) {
       console.error('Failed to handle action:', error);
       toast({
@@ -217,7 +224,7 @@ export default function WaiterActionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
@@ -234,6 +241,14 @@ export default function WaiterActionsPage() {
             <div className="text-3xl font-bold text-amber-900">{stats.pending}</div>
           </CardContent>
         </Card>
+        <Card className="border-blue-500/30 bg-blue-50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-900">{stats.inProgress}</div>
+          </CardContent>
+        </Card>
         <Card className="border-success/30 bg-success/5">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Handled</CardTitle>
@@ -247,7 +262,7 @@ export default function WaiterActionsPage() {
       {/* Filter */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={filter === 'all' ? 'default' : 'outline'}
               size="sm"
@@ -264,6 +279,18 @@ export default function WaiterActionsPage() {
               {stats.pending > 0 && (
                 <Badge variant="destructive" className="ml-2">
                   {stats.pending}
+                </Badge>
+              )}
+            </Button>
+            <Button
+              variant={filter === 'in_progress' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('in_progress')}
+            >
+              In Progress
+              {stats.inProgress > 0 && (
+                <Badge variant="default" className="ml-2 bg-blue-500">
+                  {stats.inProgress}
                 </Badge>
               )}
             </Button>
@@ -299,7 +326,8 @@ export default function WaiterActionsPage() {
                 className={cn(
                   'transition-all hover:shadow-md',
                   displayStatus === 'Pending' && 'border-amber-500/30 bg-amber-50/50',
-                  urgent && displayStatus === 'Pending' && 'border-red-500/50 bg-red-50'
+                  urgent && displayStatus === 'Pending' && 'border-red-500/50 bg-red-50',
+                  displayStatus === 'In Progress' && 'border-blue-500/30 bg-blue-50/50'
                 )}
               >
                 <CardContent className="p-4">
@@ -346,20 +374,19 @@ export default function WaiterActionsPage() {
                             Urgent
                           </Badge>
                         )}
-                        {action.status === 'IN_PROGRESS' && (
-                          <Badge variant="warning" className="text-xs">
-                            In Progress
-                          </Badge>
-                        )}
                       </div>
 
-                      {displayStatus === 'Handled' && action.handledBy && (
-                        <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                          <User className="h-4 w-4" />
-                          <span>Handled by {action.handledBy.name}</span>
-                          <span>• {getTimeSince(action.updatedAt)}</span>
-                        </div>
-                      )}
+                      {(displayStatus === 'In Progress' || displayStatus === 'Handled') &&
+                        action.handledBy && (
+                          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                            <User className="h-4 w-4" />
+                            <span>
+                              {displayStatus === 'In Progress' ? 'Handling' : 'Handled'} by{' '}
+                              {action.handledBy.name}
+                            </span>
+                            <span>• {getTimeSince(action.updatedAt)}</span>
+                          </div>
+                        )}
 
                       {/* Actions */}
                       {displayStatus === 'Pending' && (
@@ -367,11 +394,11 @@ export default function WaiterActionsPage() {
                           <Button size="sm" onClick={() => handleTakeAction(action.id)}>
                             Take Action
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleMarkHandled(action.id)}
-                          >
+                        </div>
+                      )}
+                      {displayStatus === 'In Progress' && (
+                        <div className="flex gap-2 pt-2">
+                          <Button size="sm" onClick={() => handleMarkHandled(action.id)}>
                             Mark as Handled
                           </Button>
                         </div>
@@ -391,8 +418,15 @@ export default function WaiterActionsPage() {
             <CheckCircle className="text-success mb-4 h-12 w-12" />
             <p className="text-lg font-medium">All caught up!</p>
             <p className="text-muted-foreground text-sm">
-              No {filter === 'pending' ? 'pending' : filter === 'handled' ? 'handled' : ''} requests
-              at the moment
+              No{' '}
+              {filter === 'pending'
+                ? 'pending'
+                : filter === 'in_progress'
+                  ? 'in progress'
+                  : filter === 'handled'
+                    ? 'handled'
+                    : ''}{' '}
+              requests at the moment
             </p>
           </CardContent>
         </Card>
