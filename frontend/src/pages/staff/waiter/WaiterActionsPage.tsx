@@ -18,7 +18,18 @@ export default function WaiterActionsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Fetch actions from API
+  // Silent refresh without loading state (for auto-refresh)
+  const refreshActionsSilently = useCallback(async () => {
+    try {
+      const data = await actionsService.getAllActions();
+      setActions(data);
+    } catch (error) {
+      console.error('Failed to refresh actions:', error);
+      // Silent error - don't show toast for auto-refresh failures
+    }
+  }, []);
+
+  // Fetch actions from API with loading state (for initial load and manual refresh)
   const fetchActions = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -36,12 +47,15 @@ export default function WaiterActionsPage() {
     }
   }, [toast]);
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     fetchActions();
-    const interval = setInterval(fetchActions, 30000);
-    return () => clearInterval(interval);
   }, [fetchActions]);
+
+  // Auto-refresh every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(refreshActionsSilently, 5000);
+    return () => clearInterval(interval);
+  }, [refreshActionsSilently]);
 
   // Manual refresh
   const handleRefresh = async () => {
@@ -109,7 +123,7 @@ export default function WaiterActionsPage() {
         title: 'Success',
         description: 'Action marked as in progress.',
       });
-      await fetchActions();
+      await refreshActionsSilently();
     } catch (error) {
       console.error('Failed to handle action:', error);
       toast({
@@ -129,7 +143,7 @@ export default function WaiterActionsPage() {
         title: 'Success',
         description: 'Action marked as completed.',
       });
-      await fetchActions();
+      await refreshActionsSilently();
     } catch (error) {
       console.error('Failed to complete action:', error);
       toast({

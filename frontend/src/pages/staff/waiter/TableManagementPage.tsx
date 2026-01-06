@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,27 @@ export default function TableManagementPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [tableToEdit, setTableToEdit] = useState<Table | null>(null);
 
+  // Silent refresh without loading state (for auto-refresh and dialog close)
+  const refreshTablesSilently = useCallback(async () => {
+    try {
+      const data = await tablesService.getTables(statusFilter !== 'ALL' ? statusFilter : undefined);
+      setTables(data);
+
+      // Update selectedTable if it exists to reflect new data
+      setSelectedTable((prev) => {
+        if (prev) {
+          const updatedTable = data.find((t) => t.id === prev.id);
+          return updatedTable || prev;
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error('Failed to refresh tables:', error);
+      // Silent error - don't show toast for auto-refresh failures
+    }
+  }, [statusFilter]);
+
+  // Load tables with loading state (for initial load and manual refresh)
   const loadTables = async () => {
     setLoading(true);
     try {
@@ -103,6 +124,12 @@ export default function TableManagementPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
+  // Auto-refresh every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(refreshTablesSilently, 5000);
+    return () => clearInterval(interval);
+  }, [refreshTablesSilently]);
+
   const filteredTables = tables.filter((table) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -124,7 +151,8 @@ export default function TableManagementPage() {
   };
 
   const handleSessionUpdate = () => {
-    loadTables();
+    // Silent refresh when dialog closes to avoid loading spinner
+    refreshTablesSilently();
   };
 
   const getSessionInfo = (table: Table) => {
@@ -167,7 +195,7 @@ export default function TableManagementPage() {
         title: 'Success',
         description: 'Table deleted successfully',
       });
-      loadTables();
+      refreshTablesSilently();
     } catch (error) {
       console.error('Failed to delete table:', error);
       const message =
@@ -478,13 +506,13 @@ export default function TableManagementPage() {
       <CreateTableDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        onTableCreated={loadTables}
+        onTableCreated={refreshTablesSilently}
       />
       <EditTableDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         table={tableToEdit}
-        onTableUpdated={loadTables}
+        onTableUpdated={refreshTablesSilently}
       />
     </div>
   );

@@ -42,6 +42,23 @@ export default function KitchenDashboardPage() {
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [rejectDialog, setRejectDialog] = useState({ open: false, itemId: '', reason: '' });
 
+  // Silent refresh without loading state (for auto-refresh)
+  const refreshQueueSilently = useCallback(async () => {
+    try {
+      const response = await kitchenService.getQueue({
+        includeCompleted: showCompleted,
+        search: searchTerm.trim() || undefined,
+      });
+      setItems(response.items);
+      setStats(response.stats);
+      setLastUpdated(response.lastUpdated);
+    } catch (error) {
+      console.error('Failed to refresh kitchen queue:', error);
+      // Silent error - don't show toast for auto-refresh failures
+    }
+  }, [searchTerm, showCompleted]);
+
+  // Load queue with loading state (for initial load and manual refresh)
   const fetchQueue = useCallback(async () => {
     setRefreshing(true);
 
@@ -70,6 +87,12 @@ export default function KitchenDashboardPage() {
     setIsLoading(true);
     fetchQueue();
   }, [fetchQueue]);
+
+  // Auto-refresh every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(refreshQueueSilently, 5000);
+    return () => clearInterval(interval);
+  }, [refreshQueueSilently]);
 
   const handleStatusUpdate = async (itemId: string, status: OrderItemStatus, reason?: string) => {
     setUpdatingItemId(itemId);

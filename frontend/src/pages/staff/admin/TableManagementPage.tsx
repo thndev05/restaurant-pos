@@ -81,6 +81,28 @@ export default function TableManagementPage() {
     selectedTableIdRef.current = selectedTable?.id || null;
   }, [selectedTable]);
 
+  // Silent refresh without loading state (for auto-refresh and dialog close)
+  const refreshTablesSilently = useCallback(async () => {
+    try {
+      const data = await tablesService.getTables();
+
+      setTables(data);
+
+      // Update selectedTable if it exists to reflect new data
+      const currentSelectedId = selectedTableIdRef.current;
+      if (currentSelectedId) {
+        const updatedTable = data.find((t) => t.id === currentSelectedId);
+        if (updatedTable) {
+          setSelectedTable(updatedTable);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh tables:', error);
+      // Silent error - don't show toast for auto-refresh failures
+    }
+  }, []);
+
+  // Load tables with loading state (for initial load and manual refresh)
   const loadTables = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -110,7 +132,11 @@ export default function TableManagementPage() {
 
   useEffect(() => {
     loadTables();
-  }, [loadTables]);
+
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(refreshTablesSilently, 5000);
+    return () => clearInterval(interval);
+  }, [loadTables, refreshTablesSilently]);
 
   const handleCreateTable = async (data: TableFormData) => {
     try {
@@ -119,7 +145,7 @@ export default function TableManagementPage() {
         title: 'Success',
         description: 'Table created successfully',
       });
-      loadTables();
+      refreshTablesSilently();
     } catch (error) {
       console.error('Failed to create table:', error);
       const message =
@@ -143,7 +169,7 @@ export default function TableManagementPage() {
         title: 'Success',
         description: 'Table updated successfully',
       });
-      loadTables();
+      refreshTablesSilently();
     } catch (error) {
       console.error('Failed to update table:', error);
       const message =
@@ -204,8 +230,8 @@ export default function TableManagementPage() {
   const handleSessionDialogClose = (open: boolean) => {
     setShowSessionDialog(open);
     if (!open) {
-      // Refresh data when dialog closes
-      loadTables();
+      // Silent refresh when dialog closes to avoid loading spinner
+      refreshTablesSilently();
     }
   };
 
@@ -252,7 +278,7 @@ export default function TableManagementPage() {
         title: 'Success',
         description: 'Table deleted successfully',
       });
-      loadTables();
+      refreshTablesSilently();
       setDeleteDialogOpen(false);
       setTableToDelete(null);
     } catch (error) {

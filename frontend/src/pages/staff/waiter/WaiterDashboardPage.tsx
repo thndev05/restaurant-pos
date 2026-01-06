@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ const convertApiTableToStaffTable = (apiTable: ApiTable): Table => {
                 : order.status === 'CONFIRMED'
                   ? 'Confirmed'
                   : 'Cancelled',
-            order_type: 'DineIn',
+            order_type: 'DINE_IN',
             created_at: order.createdAt,
             items: order.orderItems?.map((item) => ({
               order_item_id: item.id,
@@ -86,6 +86,27 @@ export default function WaiterDashboardPage() {
   const [showTableDialog, setShowTableDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
+  // Silent refresh without loading state (for auto-refresh and dialog close)
+  const refreshTablesSilently = useCallback(async () => {
+    try {
+      const data = await tablesService.getTables();
+      const convertedTables = data.map(convertApiTableToStaffTable);
+      setTables(convertedTables);
+
+      // Update selected table if it exists
+      if (selectedTable) {
+        const updatedTable = data.find((t) => t.id === selectedTable.id);
+        if (updatedTable) {
+          setSelectedTable(updatedTable);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh tables:', error);
+      // Silent error - don't show toast for auto-refresh failures
+    }
+  }, [selectedTable]);
+
+  // Load tables with loading state (for initial load and manual refresh)
   const loadTables = async () => {
     setLoading(true);
     try {
@@ -114,11 +135,14 @@ export default function WaiterDashboardPage() {
 
   useEffect(() => {
     loadTables();
-    // Refresh data every 30 seconds
-    const interval = setInterval(loadTables, 30000);
-    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-refresh every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(refreshTablesSilently, 5000);
+    return () => clearInterval(interval);
+  }, [refreshTablesSilently]);
 
   const statuses = ['all', 'Available', 'Occupied', 'Reserved'];
 
@@ -167,7 +191,8 @@ export default function WaiterDashboardPage() {
   };
 
   const handleSessionUpdate = () => {
-    loadTables();
+    // Silent refresh when dialog closes to avoid loading spinner
+    refreshTablesSilently();
   };
 
   return (
@@ -338,7 +363,7 @@ export default function WaiterDashboardPage() {
       <CreateOrderDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onOrderCreated={loadTables}
+        onOrderCreated={refreshTablesSilently}
       />
 
       {/* Table Session Dialog */}

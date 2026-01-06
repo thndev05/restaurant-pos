@@ -76,6 +76,39 @@ export default function OrderManagementPage() {
   const [endDate, setEndDate] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
+  // Silent refresh without loading state (for auto-refresh and dialog close)
+  const refreshOrdersSilently = useCallback(async () => {
+    try {
+      const params: { startDate?: string; endDate?: string } = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const data = await ordersService.getOrders(params);
+      setOrders(data);
+
+      // Update selectedOrder if it exists to reflect new data
+      setSelectedOrder((prev) => {
+        if (prev) {
+          // Try to find updated order in the new data
+          const updatedOrder = data.find((o) => o.id === prev.id);
+          if (updatedOrder) {
+            return updatedOrder;
+          }
+          // If not found, try to fetch it
+          ordersService
+            .getOrderById(prev.id)
+            .then((order) => setSelectedOrder(order))
+            .catch((error) => console.error('Failed to refresh selected order:', error));
+        }
+        return prev;
+      });
+    } catch (error) {
+      console.error('Failed to refresh orders:', error);
+      // Silent error - don't show toast for auto-refresh failures
+    }
+  }, [startDate, endDate]);
+
+  // Load orders with loading state (for initial load and manual refresh)
   const loadOrders = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -99,7 +132,11 @@ export default function OrderManagementPage() {
 
   useEffect(() => {
     loadOrders();
-  }, [loadOrders]);
+
+    // Auto-refresh every 5 seconds
+    const interval = setInterval(refreshOrdersSilently, 5000);
+    return () => clearInterval(interval);
+  }, [loadOrders, refreshOrdersSilently]);
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
@@ -107,26 +144,16 @@ export default function OrderManagementPage() {
   };
 
   const handleOrderUpdate = async () => {
-    // Refresh orders list
-    await loadOrders();
-
-    // If there's a selected order, refresh it with the latest data
-    if (selectedOrder) {
-      try {
-        const updatedOrder = await ordersService.getOrderById(selectedOrder.id);
-        setSelectedOrder(updatedOrder);
-      } catch (error) {
-        console.error('Failed to refresh selected order:', error);
-      }
-    }
+    // Silent refresh when order is updated
+    await refreshOrdersSilently();
   };
 
   const handleDetailDialogClose = (open: boolean) => {
     setShowDetailDialog(open);
     if (!open) {
-      // Refresh data when dialog closes
+      // Silent refresh when dialog closes to avoid loading spinner
       setSelectedOrder(null);
-      loadOrders();
+      refreshOrdersSilently();
     }
   };
 
@@ -143,7 +170,7 @@ export default function OrderManagementPage() {
         title: 'Success',
         description: 'Order cancelled successfully',
       });
-      loadOrders();
+      refreshOrdersSilently();
       setCancelDialogOpen(false);
       setOrderToCancel(null);
     } catch (error) {
@@ -167,7 +194,7 @@ export default function OrderManagementPage() {
         title: 'Success',
         description: 'Order status updated successfully',
       });
-      loadOrders();
+      refreshOrdersSilently();
     } catch (error) {
       console.error('Failed to update order status:', error);
       const message =
@@ -649,7 +676,7 @@ export default function OrderManagementPage() {
       <CreateOrderDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onOrderCreated={loadOrders}
+        onOrderCreated={refreshOrdersSilently}
       />
 
       {/* Order Detail Dialog */}
