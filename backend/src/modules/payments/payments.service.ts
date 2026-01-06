@@ -807,7 +807,7 @@ export class PaymentsService {
       }
 
       if (payment.sessionId) {
-        await this.prismaService.session.update({
+        await this.prismaService.tableSession.update({
           where: { id: payment.sessionId },
           data: { status: SessionStatus.PAID },
         });
@@ -816,12 +816,13 @@ export class PaymentsService {
       // Emit notification
       if (
         this.notificationsGateway &&
-        this.notificationsGateway.emitPaymentStatusUpdate
+        this.notificationsGateway.emitPaymentStatus
       ) {
-        this.notificationsGateway.emitPaymentStatusUpdate({
+        const userId = payment.order?.confirmedById || '';
+        this.notificationsGateway.emitPaymentStatus(userId, {
           paymentId: id,
           status: 'SUCCESS',
-          amount: parseFloat(payment.totalAmount),
+          amount: parseFloat(payment.totalAmount.toString()),
           transactionId: payment.transactionId ?? undefined,
         });
       }
