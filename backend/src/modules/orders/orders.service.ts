@@ -440,8 +440,13 @@ export class OrdersService {
     }
 
     // Send notification when order is confirmed (PENDING -> CONFIRMED)
-    if (previousStatus === OrderStatus.PENDING && status === OrderStatus.CONFIRMED) {
-      const tableInfo = order.session?.table ? `Table ${order.session.table.number}` : order.customerName || 'Customer';
+    if (
+      previousStatus === OrderStatus.PENDING &&
+      status === OrderStatus.CONFIRMED
+    ) {
+      const tableInfo = order.session?.table
+        ? `Table ${order.session.table.number}`
+        : order.customerName || 'Customer';
       await this.notificationsGateway.emitToRoles(
         NotificationType.ORDER_CONFIRMED,
         'Order Confirmed',

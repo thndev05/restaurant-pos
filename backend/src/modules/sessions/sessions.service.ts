@@ -10,7 +10,12 @@ import {
   CloseSessionDto,
   InitSessionDto,
 } from './dto';
-import { SessionStatus, TableStatus, Order, NotificationType } from 'src/generated/prisma';
+import {
+  SessionStatus,
+  TableStatus,
+  Order,
+  NotificationType,
+} from 'src/generated/prisma';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
@@ -131,7 +136,11 @@ export class SessionsService {
       NotificationType.TABLE_SESSION_STARTED,
       'New Table Session',
       `Customer scanned QR code - Table ${table.number} session started with ${session.customerCount} guests`,
-      { sessionId: session.id, tableNumber: table.number, customerCount: session.customerCount },
+      {
+        sessionId: session.id,
+        tableNumber: table.number,
+        customerCount: session.customerCount,
+      },
     );
 
     return {

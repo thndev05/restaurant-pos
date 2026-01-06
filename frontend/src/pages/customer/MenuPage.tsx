@@ -49,14 +49,14 @@ export default function MenuPage() {
         });
 
         setMenuItems(sortedItems);
-        
+
         // Sort categories by priority as well
         const sortedCategories = [...categoriesData].sort((a, b) => {
           const aPriority = categoryPriority[a.name] || 999;
           const bPriority = categoryPriority[b.name] || 999;
           return aPriority - bPriority;
         });
-        
+
         setCategories(sortedCategories);
       } catch (err) {
         console.error('Error fetching menu data:', err);

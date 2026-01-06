@@ -62,7 +62,9 @@ export class NotificationsService {
       ...(isRead !== undefined && { isRead }),
     };
 
-    this.logger.log(`Fetching notifications for user: ${userId}, isRead: ${isRead}, page: ${page}, limit: ${limit}`);
+    this.logger.log(
+      `Fetching notifications for user: ${userId}, isRead: ${isRead}, page: ${page}, limit: ${limit}`,
+    );
 
     const [notifications, total] = await Promise.all([
       this.prisma.notification.findMany({
@@ -74,8 +76,10 @@ export class NotificationsService {
       this.prisma.notification.count({ where }),
     ]);
 
-    const unreadCount = notifications.filter(n => !n.isRead).length;
-    this.logger.log(`Returned ${notifications.length} notifications (${unreadCount} unread) for user ${userId}`);
+    const unreadCount = notifications.filter((n) => !n.isRead).length;
+    this.logger.log(
+      `Returned ${notifications.length} notifications (${unreadCount} unread) for user ${userId}`,
+    );
 
     return {
       data: notifications,
@@ -118,7 +122,10 @@ export class NotificationsService {
   /**
    * Mark old notifications as read (older than specified hours)
    */
-  async markOldNotificationsAsRead(userId: string, hoursOld: number = 24): Promise<number> {
+  async markOldNotificationsAsRead(
+    userId: string,
+    hoursOld: number = 24,
+  ): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setHours(cutoffDate.getHours() - hoursOld);
 
