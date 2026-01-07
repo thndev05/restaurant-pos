@@ -155,9 +155,9 @@ export default function CashierPaymentQueuePage() {
       }
 
       const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('vi-VN', {
+        return new Intl.NumberFormat('en-US', {
           style: 'currency',
-          currency: 'VND',
+          currency: 'USD',
         }).format(amount);
       };
 
@@ -241,7 +241,7 @@ export default function CashierPaymentQueuePage() {
           </div>
           
           <div class="info">
-            <div>Date: ${new Date().toLocaleString()}</div>
+            <div>Date: ${new Date().toLocaleString('vi-VN')}</div>
             <div>Order: ${billData.orderNumber}</div>
             <div>Type: ${billData.orderType === 'DINE_IN' ? 'Dine-In' : 'Takeaway'}</div>
             ${billData.tableNumber ? `<div>Table: ${billData.tableNumber}</div>` : ''}

@@ -499,13 +499,12 @@ export class PaymentsService {
 
     // Verify amount matches
     // Database stores amount in USD as Decimal (e.g., 100.00)
-    // SePay sends amount in VND as integer (e.g., 100000)
-    // Convert VND back to USD by dividing by 1000, then compare
+    // SePay sends amount in USD as integer (e.g., 100)
+    // Compare amounts directly
     const expectedAmount = Math.round(
       parseFloat(payment.totalAmount.toString()),
     );
-    const receivedAmountInUSD = Math.round(webhookData.transferAmount / 1000);
-    const receivedAmount = receivedAmountInUSD;
+    const receivedAmount = Math.round(webhookData.transferAmount / 1000);
 
     if (expectedAmount !== receivedAmount) {
       console.log('[SePay Webhook] Amount mismatch:', {
@@ -613,7 +612,7 @@ export class PaymentsService {
       await this.notificationsGateway.emitToRoles(
         NotificationType.PAYMENT_SUCCESS,
         'Payment Successful',
-        `Payment of ${payment.totalAmount.toString()} VND received for ${tableInfo}`,
+        `Payment of $${payment.totalAmount.toString()} received for ${tableInfo}`,
         { paymentId: payment.id, transactionId: payment.transactionId },
       );
 

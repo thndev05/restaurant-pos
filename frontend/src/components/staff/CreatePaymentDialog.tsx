@@ -86,9 +86,9 @@ const PAYMENT_METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: typeof
 };
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('vi-VN', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'VND',
+    currency: 'USD',
   }).format(amount);
 };
 
@@ -523,7 +523,7 @@ export function CreatePaymentDialog({
             
             <div class="info">
               <div>Bill #: ${billData.orderNumber}</div>
-              <div>Date: ${new Date(billData.createdAt).toLocaleString()}</div>
+              <div>Date: ${new Date(billData.createdAt).toLocaleString('vi-VN')}</div>
               ${billData.tableNumber ? `<div>Table: ${billData.tableNumber}</div>` : '<div>Order Type: Take Away</div>'}
               ${billData.confirmedBy ? `<div>Server: ${billData.confirmedBy}</div>` : ''}
             </div>
@@ -889,7 +889,7 @@ export function CreatePaymentDialog({
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Date:</span>
                         <span className="font-medium">
-                          {new Date(billData.createdAt).toLocaleDateString()}
+                          {new Date(billData.createdAt).toLocaleDateString('vi-VN')}
                         </span>
                       </div>
                     </div>

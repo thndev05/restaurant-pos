@@ -1063,7 +1063,8 @@ async function main() {
   }
 
   // Generate data from last 2 months to today
-  const endDate = new Date();
+  const now = new Date();
+  const endDate = new Date(now); // Use current time as end date
   const startDate = new Date();
   startDate.setMonth(startDate.getMonth() - 2);
 
@@ -1098,6 +1099,11 @@ async function main() {
         : faker.number.int({ min: 10, max: 21 }); // Other hours
 
       const orderTime = setHour(new Date(date), hour);
+      
+      // Skip if order time is in the future
+      if (orderTime > now) {
+        continue;
+      }
       const orderType = faker.datatype.boolean(0.6) ? 'DINE_IN' : 'TAKE_AWAY';
 
       // Prepare session for dine-in orders
@@ -1108,18 +1114,20 @@ async function main() {
         sessionId = faker.string.uuid();
 
         const sessionEndTime = new Date(orderTime.getTime() + sessionDuration * 60000);
-        const sessionExpiresAt = new Date(sessionEndTime.getTime() + 24 * 60 * 60 * 1000); // Expires 24 hours after end time
+        // Ensure session end time is not in the future
+        const actualSessionEndTime = sessionEndTime > now ? now : sessionEndTime;
+        const sessionExpiresAt = new Date(actualSessionEndTime.getTime() + 24 * 60 * 60 * 1000); // Expires 24 hours after end time
 
         allSessions.push({
           id: sessionId,
           tableId: table.id,
           startTime: orderTime,
-          endTime: sessionEndTime,
+          endTime: actualSessionEndTime,
           expiresAt: sessionExpiresAt,
           status: 'CLOSED' as const,
           customerCount: faker.number.int({ min: 1, max: table.capacity }),
           createdAt: orderTime,
-          updatedAt: orderTime,
+          updatedAt: actualSessionEndTime,
         });
       }
 
@@ -1131,6 +1139,10 @@ async function main() {
 
       // Prepare order
       const orderId = faker.string.uuid();
+      const orderUpdatedTime = sessionId 
+        ? allSessions.find(s => s.id === sessionId)?.endTime || orderTime
+        : orderTime;
+      
       allOrders.push({
         id: orderId,
         orderType: orderType as 'DINE_IN' | 'TAKE_AWAY',
@@ -1139,7 +1151,7 @@ async function main() {
         customerName: customer?.name,
         customerPhone: customer?.phone,
         createdAt: orderTime,
-        updatedAt: orderTime,
+        updatedAt: orderUpdatedTime,
       });
 
       // Add items to order
@@ -1155,6 +1167,15 @@ async function main() {
         const cookingTime = faker.number.int({ min: 5, max: 20 });
         const servingTime = cookingTime + faker.number.int({ min: 0, max: 5 });
 
+        const cookingStartTime = new Date(orderTime.getTime() + 2 * 60000);
+        const readyTime = new Date(orderTime.getTime() + cookingTime * 60000);
+        const servedTime = new Date(orderTime.getTime() + servingTime * 60000);
+
+        // Ensure all times are not in the future
+        const actualCookingStartTime = cookingStartTime > now ? now : cookingStartTime;
+        const actualReadyTime = readyTime > now ? now : readyTime;
+        const actualServedTime = servedTime > now ? now : servedTime;
+
         allOrderItems.push({
           orderId,
           menuItemId: item.id,
@@ -1162,9 +1183,9 @@ async function main() {
           priceAtOrder: item.price,
           itemNameAtOrder: item.name,
           status: 'SERVED' as const,
-          cookingStartedAt: new Date(orderTime.getTime() + 2 * 60000),
-          readyAt: new Date(orderTime.getTime() + cookingTime * 60000),
-          servedAt: new Date(orderTime.getTime() + servingTime * 60000),
+          cookingStartedAt: actualCookingStartTime,
+          readyAt: actualReadyTime,
+          servedAt: actualServedTime,
           createdAt: orderTime,
         });
       }
@@ -1184,6 +1205,9 @@ async function main() {
       const paymentTime = new Date(
         orderTime.getTime() + (sessionId ? 45 : 5) * 60000,
       );
+      
+      // Ensure payment time is not in the future
+      const actualPaymentTime = paymentTime > now ? now : paymentTime;
 
       allPayments.push({
         orderId,
@@ -1195,7 +1219,7 @@ async function main() {
         paymentMethod: paymentMethod as 'CASH' | 'BANKING' | 'CARD',
         status: 'SUCCESS' as const,
         transactionId: `TX${Array.from({ length: 10 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 33)]).join('')}`,
-        paymentTime,
+        paymentTime: actualPaymentTime,
         createdAt: orderTime,
       });
 
@@ -1230,6 +1254,7 @@ async function main() {
   
   // Create reservations for the next 30 days
   const reservationStartDate = new Date();
+  reservationStartDate.setHours(reservationStartDate.getHours() + 1); // Start from 1 hour from now
   const reservationEndDate = new Date();
   reservationEndDate.setDate(reservationEndDate.getDate() + 30);
 
@@ -1238,11 +1263,6 @@ async function main() {
     date <= reservationEndDate;
     date.setDate(date.getDate() + 1)
   ) {
-    // Skip past dates
-    if (date < new Date()) {
-      continue;
-    }
-
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
     const reservationsPerDay = isWeekend
       ? faker.number.int({ min: 2, max: 4 }) // 2-4 reservations on weekends

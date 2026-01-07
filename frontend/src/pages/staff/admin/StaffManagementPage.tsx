@@ -302,10 +302,10 @@ export default function StaffManagementPage() {
                       <div className="text-muted-foreground space-y-0.5 text-xs sm:space-y-1 sm:text-sm">
                         <p className="truncate">👤 {staff.username}</p>
                         <p className="truncate">
-                          📅 Joined: {new Date(staff.createdAt).toLocaleDateString()}
+                          📅 Joined: {new Date(staff.createdAt).toLocaleDateString('vi-VN')}
                         </p>
                         <p className="truncate">
-                          🔄 Updated: {new Date(staff.updatedAt).toLocaleDateString()}
+                          🔄 Updated: {new Date(staff.updatedAt).toLocaleDateString('vi-VN')}
                         </p>
                       </div>
 

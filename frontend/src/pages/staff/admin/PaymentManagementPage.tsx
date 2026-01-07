@@ -173,7 +173,7 @@ export default function PaymentManagementPage() {
   const handleExportCSV = () => {
     const csvData = filteredPayments.map((payment) => ({
       'Transaction ID': payment.transactionId || 'N/A',
-      Date: new Date(payment.createdAt).toLocaleString(),
+      Date: new Date(payment.createdAt).toLocaleString('vi-VN'),
       Amount: formatCurrency(payment.totalAmount),
       Status: payment.status,
       Method: payment.paymentMethod,
@@ -256,9 +256,9 @@ export default function PaymentManagementPage() {
 
   const formatCurrency = (amount: number | string) => {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND',
+      currency: 'USD',
     }).format(numAmount || 0);
   };
 

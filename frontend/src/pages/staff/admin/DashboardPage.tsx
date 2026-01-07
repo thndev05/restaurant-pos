@@ -316,7 +316,7 @@ export default function DashboardPage() {
                       }}
                       labelFormatter={(label) => {
                         const date = new Date(label);
-                        return date.toLocaleDateString();
+                        return date.toLocaleDateString('vi-VN');
                       }}
                     />
                     <Legend />

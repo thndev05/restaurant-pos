@@ -79,9 +79,9 @@ export function PaymentDetailDialog({ payment, open, onOpenChange }: PaymentDeta
   const MethodIcon = methodConfig.icon;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND',
+      currency: 'USD',
     }).format(amount);
   };
 

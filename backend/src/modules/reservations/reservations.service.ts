@@ -191,7 +191,7 @@ export class ReservationsService {
     await this.notificationsGateway.emitToRoles(
       NotificationType.RESERVATION_NEW,
       'New Reservation',
-      `New reservation for ${partySize} guests at table ${table.number} on ${reservationDate.toLocaleString()}`,
+      `New reservation for ${partySize} guests at table ${table.number} on ${reservationDate.toLocaleString('vi-VN')}`,
       { reservationId: reservation.id, tableNumber: table.number },
     );
 

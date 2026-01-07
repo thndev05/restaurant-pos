@@ -239,7 +239,7 @@ export class TablesService {
       status !== TableStatus.OUT_OF_SERVICE
     ) {
       throw new ConflictException(
-        `Cannot change table status. Table has an active confirmed reservation at ${activeReservation.reservationTime.toLocaleString()}. Please cancel or complete the reservation first.`,
+        `Cannot change table status. Table has an active confirmed reservation at ${activeReservation.reservationTime.toLocaleString('vi-VN')}. Please cancel or complete the reservation first.`,
       );
     }
 

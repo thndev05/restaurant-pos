@@ -40,9 +40,9 @@ export function RefundDialog({ payment, open, onOpenChange, onSuccess }: RefundD
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND',
+      currency: 'USD',
     }).format(amount);
   };
 

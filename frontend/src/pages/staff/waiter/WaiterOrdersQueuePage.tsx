@@ -290,16 +290,21 @@ export default function WaiterOrdersQueuePage() {
     return matchesSearch;
   });
 
+  // Sort orders by updatedAt (newest first)
+  const sortedOrders = [...filteredOrders].sort((a, b) => 
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+
   // Group orders by status for tabs
   const groupedOrders: Record<OrderStatus | 'ALL', Order[]> = {
-    ALL: filteredOrders,
-    PENDING: filteredOrders.filter((o) => o.status === 'PENDING'),
-    CONFIRMED: filteredOrders.filter((o) => o.status === 'CONFIRMED'),
-    PREPARING: filteredOrders.filter((o) => o.status === 'PREPARING'),
-    READY: filteredOrders.filter((o) => o.status === 'READY'),
-    SERVED: filteredOrders.filter((o) => o.status === 'SERVED'),
-    PAID: filteredOrders.filter((o) => o.status === 'PAID'),
-    CANCELLED: filteredOrders.filter((o) => o.status === 'CANCELLED'),
+    ALL: sortedOrders,
+    PENDING: sortedOrders.filter((o) => o.status === 'PENDING'),
+    CONFIRMED: sortedOrders.filter((o) => o.status === 'CONFIRMED'),
+    PREPARING: sortedOrders.filter((o) => o.status === 'PREPARING'),
+    READY: sortedOrders.filter((o) => o.status === 'READY'),
+    SERVED: sortedOrders.filter((o) => o.status === 'SERVED'),
+    PAID: sortedOrders.filter((o) => o.status === 'PAID'),
+    CANCELLED: sortedOrders.filter((o) => o.status === 'CANCELLED'),
   };
 
   // Calculate statistics
@@ -379,9 +384,9 @@ export default function WaiterOrdersQueuePage() {
   };
 
   const formatCurrencyFn = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND',
+      currency: 'USD',
     }).format(amount);
   };
 

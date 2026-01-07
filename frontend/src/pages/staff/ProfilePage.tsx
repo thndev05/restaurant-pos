@@ -185,7 +185,7 @@ export default function ProfilePage() {
                   <p className="text-muted-foreground text-xs">Joined</p>
                   <p className="font-medium">
                     {user?.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString()
+                      ? new Date(user.createdAt).toLocaleDateString('vi-VN')
                       : 'Jan 15, 2024'}
                   </p>
                 </div>

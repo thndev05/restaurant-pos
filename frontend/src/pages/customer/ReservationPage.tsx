@@ -174,7 +174,7 @@ export default function ReservationPage() {
                     <Calendar className="h-5 w-5 text-[#7a1f1f]" />
                     <span className="font-medium">Date:</span>
                     <span>
-                      {new Date(`${formData.date}T${formData.time}`).toLocaleDateString('en-US', {
+                      {new Date(`${formData.date}T${formData.time}`).toLocaleDateString('vi-VN', {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -186,7 +186,7 @@ export default function ReservationPage() {
                     <Clock className="h-5 w-5 text-[#7a1f1f]" />
                     <span className="font-medium">Time:</span>
                     <span>
-                      {new Date(`${formData.date}T${formData.time}`).toLocaleTimeString('en-US', {
+                      {new Date(`${formData.date}T${formData.time}`).toLocaleTimeString('vi-VN', {
                         hour: 'numeric',
                         minute: '2-digit',
                         hour12: true,

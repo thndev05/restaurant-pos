@@ -289,7 +289,7 @@ export default function KitchenDashboardPage() {
           <Clock className="h-4 w-4" />
           <span>Use the refresh button to pull latest tickets</span>
         </div>
-        {lastUpdated && <span>Last updated {new Date(lastUpdated).toLocaleTimeString()}</span>}
+        {lastUpdated && <span>Last updated {new Date(lastUpdated).toLocaleTimeString('vi-VN')}</span>}
       </div>
 
       {isLoading ? (
