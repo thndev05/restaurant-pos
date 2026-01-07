@@ -89,6 +89,8 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(amount);
 };
 
@@ -118,6 +120,7 @@ export function CreatePaymentDialog({
     paymentId: string;
     transactionId: string;
     amount: number;
+    amountInVND: number;
     status: string;
     accountNumber: string;
     bankName: string;
@@ -665,7 +668,7 @@ export function CreatePaymentDialog({
                     </p>
                     <div className="flex items-center justify-center gap-2">
                       <p className="text-4xl font-bold text-green-600">
-                        {formatCurrency(qrCodeData.amount)}
+                        {formatCurrency(qrCodeData.amountInVND)}
                       </p>
                       {qrCodeData.status === 'SUCCESS' && (
                         <CheckCircle2 className="h-8 w-8 text-green-600" />

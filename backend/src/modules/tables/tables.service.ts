@@ -342,9 +342,12 @@ export class TablesService {
       expiresIn: '10y', // QR tokens don't expire (permanent for printed QR codes)
     });
 
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const qrCodeUrl = `${frontendUrl}/t/${token}`;
+
     return {
       token,
-      qrCodeUrl: `/t/${token}`,
+      qrCodeUrl,
       tableNumber: table.number,
       tableId: table.id,
     };

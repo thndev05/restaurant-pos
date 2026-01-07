@@ -498,24 +498,23 @@ export class PaymentsService {
     }
 
     // Verify amount matches
-    // Database stores amount in USD as Decimal (e.g., 100.00)
-    // SePay sends amount in USD as integer (e.g., 100)
-    // Compare amounts directly
-    const expectedAmount = Math.round(
-      parseFloat(payment.totalAmount.toString()),
-    );
-    const receivedAmount = Math.round(webhookData.transferAmount / 1000);
+    // Database stores amount in USD as Decimal (e.g., 3.14)
+    // We multiply by 1000 for QR code (e.g., 3140 VND)
+    // SePay sends amount in VND (e.g., 3140)
+    // Compare VND amounts directly
+    const amountUSD = parseFloat(payment.totalAmount.toString());
+    const expectedAmountVND = Math.round(amountUSD * 1000);
+    const receivedAmountVND = Math.round(webhookData.transferAmount);
 
-    if (expectedAmount !== receivedAmount) {
+    if (expectedAmountVND !== receivedAmountVND) {
       console.log('[SePay Webhook] Amount mismatch:', {
-        expected: expectedAmount,
-        received: receivedAmount,
-        expectedOriginal: payment.totalAmount.toString(),
-        receivedOriginal: webhookData.transferAmount,
+        expectedVND: expectedAmountVND,
+        receivedVND: receivedAmountVND,
+        amountUSD: amountUSD,
       });
       return {
         success: false,
-        message: `Amount mismatch. Expected: ${expectedAmount}, Received: ${receivedAmount}`,
+        message: `Amount mismatch. Expected: ${expectedAmountVND} VND, Received: ${receivedAmountVND} VND`,
       };
     }
 

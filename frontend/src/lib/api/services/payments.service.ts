@@ -139,6 +139,7 @@ class PaymentsService extends BaseApiService<never> {
       paymentId: string;
       transactionId: string;
       amount: number;
+      amountInVND: number;
       status: PaymentStatus;
       accountNumber: string;
       bankName: string;
