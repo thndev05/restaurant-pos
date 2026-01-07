@@ -29,14 +29,14 @@ async function bootstrap() {
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
     : ['http://localhost:5173'];
-  
+
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
   });
-  
+
   logger.log(`CORS enabled for origins: ${corsOrigins.join(', ')}`);
-  
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}/${version}`);

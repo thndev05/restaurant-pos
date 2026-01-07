@@ -291,8 +291,8 @@ export default function WaiterOrdersQueuePage() {
   });
 
   // Sort orders by updatedAt (newest first)
-  const sortedOrders = [...filteredOrders].sort((a, b) => 
-    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  const sortedOrders = [...filteredOrders].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
   // Group orders by status for tabs
