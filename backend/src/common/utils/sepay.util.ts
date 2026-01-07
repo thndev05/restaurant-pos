@@ -55,11 +55,14 @@ export function getBankTransferInfo(transactionId: string, amount: number) {
   // Generate transfer content with transaction ID
   const content = `Thanh toan ${transactionId}`;
 
+  // Convert USD to VND by multiplying by 1000 (minimum VND transfer is 1000)
+  const amountInVND = Math.round(amount * 1000);
+
   // Generate QR code URL
   const qrCodeUrl = generateSepayQrCode(
     accountNumber,
     bankName,
-    amount,
+    amountInVND,
     content,
   );
 
@@ -67,7 +70,8 @@ export function getBankTransferInfo(transactionId: string, amount: number) {
     accountNumber,
     bankName,
     accountHolder,
-    amount,
+    amount, // Original amount in USD
+    amountInVND, // Amount in VND (amount * 1000)
     content,
     transactionId,
     qrCodeUrl,
